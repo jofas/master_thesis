@@ -47,35 +47,42 @@ recognition on the mnist_ data set:
 Why the better title would be: a keras backend to spinnaker
 -----------------------------------------------------------
 
-To answer this question, a deeper look at what tensorflow
-really is shows, that tensorflow is not only the wrong
-level of abstraction for interfacing with the spinnaker
-runtime, but it is also incompatible (I think) or at least
-unfeasible, since tensorflow in itself is a complex
-runtime environment, much like the
-`spinnaker frontend <https://github.com/SpiNNakerManchester/SpiNNakerGraphFrontEnd>`_.
+I'm making the daring assumption, that implementing a new
+backend for tensorflow is not possible for one person in
+three months, without prior knowledge of
+`XLA <https://www.tensorflow.org/xla>`_ (implementing an
+XLA backend is significantly simpler than retargeting the
+tensorflow operations directly, according to [2]_),
+`LLVM <http://llvm.org>`_ and C++ (regretably, I have no
+experiences with any of these technologies).
+Especially, since spinnaker does not provide a target for
+llvm directly (third scenario from [2]_, the one requiring
+most work).
 
-TODO: describe tensorflow from the whitepaper
+It is even a question, if XLA can be interfaced properly
+with the spinnaker runtime, which rather significantly
+defers from classical XLA targets, like CPUs and GPUs.
 
-What is tensorflow? While it is common to simply say
-tensorflow is a machine learning library, in fact, it is
-not. According to the whitepaper [CITE], tensorflow is
-simply notation
+Therefore, rather than interfacing spinnaker with the low
+level tensorflow computational graph, I propose interfacing
+with the conceptual graph provided by the deep learning
+library `Keras <https://keras.io>`_, the de facto standard
+frontend for tensorflow, when it comes to implementing deep
+learning models.
 
-machine learning -- can be broken down to glorified linear
-algebra
+According to the goals of this dissertation, I feel this is
+the much more sensible approach, especially considering,
+that tensorflow is not at all the kind of environment that
+we want to port to spinnaker (tensorflow abstracts linear
+algebra operations as a graph, which can be optimized and
+distributed onto clusters and accelerators
+(see [TF2015]_), resulting in a very complex runtime.
+Overhead, which we want to avoid in the heterogenous
+setting spinnaker provides).
 
-describe why incompatible
+.. [2] `Developing a new backend for XLA <https://www.tensorflow.org/xla/developing_new_backend>`_
 
-tf is its own complex runtime - incompatible
-
-tf wrong target
-
-tf vast ecosystem
-
-example: keras tf graph before - after training - conceptual graph
-
-conceptual graph - more freedom for own implementation
+.. [TF2015] `TensorFlow:Large-Scale Machine Learning on Heterogeneous Distributed Systems <http://download.tensorflow.org/paper/whitepaper2015.pdf>`_
 
 
 Proposed API
@@ -105,11 +112,8 @@ Proposed API
                 , loss='sparse_categorical_crossentropy'
                 , metrics=['accuracy'] )
 
-   # convert to spinnaker graph
-   model = keras2spinnaker(model)
-
-   # runs spinnaker graph and update the keras model with
-   # the weights
+   # convert and run the model as spinnaker graph and
+   # update the keras model with the weights
    k2s.fit(model, X_train, y_train)
 
    # runs on local machine
