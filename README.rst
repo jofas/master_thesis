@@ -51,9 +51,12 @@ To answer this question, a deeper look at what tensorflow
 really is shows, that tensorflow is not only the wrong
 level of abstraction for interfacing with the spinnaker
 runtime, but it is also incompatible (I think) or at least
-unfeasible, since tensorflow in itself is its own runtime.
+unfeasible, since tensorflow in itself is a complex
+runtime environment, much like the
+`spinnaker frontend <https://github.com/SpiNNakerManchester/SpiNNakerGraphFrontEnd>`_.
 
 TODO: describe tensorflow from the whitepaper
+
 What is tensorflow? While it is common to simply say
 tensorflow is a machine learning library, in fact, it is
 not. According to the whitepaper [CITE], tensorflow is
