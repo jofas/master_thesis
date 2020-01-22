@@ -75,7 +75,7 @@ three months, without prior knowledge of
 `XLA <https://www.tensorflow.org/xla>`_ (implementing an
 XLA backend is significantly simpler than retargeting the
 tensorflow operations directly, according to [2]_),
-`LLVM <http://llvm.org>`_ and C++ (regretably, I have no
+`llvm <http://llvm.org>`_ and C++ (regretably, I have no
 experiences with any of these technologies).
 Especially, since spinnaker does not provide a target for
 llvm directly (third scenario from [2]_, the one requiring
@@ -88,7 +88,7 @@ defers from classical XLA targets, like CPUs and GPUs.
 Therefore, rather than interfacing spinnaker with the low
 level tensorflow computational graph, I propose interfacing
 with the conceptual graph provided by the deep learning
-library `Keras <https://keras.io>`_, the de facto standard
+library `keras <https://keras.io>`_, the de facto standard
 frontend for tensorflow, when it comes to implementing deep
 learning models.
 
@@ -134,8 +134,16 @@ Proposed API
                 , loss='sparse_categorical_crossentropy'
                 , metrics=['accuracy'] )
 
-   # convert and run the model as spinnaker graph and
-   # update the keras model with the weights
+
+   # the main (and only?) interface this dissertation
+   # will implement.
+   #
+   # It parses the conceptual graph of the model to
+   # a spinnaker graph and runs it on a spinnaker
+   # machine. 
+   # Afterwards, the weights (trainable parameters)
+   # of the keras model are updated and the model can
+   # be used for inference.
    k2s.fit(model, X_train, y_train)
 
    # runs on local machine
@@ -184,7 +192,7 @@ Other bits and bobs
 Literature
 ----------
 
-* `TensorFlow:Large-Scale Machine Learning on Heterogeneous Distributed Systems <http://download.tensorflow.org/paper/whitepaper2015.pdf>`_
+* `TensorFlow: Large-Scale Machine Learning on Heterogeneous Distributed Systems <http://download.tensorflow.org/paper/whitepaper2015.pdf>`_
 
 
 Links
