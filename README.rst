@@ -15,7 +15,7 @@ learning (see e.g. `distributed learning with keras
 For this I propose the following benchmark for image
 recognition on the mnist_ data set:
 
-1. train the following neural networks [1]_ on spinnaker
+1. Train the following neural networks [1]_ on spinnaker
    and compare the raw speed of training to state of the
    art approaches for training (to be determined which):
 
@@ -31,7 +31,7 @@ recognition on the mnist_ data set:
 
    * Boosted LeNet-4
 
-2. while the first benchmark would give information on the
+2. While the first benchmark would give information on the
    performance of spinnaker, I personally believe,
    comparing a technology that can scale to the size of a
    supercomputer against unscalable accelerated
@@ -42,6 +42,28 @@ recognition on the mnist_ data set:
    cost effective in terms of energy consumption.
 
 .. [1] For more information see `here <https://medium.com/@sh.tsang/paper-brief-review-of-lenet-1-lenet-4-lenet-5-boosted-lenet-4-image-classification-1f5f809dbf17>`_
+
+
+Why I propose a different benchmark, then the one described in the project proposal
+-----------------------------------------------------------------------------------
+
+Alan's project proposal wants me to implement the backend
+and benchmark it against the SSNToolbox_, developed by
+researchers at the ETH Zürich.
+
+If one reads the introduction to the SSNToolbox, it
+explicitly states:
+
+   *Training a deep spiking network (i.e. learning the
+   synaptic weights) is difficult.
+   An alternative approach is to take a pre-trained neural
+   network and convert it into a spiking neural network.*
+
+The SSNToolbox converts pretrained NNs to spiking NNs,
+which is the original target of spinnaker.
+This is not at all, what we want to achieve.
+We want to find out, if spinnaker is a competitive target
+for training deep NNs, not doing inference with it.
 
 
 Why the better title would be: a keras backend to spinnaker
@@ -124,14 +146,39 @@ Proposed API
 TODO
 ----
 
-* refresh memory on how to implement neural networks (maybe
+* Look at Spiro's thesis, he did a machine learning
+  benchmark during the ISC cluster competition (for more
+  ideas on the benchmark)
+
+* Look at the ImageNet challenge and consider AlexNet for
+  benchmarking
+
+* Refresh memory on how to implement neural networks (maybe
   visit some tutorials of the machine learning practical
   course)
 
-* learn how to program spinnaker
+* Learn how to program spinnaker
 
-* find a nice linear algebra package for spinnaker
+* Find a nice linear algebra package for spinnaker
   (CBLAS/LAPACKE or some derivative maybe?)
+
+
+Other bits and bobs
+-------------------
+
+* I don't see myself having time to spare, but if this
+  should be the case, the project can be arbitrarily scaled
+  up.
+
+  For instance, for the proposed benchmark, I'd just have
+  to implement a subset of keras (indeed why I focus on a
+  single task, image recognition), which can be increased
+  to a workload, a single person can not implement in three
+  months (with a reasonable amount of sleep in it).
+
+  Otherwise, implementing an interface for doing inference
+  on spinnaker can be done as well (then we could actually
+  benchmark against SSNToolbox_).
 
 
 Literature
@@ -143,6 +190,8 @@ Literature
 Links
 -----
 
+* `spinnaker project <http://apt.cs.manchester.ac.uk/projects/SpiNNaker/project/>`_
+
 * `spinnaker wiki <http://spinnakermanchester.github.io/>`_
 
 * `keras <https://keras.io>`_
@@ -152,3 +201,4 @@ Links
 .. _TPUs: https://en.wikipedia.org/wiki/Tensor_processing_unit
 .. _GPGPUs: https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units
 .. _mnist: http://yann.lecun.com/exdb/mnist/
+.. _SSNToolbox: https://snntoolbox.readthedocs.io/en/latest/guide/intro.html
