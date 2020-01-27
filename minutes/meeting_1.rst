@@ -9,20 +9,20 @@ Actions
 -------
 
 * New
+ 
+  - **Caoimhín Laoide-Kemp:** Ask for my presentation to be
+    on Tuesday 18th of Febuary, so Alan can join
 
- - **Caoimhín Laoide-Kemp:** Ask for my presentation to be
-   on Tuesday 18th of Febuary, so Alan can join
-
- - **Jonas Faßbender:**  Have a look at the spinnaker
-   backend of the `Nengo simulator <https://github.com/project-rig/nengo_spinnaker>`_
+  - **Jonas Faßbender:**  Have a look at the spinnaker
+    backend of the `Nengo simulator <https://github.com/project-rig/nengo_spinnaker>`_
 
 * On-going
-
- - **Jonas Faßbender:** Work on tasks from the TODO list
+ 
+  - **Jonas Faßbender:** Work on tasks from the TODO list
 
 * Finished
-
-  - **Jonas Faßbender:** Presenting the state of my work
+  
+  - **Jonas Faßbender:** Presenting the state of my work 
     done so far
 
 
