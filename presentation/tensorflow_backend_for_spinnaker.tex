@@ -33,11 +33,11 @@
 \begin{center}
 {\Large A tensorflow backend to SpiNNaker }
 
-More precise: a keras backend to SpiNNaker
+More precisely: a keras backend to SpiNNaker
 
 \vspace{2cm}
 
-Jonas Fa{\ss}bender
+Jonas Fassbender
 
 \vspace{2cm}
 
@@ -56,21 +56,14 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
   \pause
 
   The project's website \cite{spinnaker_project} states:
-  \begin{itemize}[<+->]
-    \item \textcolor{black}{[SpiNNaker is]} a platform for
-          high-performance massively parallel processing
-          appropriate for the simulation of large-scale
-          [spiking] neural networks in real-time, as a
-          research tool for neuroscientists, computer
-          scientists and roboticists
 
-    \item \textcolor{black}{[SpiNNaker is]} an aid in the
-          investigation of new computer architectures,
-          which break the rules of conventional
-          supercomputing, but which we hope will lead to
-          fundamentally new and advantageous principles for
-          energy-efficient massively-parallel computing
-  \end{itemize}
+  \textcolor{white}{bad workaround}
+
+  [SpiNNaker is] a platform for high-performance massively
+  parallel [and energy efficient] processing appropriate
+  for the simulation of large-scale [spiking] neural
+  networks [\dots]
+
 \end{frame}
 % }}}
 
@@ -81,9 +74,6 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
   \pause
 
   \begin{itemize}[<+->]
-    \item I don't like to wait days for training my NN to
-          finish (and it will probably still suck
-          afterwards)
     \item Amount of computation in training deep NNs
           increases exponentially (double every 3.4 months)
           \cite{openai2019}
@@ -104,13 +94,10 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
   \begin{itemize}[<+->]
     \item TensorFlow: Large-Scale Machine Learning on
           Heterogeneous Distributed Systems \cite{tf_2015}
-    \item Represents computation as a graph
     \item Basically: abstraction over various hardware and
           software libraries and APIs (CPUs, GPUs, TPUs,
           Eigen, MPI, CUDA, OpenCL, \dots)
-    \item But: no abstraction over any runtime (like
-          SpiNNaker)
-    \item "Easiest" way to add new tensorflow backend? XLA
+    \item ``Easiest'' way to add new tensorflow backend? XLA
           (\url{https://www.tensorflow.org/xla})
     \item Instead: backend for keras (\url{https://keras.io})
     \item Using high level conceptual graph (the actual
@@ -141,10 +128,12 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
   \pause
 
   \begin{itemize}[<+->]
-    \item Is there a linear algebra library for an embedded
-          environment like SpiNNaker? (LAPACKE, CBLAS,
-          \dots?)
-    \item Don't sleep
+    \item Prepare myself well
+    %\item Is there a linear algebra library for an embedded
+    %      environment like SpiNNaker? (LAPACKE, CBLAS,
+    %      \dots?)
+    \item Taking stimulants and don't sleep for three
+          months
   \end{itemize}
 \end{frame}
 % }}}
