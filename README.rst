@@ -104,7 +104,7 @@ setting spinnaker provides).
 
 .. [2] `Developing a new backend for XLA <https://www.tensorflow.org/xla/developing_new_backend>`_
 
-.. [TF2015] `TensorFlow:Large-Scale Machine Learning on Heterogeneous Distributed Systems <http://download.tensorflow.org/paper/whitepaper2015.pdf>`_
+.. [TF2015] `TensorFlow: Large-Scale Machine Learning on Heterogeneous Distributed Systems <http://download.tensorflow.org/paper/whitepaper2015.pdf>`_
 
 
 Proposed API
@@ -140,7 +140,7 @@ Proposed API
    #
    # It parses the conceptual graph of the model to
    # a spinnaker graph and runs it on a spinnaker
-   # machine. 
+   # machine.
    # Afterwards, the weights (trainable parameters)
    # of the keras model are updated and the model can
    # be used for inference.
@@ -154,7 +154,7 @@ Proposed API
 TODO
 ----
 
-* Look at Spiro's thesis, he did a machine learning
+* Look at Spyro's thesis, he did a machine learning
   benchmark during the ISC cluster competition (for more
   ideas on the benchmark)
 
@@ -166,9 +166,6 @@ TODO
   course)
 
 * Learn how to program spinnaker
-
-* Find a nice linear algebra package for spinnaker
-  (CBLAS/LAPACKE or some derivative maybe?)
 
 
 Other bits and bobs
@@ -194,6 +191,7 @@ Literature
 
 * `TensorFlow: Large-Scale Machine Learning on Heterogeneous Distributed Systems <http://download.tensorflow.org/paper/whitepaper2015.pdf>`_
 
+* `Deep Learning Performance on Different Architectures <https://static.epcc.ed.ac.uk/dissertations/hpc-msc/2017-2018/Spyro_Nita-dissertation-spyro-nita.pdf>`_
 
 Links
 -----
