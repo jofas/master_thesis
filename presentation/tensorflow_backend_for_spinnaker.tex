@@ -113,14 +113,15 @@
   \frametitle{SpiNNaker}
   \setbeamercovered{invisible}
 
-  The project's website \cite{spinnaker_project} states:
-
-  \textcolor{white}{bad workaround}
+  \begin{center}
+    \includegraphics[width=.7\linewidth]
+      {SpiNNaker_9cabinets.jpg}
+  \end{center}
 
   [SpiNNaker is] a platform for high-performance massively
   parallel [and energy efficient] processing appropriate
   for the simulation of large-scale [spiking] neural
-  networks [\dots]
+  networks \cite{spinnaker_project}
 
 \end{frame}
 % }}}
@@ -133,13 +134,13 @@
   \setbeamercovered{invisible}
 
   \begin{itemize}[<+->]
-    \item Amount of computation in training deep NNs
+    \item Amount of computation in training DNNs
           increases exponentially (double every 3.4 months)
           \cite{openai2019}
     \item We'll run out of available computation (and
           energy) eventually
     \item Massively parallel, energy efficient and scalable
-          systems are optimal for training NNs
+          systems are optimal for training DNNs
   \end{itemize}
 \end{frame}
 % }}}
@@ -155,8 +156,7 @@
     \item TensorFlow: Large-Scale Machine Learning on
           Heterogeneous Distributed Systems \cite{tf_2015}
     \item Basically: abstraction over various hardware and
-          software libraries and APIs (CPUs, GPUs, TPUs,
-          Eigen, MPI, CUDA, OpenCL, \dots)
+          software libraries and APIs
     \item ``Easiest'' way to add new tensorflow backend? XLA
           (\url{https://www.tensorflow.org/xla})
     \item Instead: backend for keras (\url{https://keras.io})
