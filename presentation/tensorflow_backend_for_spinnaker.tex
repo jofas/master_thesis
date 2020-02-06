@@ -1,59 +1,117 @@
-\documentclass{beamer}
+\documentclass[xcolor=x11names,compress,usenames,dvipsnames,mathsans]{beamer}
+%\documentclass{beamer}
 \usepackage[utf8]{inputenc}
 \usepackage{stmaryrd}
 \usepackage{tikz}
 \usepackage{listings}
-\usepackage{graphics}
+%\usepackage{graphics}
+\usepackage{textpos}
+\usepackage[english]{babel}
+\usepackage{natbib}
+\usepackage{wrapfig,color,dashrule,epsfig,graphicx}
+\usepackage{pstool,psfrag}
+\newcommand{\calt}{\color{red} } % alert color
+\newcommand{\ccom}{\color{blue} } % commentary color
 
-%\usetheme{Warsaw}
+\newcommand{\redtext}[1]{\color{UOEred}{#1}\color{UOEblue}}
 
-\usetikzlibrary{%
-    arrows,
-    arrows.meta,
-    decorations,
-    backgrounds,
-    positioning,
-    fit,
-    petri,
-    shadows,
-    datavisualization.formats.functions,
-    calc,
-    shapes,
-    shapes.multipart,
-    matrix
+\newcommand{\link}[1]{\textbf{\textcolor{PMS3025}{\underline{#1}}}}
+\definecolor{NewRed}{rgb}{0.8, 0.0, 0.0}
+
+
+%\bibliographystyle{alpha}
+
+ %% Beamer Layout %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usetheme{Edinburgh}
+\usecolortheme{edinburgh}
+\usefonttheme[onlylarge]{structurebold}
+\setbeamertemplate{itemize items}[circle]
+
+\setbeamerfont{title}{size={\fontsize{13}{20}}}
+\setbeamercolor*{palette tertiary}{fg=black,bg=black!10}
+\setbeamercolor*{palette quaternary}{fg=black,bg=black!10}
+\setbeamercolor{alerted text}{fg=red}
+\setbeamercolor{sidebar}{bg=red!25!blue,fg=white}
+
+\def\ci{\perp\!\!\!\perp}
+
+\setbeamercovered{transparent}
+
+\addtobeamertemplate{footline}{}
+{
+  \begin{textblock*}{100mm}(.845\textwidth,-0.57cm)
+    \includegraphics[height=0.5cm, width=1.8cm]{225px-Epcc_logo.jpg}
+  \end{textblock*}
 }
 
-\bibliographystyle{alpha}
 
+
+\addtobeamertemplate{frametitle}{}
+{
+  \begin{textblock*}{100mm}(.935\textwidth,-0.645cm)
+	\includegraphics[scale=.1]{crest_rb.eps}
+  \end{textblock*}
+}
+
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+
+
+
+%\setbeamercovered{transparent}
+
+%----------------------------------------------------------------------------------------
+%	STYLE STUFF -- section title slides
+%----------------------------------------------------------------------------------------
+
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+
+\bibliographystyle{abbrv}
+
+
+\title[GitLab demo]{A tensorflow backened to SpiNNaker \\
+  More precicely: a keras backend to SpiNNaker}
+% The [Short Title] appears at the bottom of every slide, the {Full Title} is only on the title page
+
+\author[author]{Jonas Fassbender \\
+\textit{jonas@fassbender.dev} \\
+\vspace{1em}
+\includegraphics[scale=.8]{logo_colour.pdf}
+} % Your name
+
+\date{}
 
 \begin{document}
 
 % titlepage {{{
 \begin{frame}
-\begin{center}
-{\Large A tensorflow backend to SpiNNaker }
+  \titlepage
+  \vspace{-2cm}
 
-More precisely: a keras backend to SpiNNaker
+  \begin{center}
+  Supervisors:
 
-\vspace{2cm}
-
-Jonas Fassbender
-
-\vspace{2cm}
-
-Supervisors:
-
-Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
-
-\end{center}
+  Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
+  \end{center}
 \end{frame}
 % }}}
 
 % What is SpiNNaker? {{{
+\section{SpiNNaker}
+
 \begin{frame}[fragile]
-  \frametitle{What is SpiNNaker?}
+  \frametitle{SpiNNaker}
   \setbeamercovered{invisible}
-  \pause
 
   The project's website \cite{spinnaker_project} states:
 
@@ -68,10 +126,11 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
 % }}}
 
 % Why use SpiNNaker as a target for training deep NNs? {{{
+\section{Motivation}
+
 \begin{frame}[fragile]
-  \frametitle{Why use SpiNNaker as a target for training deep NNs?}
+  \frametitle{SpiNNaker as a target for training DNNs}
   \setbeamercovered{invisible}
-  \pause
 
   \begin{itemize}[<+->]
     \item Amount of computation in training deep NNs
@@ -86,10 +145,11 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
 % }}}
 
 % What is tensorflow? {{{
+\section{Tensorflow}
+
 \begin{frame}[fragile]
-  \frametitle{What is tensorflow? And why the subtitle}
+  \frametitle{Tensorflow}
   \setbeamercovered{invisible}
-  \pause
 
   \begin{itemize}[<+->]
     \item TensorFlow: Large-Scale Machine Learning on
@@ -108,10 +168,11 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
 % }}}
 
 % Challenges {{{
+\section{Challenges}
+
 \begin{frame}[fragile]
   \frametitle{Challenges}
   \setbeamercovered{invisible}
-  \pause
 
   \begin{itemize}[<+->]
     \item Writing scientific programs is hard
@@ -122,10 +183,11 @@ Alan Stokes, Kevin Stratford, Caoimhín Laoide-Kemp
 % }}}
 
 % Overcoming them {{{
+\section{Overcoming them}
+
 \begin{frame}[fragile]
   \frametitle{Overcoming them}
   \setbeamercovered{invisible}
-  \pause
 
   \begin{itemize}[<+->]
     \item Prepare myself well
