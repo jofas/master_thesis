@@ -61,4 +61,4 @@ Alan reassured me, that my ideas will work.
 DONM
 ----
 
-Wednesday 5th of Febuary, 15:00, room 2.56
+Monday 17th of February, 16:00, room 2.57
