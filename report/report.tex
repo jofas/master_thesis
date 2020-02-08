@@ -28,6 +28,7 @@
 \usepackage{graphics}
 \usepackage{booktabs}
 \usepackage{natbib}
+\usepackage{csquotes}
 
 \usetikzlibrary{%
     arrows,
@@ -80,12 +81,12 @@
 
 \newpage
 
-\tableofcontents
+\begin{abstract}
+\end{abstract}
 
 \newpage
 
-\begin{abstract}
-\end{abstract}
+\tableofcontents
 
 \newpage
 
@@ -93,14 +94,62 @@
 
 \section{Introduction} % {{{
 
+According to the SpiNNaker project's website:
+\begin{displayquote}
+  SpiNNaker is a novel massively-parallel computer
+  architecture, inspired by the fundamental structure and
+  function of the human brain, which itself is composed of
+  billions of simple computing elements, communicating
+  using unreliable spikes \citep{spinn_proj}.
+\end{displayquote}
+SpiNNaker is targeted at three main areas of research:
+(\romannumeral 1) neuroscience: understanding the human
+brain, (\romannumeral 2) robotics: low power hardware and
+(\romannumeral 3) computer science: new approach to
+supercomputing and massive parallelism.
+The dissertation project, which this paper reports on,
+will concern itself with (\romannumeral 3) and one of the
+research areas of computer science, which has emerged as
+a driving force behind advancements in many fields and for
+many tasks like speech and image recognition, drug
+discovery and genomics: deep learning
+\citep{lecun_et_al_2015}.
+
+While deep learning is a promising field and deep neural
+networks at the center of important advancements, like
+described above, they face a major problem: the sheer
+amount of computation needed for training them.
+Researchers at OpenAI have estimated, that the amount of
+computation needed for training state of the art deep
+neural networks increases exponentially, doubling every
+3.4 months \citep{openai2019}.
+In order to cope with such unprecedented amounts of
+computation and energy needed, the search for specialized
+hardware is well underway.
+Current state of the art hardware for accelerating the
+training of deep neural networks are ASICs like TPUs and
+general purpose GPUs \citep{tpus, mittal_et_al_2019}.
+
+The goal of the dissertation project that is introduced in
+this paper, will be to analyze if SpiNNaker could be an
+energy efficient, scalable and fast alternative to the
+above mentioned hardware.
+Since deep neural networks are derived from the human
+brain and nerve system \citep{goodfellow2016} and SpiNNaker
+was designed to model the human brain, it seems rather
+probable, that SpiNNaker will be a good target for
+accelerating the training of deep neural networks.
+
 This paper concerns itself with the dissertation project:
 ``Deep Learning on SpiNNaker'', which will be conducted in
 the period from May 2019 to August 2019 as the final work
-for the author to achieve his Master of Science in
-High Performance Computing with Data Science.
+of the author to achieve his Master of Science in
+High Performance Computing with Data Science from the
+University of Edinburgh.
 The report is mostly a summary of the preliminary work
 conducted in the months before the actual work on the
 disseration will be conducted.
+
 The finindings of the preliminary work and the changes made
 to the original project scope are the focal point of this
 report.
@@ -114,7 +163,7 @@ implementing computationally demanding machine learning
 algorithms like deep learning in a fast manner
 \citep{tf2015}---to an approach focused on implementing
 deep learning directly on SpiNNaker.
-Because of SpiNNakers specialized design, which works
+Because of SpiNNaker's specialized design, which works
 rather contrary to that of tensorflow and current hardware
 trends for building accelerators for deep learning,
 interfacing between SpiNNaker's runtime and tensorflow was
