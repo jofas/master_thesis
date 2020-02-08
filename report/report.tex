@@ -1,0 +1,187 @@
+\documentclass{article}
+
+\usepackage{epcc}
+\usepackage{url}
+\PassOptionsToPackage{hyphens}{url}
+\usepackage[colorlinks=false, hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage[toc,page]{appendix}
+\usepackage[table]{xcolor}
+\usepackage[marginparsep=30pt]{geometry}
+\usepackage{stmaryrd}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{tabu}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{fancyref}
+\usepackage{relsize}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{diagbox}
+\usepackage{multirow}
+\usepackage{slashbox}
+\usepackage{graphics}
+\usepackage{booktabs}
+\usepackage{natbib}
+
+\usetikzlibrary{%
+    arrows,
+    arrows.meta,
+    decorations,
+    backgrounds,
+    positioning,
+    fit,
+    petri,
+    shadows,
+    datavisualization.formats.functions,
+    calc,
+    shapes,
+    shapes.multipart,
+    matrix,
+    plotmarks
+}
+
+\usepgfplotslibrary{fillbetween, statistics, dateplot}
+
+\pgfplotsset{%
+  compat=1.3,
+  every non boxed x axis/.style={%
+  enlarge x limits=false,
+  x axis line style={}%-stealth},
+  },
+  every boxed x axis/.style={},
+  every non boxed y axis/.style={%
+  enlarge y limits=false,
+  y axis line style={}%-stealth},
+  },
+  every boxed y axis/.style={},
+}
+
+\renewcommand{\labelenumii}{\theenumii}
+\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+
+\bibliographystyle{plainnat}
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+\begin{document}
+
+\pagenumbering{roman}
+
+\title{Deep Learning on SpiNNaker: Report}
+\author{Jonas Fassbender \\ \textit{jonas@fassbender.dev}}
+\date{}
+
+\makeEPCCtitle
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\begin{abstract}
+\end{abstract}
+
+\newpage
+
+\pagenumbering{arabic}
+
+\section{Introduction} % {{{
+
+This paper concerns itself with the dissertation project:
+``Deep Learning on SpiNNaker'', which will be conducted in
+the period from May 2019 to August 2019 as the final work
+for the author to achieve his Master of Science in
+High Performance Computing with Data Science.
+The report is mostly a summary of the preliminary work
+conducted in the months before the actual work on the
+disseration will be conducted.
+The finindings of the preliminary work and the changes made
+to the original project scope are the focal point of this
+report.
+The original title of the disseration project was ``A
+Tensorflow Backend to SpiNNaker'' but the preliminary work
+conducted to this point show, that the scope will be
+redirected from implementing a backend for tensorflow---a
+library for running fast linear algebra operations on
+distributed, heterogenous systems, mainly designed for
+implementing computationally demanding machine learning
+algorithms like deep learning in a fast manner
+\citep{tf2015}---to an approach focused on implementing
+deep learning directly on SpiNNaker.
+Because of SpiNNakers specialized design, which works
+rather contrary to that of tensorflow and current hardware
+trends for building accelerators for deep learning,
+interfacing between SpiNNaker's runtime and tensorflow was
+deemed too difficult and not beneficial.
+Instead, this dissertation aims at implementing deep
+learning directly on SpiNNaker, providing an interface to
+the well known deep learning library Keras \citep{keras}.
+\citet{proj} shows the original disseration project's
+scope.
+
+This paper starts with presenting a brief outline of the
+background of the dissertation, providing a discription of
+the technologies important in this report: SpiNNaker, deep
+learning and tensorflow in Section~\ref{sec:background}.
+Also, the updated goal for the dissertation is given.
+Afterwards, in Section~\ref{sec:related_work}, some
+papers and other literature crucial for the further doings
+for this project are presented.
+The paper continues by giving a work plan in
+Section~\ref{sec:work_plan}, before presenting a risk
+analysis in Section~\ref{sec:risk_analysis}.
+Afterwards the preliminary findings outlined above are
+disscussed in more depth in Section~\ref{sec:prelim}.
+At last, Section~\ref{sec:proposal} gives the final
+project proposal and Section~\ref{sec:review} will contain
+a review of a related dissertation project done in 2018:
+``Deep Learning Performance on Different Architectures'' by
+Spyro Nita \citep{nita_2018}.
+
+% }}}
+
+\section{Background} % {{{
+\label{sec:background}
+
+% }}}
+
+\section{Related Work} % {{{
+\label{sec:related_work}
+
+% }}}
+
+\section{Work Plan} % {{{
+\label{sec:work_plan}
+
+% }}}
+
+\section{Risk Analysis} % {{{
+\label{sec:risk_analysis}
+
+% }}}
+
+\section{Preliminary Findings} % {{{
+\label{sec:prelim}
+
+% }}}
+
+\section{Final Project Proposal} % {{{
+\label{sec:proposal}
+
+% }}}
+
+\section{Deep Learning Performance on Different % ... {{{
+  Architectures: Review}
+\label{sec:review}
+
+% }}}
+
+\bibliography{library.bib}
+
+\end{document}
