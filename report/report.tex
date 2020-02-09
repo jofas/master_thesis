@@ -270,6 +270,119 @@ After the review, the importance of the dissertation for
 ``Deep Learning on SpiNNaker'' will be discussed and
 evaluated.
 
+\citet{nita_2018} concerns itself with measuring the
+computational performance of two different approaches for
+training deep neural networks: (\romannumeral 1)
+distributed training using GPUs and (\romannumeral 2)
+distributed training using CPUs.
+The dissertation is a work derived of the efforts of
+Team EPCC at the Student Cluster Competition at the
+International Supercomputing Conference 2018, held in
+Frankfurt, where Team EPCC competed against other teams by
+building a small supercomputing cluster and running various
+benchmarks on it, to see which team built the best
+supercomputing cluster.
+One of these benchmarks concerned itself with measuring the
+performance of training a deep neural network on the
+clusters, which is picked up in \citet{nita_2018} and
+represents the benchmark for approach (\romannumeral 1).
+
+The benchmark is based on the famous ImageNet dataset,
+which consists of more than 14 million images, organized
+according to the WordNet hierarchy into over 21 thousand
+so called synsets (synonym sets) \citep{imagenet, wordnet}.
+Contrary to the annual Large Scale Visual Recognition
+Challenge (ILSVRC)---a benchmark also based on the ImageNet
+dataset; the de-facto standard for benchmarking image
+recognition models---the benchmark for the Student Cluster
+Competition only concerns itself with the throughput of
+images during training and not with the accuracy of the
+trained models.
+The througput is measured in images per second.
+Only if two teams should have the same throughput during
+training is the training accuracy taken into account as
+the secondary criterion for tie-breaking.
+The teams participating in the Student Cluster Competition
+had to train the VGG16 deep neural network---a famous
+model architecture introduced in the ILSVRC 2014 by
+researchers from Oxford University
+\citep{simonyan_et_al_2014}---on 1000 synsets containing
+1.2 million images.
+The main limitation for the clusters were their power
+budget of 3kW and---for the ImageNet benchmark---a maximum
+runtime of three hours \citep{nita_2018}.
+
+\citet{nita_2018} compares the throughput of the
+supercomputing cluster of Team EPCC for the performance of
+a distributed GPU system against Cirrus---a supercomputer
+hosted by the EPCC---for the performance of a distributed
+CPU system \citep{cirrus}.
+
+Concerning the results of \citet{nita_2018}, two major
+problems were encountered: (\romannumeral 1) cluster
+damage and failure of the Team EPCC cluster shortly before
+the competition and (\romannumeral 2) the fact that the CPU
+benchmark on Cirrus could not be distributed over multiple
+backend nodes.
+Fortunately benchmarks were done on the Team EPCC cluster,
+before its failure and \citet{nita_2018} presents the
+results of using the first node of the cluster with six
+NVIDIA V100 GPUs.
+Concerning (\romannumeral 2), \citet{nita_2018} presents
+the results for a single backend node and assumes that
+Cirrus would be able to linearly scale to multiple backend
+nodes, when comparing the two clusters.
+The single node of the Team EPCC cluster with its six
+NVIDIA V100 GPUs generates a throughput of 2,052 images per
+second, while a single backend node of Cirrus (two Intel
+Xeon E5-2695 processors, each with 18 physical cores) can
+generate a throughput of just 18 images per second.
+Assuming linear scaling over multiple backend nodes of
+Cirrus, 21 nodes would be needed for the throughput of a
+single NVIDIA V100 GPU.
+\citet{nita_2018} concludes that GPUs offer a significant
+advantage compared to CPUs, when it comes to training
+deep neural networks.
+
+The dissertation starts with an introduction, which
+includes a description of the dissertation's layout.
+The second chapter concerns itself with a description of
+convolutional neural networks for image classification,
+describing ImageNet and VGG16 as a special convolutional
+neural network.
+Chapter three describes everything concerning the Student
+Cluster Competition, including the benchmarks, rules and
+various features of the Team EPCC cluster, including the
+used hardware, operating system and other important
+software libraries.
+It also describes the difficulties and hardware damage to
+the cluster and---concerning the ImageNet benchmark---how
+the images were preprocessed and reformatted to the
+TFRecord format \citep{tf2015}.
+Chapter four concerns itself with the optimization of the
+VGG16 neural network, mainly through different parameters
+which are passed to tensorflow, which is used for
+implementing VGG16.
+It thoroughly describes how one can distribute training
+across multiple GPUs.
+The benchmark for the Student Cluster Competition is
+described and analyzed, as is the benchmark for Cirrus.
+The chapter ends by comparing both.
+\citet{nita_2018} concludes by summarizing the results
+presented in chapter four and gives an outline for future
+work, which could shed more light on the performance of
+GPU and CPU clusters for training deep neural networks.
+The two main points of emphasis for future work presented
+are: (\romannumeral 1) scaling training to hundreds of
+CPU nodes \citep[see e.g.][for distributing training onto
+multiple CPUs]{you2017} and (\romannumeral 2)
+comparing power consumption of CPU nodes against GPU nodes.
+
+% here review
+
+% just a paragraph on how dissertation is important for my
+% own
+
 % }}}
 
 \bibliography{library.bib}
