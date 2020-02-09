@@ -141,7 +141,7 @@ probable, that SpiNNaker will be a good target for
 accelerating the training of deep neural networks.
 
 This paper concerns itself with the dissertation project:
-``Deep Learning on SpiNNaker,'' which will be conducted in
+``Deep Learning on SpiNNaker'', which will be conducted in
 the period from May 2019 to August 2019 as the final work
 of the author to achieve his Master of Science in
 High Performance Computing with Data Science from the
@@ -154,7 +154,7 @@ The finindings of the preliminary work and the changes made
 to the original project scope are the focal point of this
 report.
 The original title of the disseration project was ``A
-Tensorflow Backend to SpiNNaker,'' but the preliminary work
+Tensorflow Backend to SpiNNaker'', but the preliminary work
 conducted to this point show, that the scope will be
 redirected from implementing a backend for tensorflow---a
 library for running fast linear algebra operations on
@@ -378,10 +378,69 @@ CPU nodes \citep[see e.g.][for distributing training onto
 multiple CPUs]{you2017} and (\romannumeral 2)
 comparing power consumption of CPU nodes against GPU nodes.
 
-% here review
+The best thing to say about \citet{nita_2018} is how well
+the whole experience of the Student Cluster Competition is
+communicated by the author.
+\citet{nita_2018} does not simply give a description of
+everything that is important for the benchmark, but gives
+a very conclusive and elaborate review of the whole
+competition.
+It serves as a red line throughout the whole dissertation.
 
-% just a paragraph on how dissertation is important for my
-% own
+Chapter four contains the benchmark and its results.
+It is a conclusive chapter and well annotated with useful
+references.
+The difficulties of the environment are clearly described
+and while there were failures and the benchmarks on both
+the cluster of Team EPCC and Cirrus are not optimal, these
+difficulties are discussed openly and the presented results
+are sensible.
+
+Overall, \citet{nita_2018} describes the context and
+problem scope well.
+Its only problem is, it does not make it easy for the
+reader to see that.
+The layout can only be described as cluttered and a few
+passages and paragraphs are simply unnecessary.
+For example, Chapter~3.4 does not belong in the chapter
+that concerns itself with the Student Cluster Competition,
+if it belongs into the dissertation at all.
+While the chosen data format could be seen as an
+optimization and therefore should be described in chapter
+four, problems during the download before the competition
+are irrelevant to the benchmark.
+Also chapter three and two could be swapped, which would
+have made for an easier introduction to the dissertation,
+where one is first confronted by the whole context and
+rather gentle chapter about the Student Cluster
+Competition, instead of by a description of convolutional
+neural networks and ImageNet.
+The first paragraph of the introduction to the dissertation
+is just weird and seems to pay homage to
+\citet{goodfellow2016}, which also starts with a similarly
+weird introduction about Greek mythology and the craving of
+humankind for thinking machines.
+
+A second point of critique could be the absence of a
+chapter on related work, which gives a rough overview of
+other, comparable benchmarks.
+Some other benchmarks, like \citet{you2017}, are referenced
+in the dissertation, but the reader does not get a general
+overview over what else is out there.
+
+\citet{nita_2018} and ``Deep Learning on SpiNNaker''
+overlap in their problem scope, in the sense that both
+concern itself with benchmarking the training speed of
+deep neural networks.
+Both focusing on image recognition based on the ImageNet
+dataset.
+While probably not directly important for the benchmark
+conducted as part of ``Deep Learning on SpiNNaker'',
+since \citet{nita_2018} benchmarks the VGG16 model and
+``Deep Learning on SpiNNaker'' will focus on ResNet50 and
+AlexNet (see Section~\ref{sec:proposal}),
+\citet{nita_2018} still provided a great first point of
+reference for the literature review done so far.
 
 % }}}
 
