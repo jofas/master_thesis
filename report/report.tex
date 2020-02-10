@@ -102,6 +102,10 @@ According to the SpiNNaker project's website:
   billions of simple computing elements, communicating
   using unreliable spikes \citep{spinn_proj}.
 \end{displayquote}
+
+% TODO: describe SpiNNaker and spiking neural networks here
+% (reference appendix for photos)
+
 SpiNNaker is targeted at three main areas of research:
 (\romannumeral 1) neuroscience: understanding the human
 brain, (\romannumeral 2) robotics: low power hardware and
@@ -174,46 +178,74 @@ the well known deep learning library Keras \citep{keras}.
 \citet{proj} shows the original disseration project's
 scope.
 
-This paper starts with presenting a brief outline of the
-background of the dissertation, providing a discription of
-the technologies important in this report: SpiNNaker, deep
-learning and tensorflow in Section~\ref{sec:background}.
-Also, the updated goal for the dissertation is given.
-Afterwards, in Section~\ref{sec:related_work}, some
-papers and other literature crucial for the further doings
-for this project are presented.
+This paper starts with presenting the final project
+proposal, in particular focusing on the benchmark to be
+conducted.
+Afterwards related work is presented in
+Section~\ref{sec:related_work}.
+The main focus lies on presenting papers with benchmarks
+we can compare our implementation against.
 The paper continues by giving a work plan in
 Section~\ref{sec:work_plan}, before presenting a risk
 analysis in Section~\ref{sec:risk_analysis}.
 Afterwards the preliminary findings outlined above are
 disscussed in more depth in Section~\ref{sec:prelim}.
-At last, Section~\ref{sec:proposal} gives the final
-project proposal and Section~\ref{sec:review} will contain
-a review of a related dissertation project done in 2018:
+At last Section~\ref{sec:review} will contain a review of a
+related dissertation project done in 2018:
 ``Deep Learning Performance on Different Architectures'' by
 Spyro Nita \citep{nita_2018}.
 
 % }}}
 
-\section{Background} % {{{
-\label{sec:background}
+\section{Final Project Proposal} % {{{
+\label{sec:proposal}
 
-% TODO: pictures of SpiNNaker
+This section will begin by giving an outline of the initial
+project proposal.
+The preliminary findings given in Section~\ref{sec:prelim}
+lad us to abandon the inital project proposal.
+The updated project proposal is given.
+The benchmark with which we will compare our deep learning
+implementation on SpiNNaker with other hardware platforms
+and deep learning libraries is presented.
 
-% paragraph on spiking neural networks
+% TODO: old project proposal
 
-% very general view of DNNs
+% here just a paragraph why first the idea was tensorflow
+% reference preliminary findings on why not deemed
+% beneficial
 
-% very general view of tensorflow
+% TODO: here new project proposal
 
-% benchmark idea
+% implement subset of keras api (or at least a keras like
+% python api) to make benchmark possible
+
+We intent to benchmark the performance of our
+implementation based on an image classifier, which is a
+very popular problem domain for deep learning, providing
+many good benchmarks we can compare against.
+
+% what famous models are out there? start with lenets and
+% mnist -> way too small -> imagenet: also very famous
+% models: AlexNet, VGG16 and ResNet (explain some history)
+
+% then give benchmark explanation (ResNet) -> give all the
+% benchmark papers
 
 % }}}
 
 \section{Related Work} % {{{
 \label{sec:related_work}
 
-% TODO: benchmark papers
+This section will foucus itself with related work important
+for the final project proposal of ``Deep Learning on
+SpiNNaker''.
+The main focus lies on benchmarks, with wich we can compare
+our impelementation on SpiNNaker with state of the art
+libraries and---more importantly---hardware.
+Further literature of importance for this project, e.g.
+\citet{he_et_al_2015}, \citet{goodfellow2016} or
+\citet{imagenet}, can be found in the References.
 
 % }}}
 
@@ -237,15 +269,6 @@ Spyro Nita \citep{nita_2018}.
 
 % tf backend too difficult (XLA, linear algebra not what
 % spinnaker was designed for)
-
-% }}}
-
-\section{Final Project Proposal} % {{{
-\label{sec:proposal}
-
-% describe the benchmark
-
-% implement subset of keras api to make benchmark possible
 
 % }}}
 
@@ -439,7 +462,7 @@ dataset.
 While probably not directly important for the benchmark
 conducted as part of ``Deep Learning on SpiNNaker'',
 since \citet{nita_2018} benchmarks the VGG16 model and
-``Deep Learning on SpiNNaker'' will focus on ResNet50
+``Deep Learning on SpiNNaker'' will focus on ResNet-50
 (see Section~\ref{sec:proposal}),
 \citet{nita_2018} still provided a great first point of
 reference for the literature review done so far.
@@ -447,5 +470,24 @@ reference for the literature review done so far.
 % }}}
 
 \bibliography{library.bib}
+\addcontentsline{toc}{section}{References}
+
+
+\begin{appendices}
+\section{Photos of SpiNNaker}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{spinnakerBoard.jpg}
+  \caption{A single SpiNNaker board with 48 SpiNNaker
+    chips. Each chip has 18 cores.}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]
+    {SpiNNaker_9cabinets.jpg}
+  \caption{The one million core machine in Manchester.}
+\end{figure}
+
+\end{appendices}
 
 \end{document}
