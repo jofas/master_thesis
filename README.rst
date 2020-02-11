@@ -1,5 +1,5 @@
-A tensorflow backend to spinnaker
-=================================
+Deep Learning on SpiNNaker (formerly: A Tensorflow Backend to SpiNNaker)
+========================================================================
 
 
 Goal
@@ -66,8 +66,8 @@ We want to find out, if spinnaker is a competitive target
 for training deep NNs, not doing inference with it.
 
 
-Why the better title would be: a keras backend to spinnaker
------------------------------------------------------------
+Why Deep Learning on SpiNNaker instead of A Tensorflow Backend to SpiNNaker
+---------------------------------------------------------------------------
 
 I'm making the daring assumption, that implementing a new
 backend for tensorflow is not possible for one person in
@@ -153,13 +153,6 @@ Proposed API
 
 TODO
 ----
-
-* Look at Spyro's thesis, he did a machine learning
-  benchmark during the ISC cluster competition (for more
-  ideas on the benchmark)
-
-* Look at the ImageNet challenge and consider AlexNet for
-  benchmarking
 
 * Refresh memory on how to implement neural networks (maybe
   visit some tutorials of the machine learning practical
