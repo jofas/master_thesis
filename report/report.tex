@@ -103,14 +103,68 @@ According to the SpiNNaker project's website:
   using unreliable spikes \citep{spinn_proj}.
 \end{displayquote}
 
-% TODO: describe SpiNNaker and spiking neural networks here
-% (reference appendix for photos)
+SpiNNaker is a digital neuromorphic computer architecture,
+designed to model the human brain.
+This is rather a gross simplification of what SpiNNaker was
+designed for.
+Understanding the human brain is one of the biggest
+frontiers of science and there are many ideas on how one
+can model a complex and still mostly unknown structure such
+as the human brain.
+Therefore, there are many different proposed neuromorphic
+computer architectures and ideas on how to model the human
+brain, from early analogue approaches for vision systems
+like presented in \citet{mead1989} to large scale digital
+architectures like Blue Brain \citep{markram2006}; all
+aiming to implement different types of neurons and models
+of the human brain efficiently \citep{furber_et_al_2007}.
+
+SpiNNaker is an architecture for the large scale and
+real-time modeling of spiking neural networks
+\citep{furber_et_al_2006, furber_et_al_2006b,
+  furber_et_al_2007}.
+\citet{maass1997} describes spiking neural networks as the
+third generation of neural networks.
+Unlike the second generation neural networks---which we
+will deal with in the dissertation project here reported on
+in the form of deep learning neural networks---spiking
+neural networks incorporate a concept of time in their
+action potentials (spikes).
+Neural networks of the second generation do not have a
+concept of time and fire every time they are activated.
+Spiking neural networks are derived from evindence
+collected from biological neural systems; they are therfore
+more closely representing neural systems of biological
+life than deep learning neural networks \citep{maass1997}.
+
+The SpiNNaker chip is a ARM multiprocessor chip having 18
+cores, with a Network-on-Chip system for
+communication between cores \citep{furber_et_al_2007,
+  spinn_proj}.
+Each core can model up to 1000 spiking neurons.
+The spiking neurons in the neural network communicate with
+spike events \citep{furber_et_al_2007}.
+Spike events are---like their biological
+counterpart---inheritently unstable and small.
+This is represented in the interconnection hardware.
+Small packets (40 or 72 bits) can be send, without
+guarantee of successful arrival.
+Even without this guarantee, on can still perform
+meaningful computations on SpiNNaker and fault detection
+and recovery mechanisms are implemented \citep{spinn_proj}.
+One can connect many SpiNNaker chips together, to build a
+masively parallel and energy efficient supercomputer that
+is able to run up to a billion spiking neurons in real time
+\citep{furber_et_al_2007}.
+Photos of the SpiNNaker hardware can be found in
+Appendix~\ref{sec:spinn_photos}.
 
 SpiNNaker is targeted at three main areas of research:
 (\romannumeral 1) neuroscience: understanding the human
-brain, (\romannumeral 2) robotics: low power hardware and
+brain, (\romannumeral 2) robotics: low power hardware for
+implementing neural decision systems and
 (\romannumeral 3) computer science: new approach to
-supercomputing and massive parallelism.
+supercomputing and massive parallelism \citep{spinn_proj}.
 The dissertation project, which this paper reports on,
 will concern itself with (\romannumeral 3) and one of the
 research areas of computer science, which has emerged as
@@ -180,7 +234,7 @@ scope.
 
 This paper starts with presenting the final project
 proposal, in particular focusing on the benchmark to be
-conducted.
+conducted in Section~\ref{sec:proposal}.
 Afterwards related work is presented in
 Section~\ref{sec:related_work}.
 The main focus lies on presenting papers with benchmarks
@@ -475,6 +529,7 @@ reference for the literature review done so far.
 
 \begin{appendices}
 \section{Photos of SpiNNaker}
+\label{sec:spinn_photos}
 
 \begin{figure}[H]
   \includegraphics[width=\linewidth]{spinnakerBoard.jpg}
@@ -485,7 +540,9 @@ reference for the literature review done so far.
 \begin{figure}[H]
   \includegraphics[width=\linewidth]
     {SpiNNaker_9cabinets.jpg}
-  \caption{The one million core machine in Manchester.}
+  \caption{The one million core machine in Manchester.
+    It is capable of running up to one billion spiking
+    neurons in real-time.}
 \end{figure}
 
 \end{appendices}
