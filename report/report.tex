@@ -228,9 +228,9 @@ trends for building accelerators for deep learning,
 interfacing between SpiNNaker's runtime and tensorflow was
 deemed too difficult and not beneficial.
 Instead, this dissertation aims at implementing deep
-learning directly on SpiNNaker, providing an interface
-designed in the likes of the well known deep learning
-library Keras \citep{keras}.
+learning directly on SpiNNaker, probably providing an
+interface designed in the likes of the well known deep
+learning library Keras \citep{keras}.
 \citet{proj} shows the original disseration project's
 scope.
 
@@ -320,15 +320,14 @@ ResNet-50 \citep{alexnet, simonyan_et_al_2014,
   he_et_al_2015}.
 We intend to benchmark by training the most complex of
 these three models: ResNet-50.
-The benchmark will be to train ResNet-50 for 90 epochs with
-1000 categories (1.28 million images) of the ImageNet
-dataset (setting of the ILSVRC 2012) and measure the time
-it takes to finish the training.
+The benchmark will be to train ResNet-50 with 1000
+categories (1.28 million images) of the ImageNet dataset
+(setting of the ILSVRC 2012) and measure the time it takes
+to finish the training.
 The top-1 accuracy of the model is evaluated on 50,000 test
-images and should be around 75\%, in order to compare it to
-the other benchmarks presented in
+images and should be at least 74.9\%, in order to compare
+it to the other benchmarks presented in
 Section~\ref{sec:related_work}.
-The training obviously must be efficient, while being fast.
 
 In conclusion, our final project proposal will be
 implementing deep learning algorithms directly on
@@ -359,8 +358,53 @@ Further literature of importance for this project, e.g.
 \citet{he_et_al_2015}, \citet{goodfellow2016} or
 \citet{imagenet}, can be found in the References.
 
-% all the papers (small table with their results and
-% hardware, software)
+The benchmark settings described in the previous chapter
+are the image classification benchmark for training deep
+learning models of the recently launched MLPerf benchmark
+project.
+The MLPerf benchmark was proposed, to ensure fair
+performance comparisons between various hardware and
+software libraries for deep learning
+\citep{mattson_et_al_2019}.
+We intend to stick to the rules of the MLPerf benchmark.
+If the dissertation project will succeed as planned, we
+will submit our timing results to the MLPerf Training
+benchmark v0.7, which is due on the 21st of February 2020.
+The results of MLPerf Training v0.6 can be found at
+\url{https://mlperf.org/training-results-0-6/}.
+Currently the fastest system for the image classification
+benchmark is based on tensorflow and 1024 TPUv3s.
+It is able to finish in 1.28 minutes.
+Besides the MLPerf benchmark, which is quite new, there
+are a few older papers which use a similar setting for
+benchmarking their systems.
+These papers and their results are listed in
+Table~\ref{tab:benchmarks}.
+
+\begin{table}
+\begin{center}
+\begin{tabu}{|l|l|l|l|l|}
+\hline
+paper &processor/accelerator &\# &library &time \\
+\hline
+\citet{he_et_al_2015} &Tesla P100 &8 &caffe &29 hours \\
+\citet{goyal_et_al_2017} &Tesla P100 &256 &caffe2 &1 hour \\
+\citet{smith_et_al_2017} &TPU pod &1 &tensorflow &30 minutes \\
+\citet{akiba_et_al_2017} &Tesla P100 &1024 &chainer &15 minutes \\
+\citet{you2017} &Xeon Phi KNL &2048 &caffe &14 minutes \\
+\citet{jia_et_al_2018} &Tesla P40 &2048 &tensorflow &6.6 minutes \\
+\citet{mikami_et_al_2018} &Tesla V100 &2176 &NNL &3.7 minutes \\
+\hline
+\end{tabu}
+\end{center}
+\caption{Selected timings from benchmarks other than MLPerf
+  with a similar setting. None can beat the fastest system
+  from the MLPerf benchmark, which is not surprising,
+  given the fast pace of improvements in both hardware
+  and software for deep learning and the fact, that the
+  MLPerf benchmark results are the most recent.}
+\label{tab:benchmarks}
+\end{table}
 
 % }}}
 
