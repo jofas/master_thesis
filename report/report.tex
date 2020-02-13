@@ -97,7 +97,7 @@ deep neural networks \citep[see e.g.][]{goodfellow2016}.
 The preliminary research done for the dissertation phase
 in the summer of 2020 is described and all relevant
 findings are presented.
-Changes made to the inital project proposal are discussed.
+Changes made to the initial project proposal are discussed.
 An outline in form of a work plan and relevant background
 information are presented as well.
 A literature review of \citet{nita_2018} is given at the
@@ -156,10 +156,11 @@ neural networks incorporate a concept of time in their
 action potentials (spikes).
 Neural networks of the second generation do not have a
 concept of time and fire every time they are activated.
-Spiking neural networks are derived from evindence
-collected from biological neural systems; they are therfore
-more closely representing neural systems of biological
-life than deep learning neural networks \citep{maass1997}.
+Spiking neural networks are derived from evidence
+collected from biological neural systems; they are
+therefore more closely representing neural systems of
+biological life than deep learning neural networks
+\citep{maass1997}.
 
 The SpiNNaker chip is a ARM multiprocessor chip having 18
 cores, with a Network-on-Chip system for
@@ -169,7 +170,7 @@ Each core can model up to 1000 spiking neurons.
 The spiking neurons in the neural network communicate with
 spike events \citep{furber_et_al_2007}.
 Spike events are---like their biological
-counterpart---inheritently unstable and small.
+counterpart---inherently unstable and small.
 This is represented in the interconnection hardware.
 Small packets (40 or 72 bits) can be send, without
 guarantee of successful arrival.
@@ -177,7 +178,7 @@ Even without this guarantee, on can still perform
 meaningful computations on SpiNNaker and fault detection
 and recovery mechanisms are implemented \citep{spinn_proj}.
 One can connect many SpiNNaker chips together, to build a
-masively parallel and energy efficient supercomputer that
+massively parallel and energy efficient supercomputer that
 is able to run up to a billion spiking neurons in real time
 \citep{furber_et_al_2007}.
 Photos of the SpiNNaker hardware can be found in
@@ -230,17 +231,17 @@ High Performance Computing with Data Science from the
 University of Edinburgh.
 The report is mostly a summary of the preliminary work
 conducted in the months before the actual work on the
-disseration will be conducted.
+dissertation will be conducted.
 
-The finindings of the preliminary work and the changes made
+The findings of the preliminary work and the changes made
 to the original project scope are the focal point of this
 report.
-The original title of the disseration project was ``A
+The original title of the dissertation project was ``A
 Tensorflow Backend to SpiNNaker'', but the preliminary work
 conducted to this point show, that the scope will be
 redirected from implementing a backend for tensorflow---a
 library for running fast linear algebra operations on
-distributed, heterogenous systems, mainly designed for
+distributed, heterogeneous systems, mainly designed for
 implementing computationally demanding machine learning
 algorithms like deep learning in a fast manner
 \citep{tf2015}---to an approach focused on implementing
@@ -254,7 +255,7 @@ Instead, this dissertation aims at implementing deep
 learning directly on SpiNNaker, probably providing an
 interface designed in the likes of the well known deep
 learning library Keras \citep{keras}.
-\citet{proj} shows the original disseration project's
+\citet{proj} shows the original dissertation project's
 scope.
 
 This paper starts with presenting the final project
@@ -268,7 +269,7 @@ The paper continues by giving a work plan in
 Section~\ref{sec:work_plan}, before presenting a risk
 analysis in Section~\ref{sec:risk_analysis}.
 Afterwards the preliminary findings outlined above are
-disscussed in more depth in Section~\ref{sec:prelim}.
+discussed in more depth in Section~\ref{sec:prelim}.
 At last Section~\ref{sec:review} will contain a review of a
 related dissertation project done in 2018:
 ``Deep Learning Performance on Different Architectures'' by
@@ -371,12 +372,12 @@ are presented below.
 \section{Related Work} % {{{
 \label{sec:related_work}
 
-This section will foucus itself with related work important
+This section will focus itself with related work important
 for the final project proposal of ``Deep Learning on
 SpiNNaker''.
-The main focus lies on benchmarks, with wich we can compare
-our impelementation on SpiNNaker with state of the art
-libraries and---more importantly---hardware.
+The main focus lies on benchmarks, with which we can
+compare our implementation on SpiNNaker with state of the
+art libraries and---more importantly---hardware.
 Further literature of importance for this project, e.g.
 \citet{he_et_al_2015}, \citet{goodfellow2016} or
 \citet{imagenet}, can be found in the References.
@@ -488,7 +489,7 @@ The log section and the benchmark section will depend on
 the implementation and benchmarking efforts.
 The conclusion section of the report depends on the log and
 the benchmark section of the dissertation.
-The subtasks of implementing ResNet-50 are enuerated,
+The subtasks of implementing ResNet-50 are enumerated,
 because they are done in succession, in the order they
 are presented.
 Only optimizing will depend on the benchmark, all else is
@@ -784,16 +785,6 @@ a minimum.
 This enables us to focus on the most important tasks, while
 still maintaining a reasonable level of impact in the case
 of success and even reducing the risk of failure.
-% implement subset of keras api (or at least a keras like
-% python api) to make benchmark possible
-%
-% probably will be a keras like api, but api not the focus,
-% bc first we have to find out if spiNNaker is viable
-% solution for dl in the first place, before we can worry
-% about an interface for machine learning researchers
-
-%
-% here write about MLPerf
 
 % }}}
 
@@ -850,8 +841,7 @@ The teams participating in the Student Cluster Competition
 had to train the VGG16 deep neural network---a famous
 model architecture introduced in the ILSVRC 2014 by
 researchers from Oxford University
-\citep{simonyan_et_al_2014}---on 1000 synsets containing
-1.2 million images.
+\citep{simonyan_et_al_2014}.
 The main limitation for the clusters were their power
 budget of 3kW and---for the ImageNet benchmark---a maximum
 runtime of three hours \citep{nita_2018}.
