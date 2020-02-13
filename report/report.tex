@@ -368,12 +368,13 @@ software libraries for deep learning
 \citep{mattson_et_al_2019}.
 We intend to stick to the rules of the MLPerf benchmark.
 If the dissertation project will succeed as planned, we
-will submit our timing results to the MLPerf Training
+will submit our benchmark results to the MLPerf Training
 benchmark v0.7, which is due on the 21st of February 2020.
 The results of MLPerf Training v0.6 can be found at
 \url{https://mlperf.org/training-results-0-6/}.
 Currently the fastest system for the image classification
-benchmark is based on tensorflow and 1024 TPUv3s.
+benchmark is based on tensorflow and 1024 TPUv3s (one full
+TPUv3 pod) \citep{stone2019}.
 It is able to finish in 1.28 minutes.
 Besides the MLPerf benchmark, which is quite new, there
 are a few older papers which use a similar setting for
@@ -512,7 +513,7 @@ the benchmark will not be finished after calendar week 32.
     \hline
     \quad Background &\cb &\cb &\cb &\cb &\cb &\cb &\cb &&&&&& \\
     \hline
-    \quad Log &&&&&&& &\cb &\cb &\cb &\cb && \\
+    \quad Log &\cb &\cb &\cb &\cb &\cb &\cb &\cb &\cb &\cb &\cb &\cb && \\
     \hline
     \quad Benchmark &&&&&&&&&&&\cb &\cb & \\
     \hline
@@ -554,7 +555,7 @@ dissertation would be lost.
 Psychic help in form of a psychiatrist would hopefully help
 with overcoming a trauma following Alan Stoke's death.
 Concerning the second point---knowledge about
-SpiNNaker---there exists a Google group with most of the
+SpiNNaker---there exists a google group with most of the
 people using SpiNNaker in it, including the members of the
 SpiNNaker core team.
 The google group already is the second point of contact
@@ -566,19 +567,41 @@ Appendix~\ref{sec:spinn_photos} for a picture of a
 SpiNNaker board) allocated for work on this dissertation.
 A SpiNNaker board is a costly piece of hardware.
 While the destruction of the board would put the author
-into financial problems, the destruction of the board is
-not endangering the successful completion of the
-dissertation, since there is the supercomputer in
-Manchester (see Appendix~\ref{sec:spinn_photos} for a
-picture of the supercomputer) where the work on the
-dissertation can be done on.
+into financial problems, it is not endangering the
+successful completion of the dissertation, since there is
+the supercomputer in Manchester (see
+Appendix~\ref{sec:spinn_photos} for a picture of the
+supercomputer) where the work on the dissertation can be
+done on.
 The benchmarks will be run on the supercomputer anyways.
 Only the implementation phase could take longer, because
 rapid prototyping on a dedicated piece of hardware would
 not be possible, since the supercomputer must be shared
 with other researchers.
 
-% Failure of implementation
+Writing scientific programs like deep neural networks is
+not a trivial task.
+So is writing software for a complex runtime such as the
+SpiNNaker runtime.
+Like stated above, the benchmark proposed is more ambitious
+than the original proposed benchmark.
+It could be, that as of right now unknown complications
+could make it impossible to implement ResNet-50 on
+SpiNNaker in the time span of the dissertation.
+But even if the final benchmark is impossible to achieve,
+due to an unfinished implementation, there is the log
+section of the dissertation (see
+Section~\ref{sec:work_plan}).
+The log section will contain everything done during the
+implementation and benchmarking phase.
+Problems encountered will be documented and even if the
+final benchmark will not be achieved or the performance is
+off, the log section will show where the problems were,
+which is a result usable for future efforts of implementing
+deep learning on SpiNNaker.
+So, even if the final benchmark will not be a success,
+presentable results for the dissertation will still be
+available.
 
 % }}}
 
@@ -595,6 +618,10 @@ with other researchers.
 
 % implement subset of keras api (or at least a keras like
 % python api) to make benchmark possible
+%
+
+%
+% here write about MLPerf
 
 % }}}
 
