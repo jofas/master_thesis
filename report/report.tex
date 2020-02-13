@@ -81,8 +81,31 @@
 
 \newpage
 
+\hspace{0pt}
+\vfill
+
 \begin{abstract}
+This paper reports on the preliminary research done for the
+dissertation project ``Deep Learning on SpiNNaker''
+(formerly ``A Tensorflow Backend to SpiNNaker'').
+SpiNNaker is a novel neuromorphic, massively parallel and
+energy efficient computer architecture for the modeling
+of the human brain.
+The goal of ``Deep Learning on SpiNNaker'' is to find out,
+if SpiNNaker can be used to accelerate the training of
+deep neural networks \citep[see e.g.][]{goodfellow2016}.
+The preliminary research done for the dissertation phase
+in the summer of 2020 is described and all relevant
+findings are presented.
+Changes made to the inital project proposal are discussed.
+An outline in form of a work plan and relevant background
+information are presented as well.
+A literature review of \citet{nita_2018} is given at the
+end of this report.
 \end{abstract}
+
+\vfill
+\hspace{0pt}
 
 \newpage
 
@@ -369,7 +392,12 @@ software libraries for deep learning
 We intend to stick to the rules of the MLPerf benchmark.
 If the dissertation project will succeed as planned, we
 will submit our benchmark results to the MLPerf Training
-benchmark v0.7, which is due on the 21st of February 2020.
+benchmark v0.7, which is due on the 21st of February 2020
+(submitting the results to the MLPerf Training benchmark
+v0.7 is not part of the dissertation phase
+anymore---instead it is part of the follow up on the
+dissertation and is therefore not further regarded in this
+paper).
 The results of MLPerf Training v0.6 can be found at
 \url{https://mlperf.org/training-results-0-6/}.
 Currently the fastest system for the image classification
@@ -549,7 +577,7 @@ He is the main source of information concerning the
 SpiNNaker hardware and runtime.
 His death would put the dissertation in grave jeopardy.
 A death of a person is always coupled to mental
-difficulties and traumas for the beraved.
+difficulties and traumas for the bereaved.
 Also, a lot of necessary knowledge needed for this
 dissertation would be lost.
 Psychic help in form of a psychiatrist would hopefully help
@@ -608,17 +636,161 @@ available.
 \section{Preliminary Findings} % {{{
 \label{sec:prelim}
 
-% main problem will be programming
+This section will present the preliminary findings at the
+point of writing this paper.
+The research phase until now has been all about setting the
+right background for a successful dissertation phase.
+Like stated in Section~\ref{sec:proposal}, the final
+project proposal has changed quite a bit from the initial
+one, thanks to the preliminary findings.
+There a three main pieces of knowledge gained for the
+dissertation phase: (\romannumeral 1) the main problem
+will be the author's ability to program ResNet-50 on
+SpiNNaker, which is not a trivial task, (\romannumeral 2)
+implementing a tensorflow backend is not a feasible thing
+to do in the short time for the dissertation and
+(\romannumeral 3) the discovery of the MLPerf benchmark,
+which gives us a perfect setting for finding out, if
+SpiNNaker can compete with state of the art hardware for
+deep learning.
 
-% => minimize everything that is not programming
-%    (benchmarking: use other benchmarks, ...)
+The first finding we had was that programming will be
+non-trivial.
+SpiNNaker has a complex runtime.
+The neuromorphic computer architecture is unlike any other
+and therefore the programming model differs drastically
+from more common ones.
+To overcome the difficulties of programming on SpiNNaker
+will be the major challenge of the dissertation.
+Therefore it was clear from the beginning, that every task,
+that does not directly concern itself with getting a
+running version of a deep neural network on
+SpiNNaker and the writing of the dissertation must be
+minimized to the maximum amount possible or even better be
+removed completely from the dissertation phase.
 
-% tf backend too difficult (XLA, linear algebra not what
-% spinnaker was designed for)
+This was accomplished by the preliminary research in two
+major ways.
+From the beginning it was clear, that the initially
+proposed benchmark against the ssn tool (see
+Section~\ref{sec:proposal}) is not the desired one and
+really only an afterthought.
+At the beginning tensorflow was much more of a focal point.
+But because of the difficulties of implementing a backend
+for tensorflow and the fact that it is yet unknown if
+SpiNNaker is even a good platform for deep learning, a
+benchmark for finding this out should be the first step,
+before one can worry about how to interface SpiNNaker with
+already established libraries for deep learning.
 
+Another reason, why the initial benchmark was disregarded
+quite early in the research phase, is the fact that
+training deep learning neural networks is the really
+computationally expensive operation for which high
+performance solutions must be developed, not doing
+inference with them.
+Also, benchmarking SpiNNaker vs.\ SpiNNaker implementation
+does not even offer half the insights, because only the
+native deep neural network would be compared against the
+deep neural network transformed to a spiking neural
+network.
+Only the implementation would be benchmarked, not
+SpiNNaker, even though the much more interesting insight
+would be SpiNNaker's performance compared to other state
+of the art accelerators, like GPU or TPU clusters.
+
+Because programming SpiNNaker is hard enough of a task,
+having to interface the complex SpiNNaker runtime with the
+complex tensorflow runtime was simply deemed too difficult.
+At the beginning, implementing a tensorflow backend seemed
+sensible.
+Tensorflow already offers interfaces to state of the art
+accelerators like GPUs and TPUs.
+Research on how to implement hardware backends to
+tensorflow revealed, that the tensorflow community
+recommends working with tensorflow's extended linear
+algebra compiler (XLA).
+A description of XLA can be found at:
+\url{https://www.tensorflow.org/xla}.
+Instead of having to implement every tensorflow core
+operation, one has only to implement a XLA backend, which
+is significantly simpler and more scalable
+\citep{xla_backend}.
+\citet{xla_backend} describes three types of XLA backend
+implementations:
+\begin{enumerate}
+  \item CPUs without XLA support, either with LLVM backend
+    or not
+  \item Non-CPUs with LLVM backend
+  \item Non-CPUs without LLVM backend
+\end{enumerate}
+SpiNNaker would fall under category three, Non-CPU without
+LLVM backend, which is the category requiring the most
+effort \citep{xla_backend}.
+Interfacing SpiNNaker with XLA in the time span of the
+dissertation is not deemed possible.
+
+Another point not in favor of a tensorflow backend would be
+the fact, that SpiNNaker's neuromorphic architecture is
+quite different from the architecture of common deep
+learning accelerators and libraries.
+Tensorflow implements fast linear algebra operations on
+heterogeneous and distributed hardware \citep{tf2015}.
+Accelerators like GPUs and TPUs are designed for doing
+fast linear algebra operations.
+SpiNNaker is designed to run small neurons communicating
+with each other over unstable spiking events
+\citep{furber_et_al_2007}.
+Deep learning operations in tensorflow and on state of the
+are accelerators are implemented on a layer-level with
+matrix operations \citep{goodfellow2016}.
+Deep learning offers an abstraction much more convenient
+and closer to SpiNNaker's architecture than matrix
+operations over the layers of a deep neural network: the
+neurons inside each layer.
+For tensorflow, we would have to implement fast and
+distributed linear algebra operations.
+This is not what SpiNNaker originally was designed for.
+Instead, implementing deep neural networks on the
+abstraction level of neurons instead of layers of neurons
+seems a more natural fit.
+
+With removing tensorflow from the project proposal, we
+were able to reduce a fairly big chunk of work, which we
+probably would not have been able to fit into the time
+span of the dissertation.
+To fully reduce the tasks to do for the successful
+completion of the dissertation to implementing,
+benchmarking the implementation and writing the report
+(see Section~\ref{sec:work_plan}), MLPerf offers the last
+bit (see Section~\ref{sec:related_work}).
+At the beginning---already after the ssn toolbox benchmark
+was disregarded---we were planning on comparing the
+SpiNNaker implementation against a deep neural network
+running on a different supercomputer, such as Cirrus
+\citep{cirrus}.
+That would have meant, that we would have to conduct two
+benchmarks, one on SpiNNaker, another one on Cirrus.
+Thanks to MLPerf and the other benchmarks presented in
+Section~\ref{sec:related_work}, we can remove the
+benchmark on a different architecture, which will safe
+a lot of time needed for implementing ResNet-50 on
+SpiNNaker.
+
+With removing tensorflow from the project proposal and
+having the MLPerf benchmark for comparison, we are able
+to reduce the tasks to do for a successful dissertation to
+a minimum.
+This enables us to focus on the most important tasks, while
+still maintaining a reasonable level of impact in the case
+of success and even reducing the risk of failure.
 % implement subset of keras api (or at least a keras like
 % python api) to make benchmark possible
 %
+% probably will be a keras like api, but api not the focus,
+% bc first we have to find out if spiNNaker is viable
+% solution for dl in the first place, before we can worry
+% about an interface for machine learning researchers
 
 %
 % here write about MLPerf
