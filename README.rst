@@ -65,3 +65,9 @@ Links
 * `spinnaker project <http://apt.cs.manchester.ac.uk/projects/SpiNNaker/project/>`_
 
 * `spinnaker wiki <http://spinnakermanchester.github.io/>`_
+
+* `MLPerf <https://mlperf.org/>`_
+
+* `Identity Mappings in Deep Residual Networks <https://arxiv.org/abs/1603.05027>`_
+
+* `ResNet-50v1.5 <https://github.com/facebookarchive/fb.resnet.torch>`_
