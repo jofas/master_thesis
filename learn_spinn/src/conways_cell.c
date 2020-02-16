@@ -167,6 +167,7 @@ void send_state(void) {
     // send my new state to the simulation neighbours
     log_debug("sending my state of %d via multicast with key %d",
 	    my_state, my_key);
+
     while (!spin1_send_mc_packet(my_key, my_state, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
@@ -233,7 +234,10 @@ void update(uint ticks, uint b) {
     if (time == 0) {
         next_state();
         send_state();
+
+        // ????
         recording_record(0, &my_state, 4);
+
         log_debug("Send my first state!");
     } else {
         read_input_buffer();
@@ -247,7 +251,9 @@ void update(uint ticks, uint b) {
 
         send_state();
 
+        // ???
         recording_record(0, &my_state, 4);
+
         recording_do_timestep_update(time);
     }
 }

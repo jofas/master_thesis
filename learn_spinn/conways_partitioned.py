@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 from pacman.model.graphs.machine import MachineEdge
 import spinnaker_graph_front_end as front_end
 
@@ -68,6 +69,8 @@ def main():
             front_end.add_machine_vertex_instance(vert)
 
             vertices[x][y] = vert
+
+    # assert here, that vertices are correct
 
     # build edges
     for x in range(0, X_SIZE):
