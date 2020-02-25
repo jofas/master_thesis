@@ -42,7 +42,7 @@ class ConwayBasicCell(
     """ Cell which represents a cell within the 2d fabric
     """
 
-    PARTITION_ID = "STATE"
+    PARTITION_ID = "NEIGHBOR_CONNECT"
 
     TRANSMISSION_DATA_SIZE = 2 * BYTES_PER_WORD  # has key and key
     STATE_DATA_SIZE = BYTES_PER_WORD  # 1 or 2 based off dead or alive
@@ -96,6 +96,9 @@ class ConwayBasicCell(
         spec.write_array(recording_utilities.get_recording_header_array(
             [self.RECORDING_ELEMENT_SIZE * data_n_time_steps]))
 
+
+        # TODO: here add second partition
+
         # check got right number of keys and edges going into me
         partitions = \
             machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
@@ -118,6 +121,10 @@ class ConwayBasicCell(
                     " please fix.")
 
         # write key needed to transmit with
+
+        # here get a scond key for the vertex, so I can connect it
+        # with the streaming output
+
         key = routing_info.get_first_key_from_pre_vertex(
             self, self.PARTITION_ID)
 

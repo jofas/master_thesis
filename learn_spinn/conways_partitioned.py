@@ -22,6 +22,8 @@ from conways_basic_cell import ConwayBasicCell
 
 import numpy as np
 
+import csv
+
 def to_askii(bool):
     return "X" if bool else "O"
 
@@ -40,6 +42,14 @@ n_chips = (X_SIZE * Y_SIZE) // 15
 
 
 def main():
+
+
+    # ReverseIpTagMultiCastSourceMachineVertex
+    #
+    # connect this with input layer
+    #
+    #
+
 
     # set up the front end and ask for the detected machines dimensions
     front_end.setup(
@@ -100,7 +110,7 @@ def main():
     front_end.run(runtime)
 
     # get recorded data
-    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.bool)
+    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
 
     # get the data per vertex
     for x in range(0, X_SIZE):
@@ -109,18 +119,45 @@ def main():
                 front_end.buffer_manager(),
                 front_end.placements().get_placement_of_vertex(vertices[x][y]))
 
-    recorded_data = arr_to_askii(recorded_data)
 
-    # visualise it in text form (bad but no vis this time)
-    for time in range(0, runtime):
-        print("at time {}\n{}".format(time,
-            "".join([ "".join(recorded_data[:,y,time]) + "\n"
-                for y in range(X_SIZE - 1, 0, -1)
-                ])
-        ))
+    #export_data(recorded_data)
+    check_correctness(recorded_data)
+    visualize_conways(recorded_data)
 
     # clear the machine
     front_end.stop()
+
+
+def visualize_conways(data):
+    data = arr_to_askii(data)
+
+    for time in range(0, runtime):
+        print("at time {}\n{}".format(
+            time, "".join([ "".join(data[:,y,time]) + "\n"
+                for y in range(X_SIZE - 1, 0, -1)])
+        ))
+
+
+def export_data(data):
+    with open("test.csv", "w") as f:
+        w = csv.writer(f)
+        for time in range(0, runtime):
+            w.writerow(data[:,:,time].flatten())
+
+
+def import_data():
+    with open("test.csv", "r") as f:
+        r = csv.reader(f)
+        return np.array([row for row in r], dtype=np.int32)
+
+
+def check_correctness(data):
+    generated_output = np.array([data[:,:,time].flatten()
+        for time in range(0, runtime)])
+
+    correct_output = import_data()
+
+    assert (correct_output == generated_output).all()
 
 
 if __name__ == "__main__":
