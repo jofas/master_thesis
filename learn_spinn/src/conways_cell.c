@@ -109,7 +109,7 @@ typedef struct neighbour_states {
  *
  * SOURCE
  */
-void receive_data(uint key, uint payload) {
+void receive_data(uint key, uint payload) { // {{{
     use(key);
     //log_info("the key i've received is %d\n", key);
     //log_info("the payload i've received is %d\n", payload);
@@ -117,9 +117,9 @@ void receive_data(uint key, uint payload) {
     if (!circular_buffer_add(input_buffer, payload)) {
         log_info("Could not add state");
     }
-}
+} // }}}
 
-void do_safety_check(void) {
+void do_safety_check(void) { // {{{
     // do a safety check on number of states. Not like we can fix it
     // if we've missed events
     cpsr = spin1_int_disable();
@@ -134,9 +134,9 @@ void do_safety_check(void) {
     log_debug("only received %d dead states",
 	    dead_states_recieved_this_tick);
     spin1_mode_restore(cpsr);
-}
+} // }}}
 
-void read_input_buffer(void) {
+void read_input_buffer(void) { // {{{
     cpsr = spin1_int_disable();
     circular_buffer_print_buffer(input_buffer);
 
@@ -157,9 +157,9 @@ void read_input_buffer(void) {
 
     }
     spin1_mode_restore(cpsr);
-}
+} // }}}
 
-void send_state(void) {
+void send_state(void) { // {{{
     // reset for next iteration
     alive_states_recieved_this_tick = 0;
     dead_states_recieved_this_tick = 0;
@@ -173,9 +173,9 @@ void send_state(void) {
     }
 
     log_debug("sent my state via multicast");
-}
+} // }}}
 
-void next_state(void) {
+void next_state(void) { // {{{
     // calculate new state from the total received so far
     if (my_state == ALIVE) {
         if (alive_states_recieved_this_tick <= 1) {
@@ -191,18 +191,9 @@ void next_state(void) {
     } else if (alive_states_recieved_this_tick == 3) {
         my_state = ALIVE;
     }
-}
+} // }}}
 
-/****f* conways.c/update
- *
- * SUMMARY
- *
- * SYNOPSIS
- *  void update (uint ticks, uint b)
- *
- * SOURCE
- */
-void update(uint ticks, uint b) {
+void update(uint ticks, uint b) { // {{{
     use(b);
     use(ticks);
 
@@ -256,18 +247,18 @@ void update(uint ticks, uint b) {
 
         recording_do_timestep_update(time);
     }
-}
+} // }}}
 
 //! \brief this method is to catch strange behaviour
 //! \param[in] key: the key being received
 //! \param[in] unknown: second arg with no state. set to zero by default
-void receive_data_void(uint key, uint unknown) {
+void receive_data_void(uint key, uint unknown) { // {{{
     use(key);
     use(unknown);
     log_error("this should never ever be done");
-}
+} // }}}
 
-static bool initialize(uint32_t *timer_period) {
+static bool initialize(uint32_t *timer_period) { // {{{
     log_info("Initialise: started");
 
     // Get the address this core's DTCM data starts at from SRAM
@@ -322,7 +313,7 @@ static bool initialize(uint32_t *timer_period) {
 	    &recording_flags);
     log_info("Recording flags = 0x%08x", recording_flags);
     return success;
-}
+} // }}}
 
 /****f* conways.c/c_main
  *
@@ -335,7 +326,7 @@ static bool initialize(uint32_t *timer_period) {
  *
  * SOURCE
  */
-void c_main(void) {
+void c_main(void) { // {{{
     log_info("starting conway_cell");
 
     // Load DTCM data
@@ -362,4 +353,4 @@ void c_main(void) {
     time = UINT32_MAX;
 
     simulation_run();
-}
+} // }}}

@@ -18,6 +18,12 @@ import os
 from pacman.model.graphs.machine import MachineEdge
 import spinnaker_graph_front_end as front_end
 
+from spinn_front_end_common.utilities.connections import \
+    LiveEventConnection
+
+from spinn_front_end_common.utility_models import \
+    LivePacketGatherMachineVertex
+
 from conways_basic_cell import ConwayBasicCell
 
 import numpy as np
@@ -42,15 +48,6 @@ n_chips = (X_SIZE * Y_SIZE) // 15
 
 
 def main():
-
-
-    # ReverseIpTagMultiCastSourceMachineVertex
-    #
-    # connect this with input layer
-    #
-    #
-
-
     # set up the front end and ask for the detected machines dimensions
     front_end.setup(
         n_chips_required=n_chips,
@@ -65,24 +62,31 @@ def main():
         raise KeyError("Don't have enough cores to run simulation")
 
     # contain the vertices for the connection aspect
-    vertices = [
-        [None for _ in range(X_SIZE)]
-        for _ in range(Y_SIZE)]
+    vertices = [[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)]
+    streamers = np.array(
+        [[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)]
+    )
 
     # build vertices
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
             vert = ConwayBasicCell(
-                "cell{}".format((x * X_SIZE) + y),
+                "cell_{}".format((x * X_SIZE) + y),
                 (x, y) in active_states)
 
+            streamer = LivePacketGatherMachineVertex(
+                "streamer_{}".format((x * X_SIZE) + y),
+                port = 19999,
+                hostname="192.168.2.200"
+            )
+
             front_end.add_machine_vertex_instance(vert)
+            front_end.add_machine_vertex_instance(streamer)
 
             vertices[x][y] = vert
+            streamers[x, y] = streamer
 
-    # assert here, that vertices are correct
-
-    # build edges
+    # build edges {{{
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
 
@@ -106,8 +110,44 @@ def main():
                         vertices[x][y], vertices[dest_x][dest_y],
                         label=compass), ConwayBasicCell.PARTITION_ID)
 
+            # connect streamer with vertices
+            front_end.add_machine_edge_instance(
+                MachineEdge(
+                    vertices[x][y],
+                    streamers[x, y],
+                    label="edge_{}".format(vertices[x][y].label)
+                ),
+                ConwayBasicCell.PARTITION_ID
+            )
+    # }}}
+
+    labels = [s.label for s in streamers.flatten()]
+    conn = LiveEventConnection(
+       None, receive_labels=labels#, local_port=19995
+    )
+
+    def cb(label, time, stuff):
+        print("received: {}, {}, {}".format(label, time, stuff))
+
+    for label in labels: conn.add_receive_callback(label, cb)
+
     # run the simulation
     front_end.run(runtime)
+
+    conn.close()
+
+    """
+    for x in range(0, X_SIZE):
+        for y in range(0, Y_SIZE):
+            data = streamers[x][y].get_provenance_data_from_machine(
+                front_end.transceiver(),
+                front_end.placements().get_placement_of_vertex(
+                    streamers[x][y]
+                )
+            )
+
+            print(x, y, data)
+    """
 
     # get recorded data
     recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
@@ -122,7 +162,7 @@ def main():
 
     #export_data(recorded_data)
     check_correctness(recorded_data)
-    visualize_conways(recorded_data)
+    #visualize_conways(recorded_data)
 
     # clear the machine
     front_end.stop()

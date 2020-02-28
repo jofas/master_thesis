@@ -106,6 +106,7 @@ class ConwayBasicCell(
             raise ConfigurationException(
                 "Can only handle one type of partition.")
 
+
         # check for duplicates
         edges = list(machine_graph.get_edges_ending_at_vertex(self))
         if len(edges) != 8:
