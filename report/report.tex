@@ -118,6 +118,16 @@ end of this report.
 \section{Introduction} % {{{
 \label{sec:intro}
 
+This paper concerns itself with the dissertation project:
+``Deep Learning on SpiNNaker'', which will be conducted in
+the period from May 2019 to August 2019 as the final work
+of the author to achieve his Master of Science in
+High Performance Computing with Data Science from the
+University of Edinburgh.
+The report is mostly a summary of the preliminary work
+conducted in the months before the actual work on the
+dissertation will be conducted.
+
 According to the SpiNNaker project's website:
 \begin{displayquote}
   SpiNNaker is a novel massively-parallel computer
@@ -162,7 +172,7 @@ therefore more closely representing neural systems of
 biological life than deep learning neural networks
 \citep{maass1997}.
 
-The SpiNNaker chip is a ARM multiprocessor chip having 18
+The SpiNNaker chip is a multiprocessor chip, which has 18 ARM
 cores, with a Network-on-Chip system for
 communication between cores \citep{furber_et_al_2007,
   spinn_proj}.
@@ -174,10 +184,11 @@ counterpart---inherently unstable and small.
 This is represented in the interconnection hardware.
 Small packets (40 or 72 bits) can be send, without
 guarantee of successful arrival.
-Even without this guarantee, on can still perform
+Even without this guarantee, one can still perform
 meaningful computations on SpiNNaker and fault detection
 and recovery mechanisms are implemented \citep{spinn_proj}.
-One can connect many SpiNNaker chips together, to build a
+48 SpiNNaker chips are mounted on a SpiNNaker board.
+One can connect many SpiNNaker boards together, to build a
 massively parallel and energy efficient supercomputer that
 is able to run up to a billion spiking neurons in real time
 \citep{furber_et_al_2007}.
@@ -220,18 +231,8 @@ above mentioned hardware.
 Since deep neural networks are derived from the human
 brain and nerve system \citep{goodfellow2016} and SpiNNaker
 was designed to model the human brain, it seems rather
-probable, that SpiNNaker will be a good target for
+plausible, that SpiNNaker will be a good target for
 accelerating the training of deep neural networks.
-
-This paper concerns itself with the dissertation project:
-``Deep Learning on SpiNNaker'', which will be conducted in
-the period from May 2019 to August 2019 as the final work
-of the author to achieve his Master of Science in
-High Performance Computing with Data Science from the
-University of Edinburgh.
-The report is mostly a summary of the preliminary work
-conducted in the months before the actual work on the
-dissertation will be conducted.
 
 The findings of the preliminary work and the changes made
 to the original project scope are the focal point of this
@@ -295,16 +296,24 @@ deep learning algorithms and layers directly on SpiNNaker,
 instead of implementing a tensorflow backend (see
 Section~\ref{sec:prelim}) and (\romannumeral 2) a different
 benchmark to measure the performance of SpiNNaker.
-While at first, implementing a tensorflow backend in order
-to enable deep learning on SpiNNaker seemed wise: low
-level linear algebra operations based on which deep
-learning algorithms run, instead of having to implement
-them directly.
-The discrepancy between tensorflow's architecture and
-SpiNNaker's was deemed too big to overcome and to get a
-working deep learning neural network running in the limited
+At first glance, implementing a tensorflow backend in order to
+enable deep learning on SpiNNaker seemed wise.
+Tensorflow already supports various hardware as its targets, like
+CPUs, GPUs or TPUs \citep{tf2015, jouppi_2016}.
+Without further knowledge at this point, adding a backend to SpiNNaker
+seemed the best way to get deep neural networks running on SpiNNaker,
+since we thought that this would be the road where the least work
+needs to be done.
+Simply implementing the low-level linear algebra operations that
+tensorflow offers, was deemed less work than having to deal directly
+with deep learning and its complexity.
+As the preliminary research revealed, the discrepancy between
+tensorflow's architecture and SpiNNaker's is too big to overcome and
+to get a working deep learning neural network running in the limited
 amount of time for doing the dissertation was estimated to
 be impossible.
+This topic is further discussed in Section~\ref{sec:prelim}.
+
 Concerning (\romannumeral 2), the benchmark proposed by the
 initial proposal was to benchmark our native deep learning
 implementation against the snn toolbox
@@ -393,7 +402,7 @@ software libraries for deep learning
 We intend to stick to the rules of the MLPerf benchmark.
 If the dissertation project will succeed as planned, we
 will submit our benchmark results to the MLPerf Training
-benchmark v0.7, which is due on the 21st of February 2020
+benchmark v0.7, which is due on the 21st of February 2021
 (submitting the results to the MLPerf Training benchmark
 v0.7 is not part of the dissertation phase
 anymore---instead it is part of the follow up on the
@@ -410,6 +419,10 @@ are a few older papers which use a similar setting for
 benchmarking their systems.
 These papers and their results are listed in
 Table~\ref{tab:benchmarks}.
+None can beat the fastest implementation on the TPUv3 pod.
+This is not surprising, given the fast pace of improvements in both
+hardware and software for deep learning and the fact, that the
+MLPerf benchmark results are the most recent.
 
 \begin{table}
 \begin{center}
@@ -428,11 +441,7 @@ paper &processor/accelerator &\# &library &time \\
 \end{tabu}
 \end{center}
 \caption{Selected timings from benchmarks other than MLPerf
-  with a similar setting. None can beat the fastest system
-  from the MLPerf benchmark, which is not surprising,
-  given the fast pace of improvements in both hardware
-  and software for deep learning and the fact, that the
-  MLPerf benchmark results are the most recent.}
+  with a similar setting.}
 \label{tab:benchmarks}
 \end{table}
 
@@ -572,7 +581,7 @@ of the dissertation:
   \item Failure to implement ResNet-50 on SpiNNaker
 \end{itemize}
 
-Alan Stokes is on of the dissertation's supervisor and part
+Alan Stokes is one of the dissertation's supervisors and part
 of the core team of SpiNNaker developers.
 He is the main source of information concerning the
 SpiNNaker hardware and runtime.
@@ -581,14 +590,13 @@ A death of a person is always coupled to mental
 difficulties and traumas for the bereaved.
 Also, a lot of necessary knowledge needed for this
 dissertation would be lost.
-Psychic help in form of a psychiatrist would hopefully help
-with overcoming a trauma following Alan Stoke's death.
-Concerning the second point---knowledge about
-SpiNNaker---there exists a google group with most of the
-people using SpiNNaker in it, including the members of the
-SpiNNaker core team.
+%Psychic help in form of a psychiatrist would hopefully help
+%with overcoming a trauma following Alan Stoke's death.
+Concerning the lost knowledge about SpiNNaker: there exists a google
+group with most of the people using SpiNNaker in it, including the
+other members of the SpiNNaker core team.
 The google group already is the second point of contact
-concerning SpiNNaker and would therefore be upgraded to
+concerning SpiNNaker and would therefore simply be upgraded to
 first.
 
 There is a SpiNNaker board (see
