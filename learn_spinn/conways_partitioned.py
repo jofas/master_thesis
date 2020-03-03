@@ -21,8 +21,15 @@ import spinnaker_graph_front_end as front_end
 from spinn_front_end_common.utilities.connections import \
     LiveEventConnection
 
+from spinn_front_end_common.utilities.globals_variables import \
+    get_simulator
+
+from spinn_front_end_common.utilities import helpful_functions
+
 from spinn_front_end_common.utility_models import \
     LivePacketGatherMachineVertex
+
+from spinn_utilities.socket_address import SocketAddress
 
 from conways_basic_cell import ConwayBasicCell
 
@@ -76,8 +83,8 @@ def main():
 
             streamer = LivePacketGatherMachineVertex(
                 "streamer_{}".format((x * X_SIZE) + y),
-                port = 19999,
-                hostname="192.168.2.200"
+                port = 19995,#17895,
+                hostname="192.168.2.200",
             )
 
             front_end.add_machine_vertex_instance(vert)
@@ -121,9 +128,31 @@ def main():
             )
     # }}}
 
+    conf = get_simulator().config
+    print(conf)
+    for x in conf.defaults():
+        print(x)
+    print(conf.defaults())
+
+    db_notify_port = 19995
+    db_notify_host = "192.168.2.200"
+
+    db_ack_port = None#
+    #helpful_functions.read_config_int(
+    #    conf, "Database", "listen_port")
+
+    print(db_notify_port, db_notify_host, db_ack_port)
+
+    database_socket = SocketAddress(
+            listen_port=db_ack_port,
+            notify_host_name=db_notify_host,
+            notify_port_no=db_notify_port)
+
+    get_simulator().add_socket_address(database_socket)
+
     labels = [s.label for s in streamers.flatten()]
     conn = LiveEventConnection(
-       None, receive_labels=labels#, local_port=19995
+       None, receive_labels=labels, local_port=19995#17895
     )
 
     def cb(label, time, stuff):
