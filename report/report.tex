@@ -1,7 +1,7 @@
 \documentclass{article}
 
 \usepackage{epcc}
-\usepackage{url}
+\usepackage[hyphens]{url}
 \PassOptionsToPackage{hyphens}{url}
 \usepackage[colorlinks=false, hidelinks]{hyperref}
 \usepackage{amsmath}
@@ -118,16 +118,18 @@ end of this report.
 \section{Introduction} % {{{
 \label{sec:intro}
 
-This paper concerns itself with the dissertation project:
-``Deep Learning on SpiNNaker'', which will be conducted in
-the period from May 2019 to August 2019 as the final work
-of the author to achieve his Master of Science in
-High Performance Computing with Data Science from the
-University of Edinburgh.
-The report is mostly a summary of the preliminary work
-conducted in the months before the actual work on the
-dissertation will be conducted.
+%This paper concerns itself with the dissertation project:
+%``Deep Learning on SpiNNaker'', which will be conducted in
+%the period from May 2019 to August 2019 as the final work
+%of the author to achieve his Master of Science in
+%High Performance Computing with Data Science from the
+%University of Edinburgh.
+%The report is mostly a summary of the preliminary work
+%conducted in the months before the actual work on the
+%dissertation will be conducted.
 
+SpiNNaker is a digital neuromorphic computer architecture,
+designed to model the human brain.
 According to the SpiNNaker project's website:
 \begin{displayquote}
   SpiNNaker is a novel massively-parallel computer
@@ -136,9 +138,6 @@ According to the SpiNNaker project's website:
   billions of simple computing elements, communicating
   using unreliable spikes \citep{spinn_proj}.
 \end{displayquote}
-
-SpiNNaker is a digital neuromorphic computer architecture,
-designed to model the human brain.
 This is rather a gross simplification of what SpiNNaker was
 designed for.
 Understanding the human brain is one of the biggest
@@ -167,10 +166,10 @@ action potentials (spikes).
 Neural networks of the second generation do not have a
 concept of time and fire every time they are activated.
 Spiking neural networks are derived from evidence
-collected from biological neural systems; they are
-therefore more closely representing neural systems of
-biological life than deep learning neural networks
-\citep{maass1997}.
+collected from biological neural systems, which use the timing of
+spikes to encode information; they are therefore more closely
+representing neural systems of biological life than deep learning
+neural networks \citep{maass1997}.
 
 The SpiNNaker chip is a multiprocessor chip, which has 18 ARM
 cores, with a Network-on-Chip system for
@@ -201,13 +200,11 @@ brain, (\romannumeral 2) robotics: low power hardware for
 implementing neural decision systems and
 (\romannumeral 3) computer science: new approach to
 supercomputing and massive parallelism \citep{spinn_proj}.
-The dissertation project, which this paper reports on,
-will concern itself with (\romannumeral 3) and one of the
-research areas of computer science, which has emerged as
-a driving force behind advancements in many fields and for
-many tasks like speech and image recognition, drug
-discovery and genomics: deep learning
-\citep{lecun_et_al_2015}.
+The dissertation project will concern itself with (\romannumeral 3)
+and one of the research areas of computer science, which has emerged a
+s a driving force behind advancements in many fields and for many
+tasks like speech and image recognition, drug discovery and genomics:
+deep learning \citep{lecun_et_al_2015}.
 
 While deep learning is a promising field and deep neural
 networks at the center of important advancements, like
@@ -224,10 +221,9 @@ Current state of the art hardware for accelerating the
 training of deep neural networks are ASICs like TPUs and
 general purpose GPUs \citep{tpus, mittal_et_al_2019}.
 
-The goal of the dissertation project that is introduced in
-this paper, will be to analyze if SpiNNaker could be an
-energy efficient, scalable and fast alternative to the
-above mentioned hardware.
+The goal of the dissertation project introduced in this paper will be
+to analyze if SpiNNaker could be an energy efficient, scalable and
+fast alternative to the above mentioned hardware.
 Since deep neural networks are derived from the human
 brain and nerve system \citep{goodfellow2016} and SpiNNaker
 was designed to model the human brain, it seems rather
@@ -238,24 +234,18 @@ The findings of the preliminary work and the changes made
 to the original project scope are the focal point of this
 report.
 The original title of the dissertation project was ``A
-Tensorflow Backend to SpiNNaker'', but the preliminary work
-conducted to this point show, that the scope will be
-redirected from implementing a backend for tensorflow---a
-library for running fast linear algebra operations on
-distributed, heterogeneous systems, mainly designed for
-implementing computationally demanding machine learning
-algorithms like deep learning in a fast manner
-\citep{tf2015}---to an approach focused on implementing
-deep learning directly on SpiNNaker.
+Tensorflow Backend to SpiNNaker''.
+Tensorflow is a library for running fast linear algebra operations on
+distributed, heterogeneous systems, mainly designed for implementing
+computationally demanding machine learning algorithms like deep
+learning in a fast manner \citep{tf2015}.
 Because of SpiNNaker's specialized design, which works
-rather contrary to that of tensorflow and current hardware
-trends for building accelerators for deep learning,
-interfacing between SpiNNaker's runtime and tensorflow was
-deemed too difficult and not beneficial.
+rather contrary to that of Tensorflow and current hardware
+trends for building accelerators for deep learning and fast linear
+algebra operations, interfacing between SpiNNaker's runtime and
+Tensorflow was deemed too difficult and not beneficial.
 Instead, this dissertation aims at implementing deep
-learning directly on SpiNNaker, probably providing an
-interface designed in the likes of the well known deep
-learning library Keras \citep{keras}.
+learning directly on SpiNNaker.
 \citet{proj} shows the original dissertation project's
 scope.
 
@@ -284,8 +274,7 @@ Spyro Nita \citep{nita_2018}.
 This section will begin by giving an outline of the initial
 project proposal.
 The preliminary findings given in Section~\ref{sec:prelim}
-lad us to abandon the initial project proposal.
-The updated project proposal is given.
+lad us to abandon it and the updated version is given below.
 The benchmark with which we will compare our deep learning
 implementation on SpiNNaker with other hardware platforms
 and deep learning libraries is presented.
@@ -293,10 +282,10 @@ and deep learning libraries is presented.
 The final project proposal will differ from the initial one
 in two meaningful ways: (\romannumeral 1) we will implement
 deep learning algorithms and layers directly on SpiNNaker,
-instead of implementing a tensorflow backend (see
+instead of implementing a Tensorflow backend (see
 Section~\ref{sec:prelim}) and (\romannumeral 2) a different
 benchmark to measure the performance of SpiNNaker.
-At first glance, implementing a tensorflow backend in order to
+At first glance, implementing a Tensorflow backend in order to
 enable deep learning on SpiNNaker seemed wise.
 Tensorflow already supports various hardware as its targets, like
 CPUs, GPUs or TPUs \citep{tf2015, jouppi_2016}.
@@ -305,10 +294,10 @@ seemed the best way to get deep neural networks running on SpiNNaker,
 since we thought that this would be the road where the least work
 needs to be done.
 Simply implementing the low-level linear algebra operations that
-tensorflow offers, was deemed less work than having to deal directly
+Tensorflow offers, was deemed less work than having to deal directly
 with deep learning and its complexity.
 As the preliminary research revealed, the discrepancy between
-tensorflow's architecture and SpiNNaker's is too big to overcome and
+Tensorflow's architecture and SpiNNaker's is too big to overcome and
 to get a working deep learning neural network running in the limited
 amount of time for doing the dissertation was estimated to
 be impossible.
@@ -324,10 +313,10 @@ then can be deployed on SpiNNaker.
 The problem with this benchmark is the fact, that only
 pre-trained deep neural networks can be used and only
 inference would be possible on SpiNNaker.
-We do not aim at doing the rather inexpensive inference
-(at least compared to the training), rather we want to
-use SpiNNaker where it would be needed more: training
-a deep neural network---a computationally very costly
+We do not aim at doing computationally inexpensive inference
+(at least compared to training).
+Rather we want to use SpiNNaker where it would be needed more:
+training a deep neural network---a computationally very costly
 operation (see Section~\ref{sec:intro}).
 
 Instead of benchmarking against the snn toolbox, we intend
@@ -364,7 +353,7 @@ Section~\ref{sec:related_work}.
 
 In conclusion, our final project proposal will be
 implementing deep learning algorithms directly on
-SpiNNaker, instead of providing a backend to tensorflow.
+SpiNNaker, instead of providing a backend to Tensorflow.
 We will benchmark this implementation and SpiNNaker against
 other benchmarks based on state of the art deep learning
 libraries and accelerators for fast training of neural
@@ -373,8 +362,7 @@ against the snn toolbox.
 For this benchmark we will train the famous ResNet-50 model
 based on the settings described above and compare our
 results against the results others generated with the same
-setting but with different libraries and hardware, which
-are presented below.
+setting but with different libraries and hardware, presented below.
 
 % }}}
 
@@ -382,11 +370,10 @@ are presented below.
 \label{sec:related_work}
 
 This section will focus itself with related work important
-for the final project proposal of ``Deep Learning on
-SpiNNaker''.
+for the final project proposal.
 The main focus lies on benchmarks, with which we can
 compare our implementation on SpiNNaker with state of the
-art libraries and---more importantly---hardware.
+art deep learning libraries and---more importantly---hardware.
 Further literature of importance for this project, e.g.
 \citet{he_et_al_2015}, \citet{goodfellow2016} or
 \citet{imagenet}, can be found in the References.
@@ -408,10 +395,11 @@ v0.7 is not part of the dissertation phase
 anymore---instead it is part of the follow up on the
 dissertation and is therefore not further regarded in this
 paper).
+
 The results of MLPerf Training v0.6 can be found at
 \url{https://mlperf.org/training-results-0-6/}.
 Currently the fastest system for the image classification
-benchmark is based on tensorflow and 1024 TPUv3s (one full
+benchmark is based on Tensorflow and 1024 TPUv3s (one full
 TPUv3 pod) \citep{stone2019}.
 It is able to finish in 1.28 minutes.
 Besides the MLPerf benchmark, which is quite new, there
@@ -432,10 +420,10 @@ paper &processor/accelerator &\# &library &time \\
 \hline
 \citet{he_et_al_2015} &Tesla P100 &8 &caffe &29 hours \\
 \citet{goyal_et_al_2017} &Tesla P100 &256 &caffe2 &1 hour \\
-\citet{smith_et_al_2017} &TPU pod &1 &tensorflow &30 minutes \\
+\citet{smith_et_al_2017} &TPU pod &1 &Tensorflow &30 minutes \\
 \citet{akiba_et_al_2017} &Tesla P100 &1024 &chainer &15 minutes \\
 \citet{you2017} &Xeon Phi KNL &2048 &caffe &14 minutes \\
-\citet{jia_et_al_2018} &Tesla P40 &2048 &tensorflow &6.6 minutes \\
+\citet{jia_et_al_2018} &Tesla P40 &2048 &Tensorflow &6.6 minutes \\
 \citet{mikami_et_al_2018} &Tesla V100 &2176 &NNL &3.7 minutes \\
 \hline
 \end{tabu}
@@ -450,7 +438,6 @@ paper &processor/accelerator &\# &library &time \\
 \section{Work Plan} % {{{
 \label{sec:work_plan}
 
-
 This section will describe the time table for the actual
 dissertation period.
 The dissertation period starts on Monday the 25th of May
@@ -459,7 +446,7 @@ This covers 13 weeks, calendar week 22 to calendar week 34
 inclusively.
 
 There are three distinct main tasks to do for the
-dissertation project, which all can be further broken
+dissertation project, which can be further broken
 down into more fine-grained subtasks:
 \begin{itemize}
   \item Implementing ResNet-50 on SpiNNaker
@@ -521,6 +508,20 @@ proof reading.
 Calendar week 33 could be used as a buffer week, if
 the benchmark will not be finished after calendar week 32.
 
+Implementation is broken down into many subtasks.
+One of the risks this project faces will be the author's inability
+to implement ResNet-50 (see Section~\ref{sec:risk_analysis}).
+But even if that should be the case, one could theoretically run a
+simple neural network on SpiNNaker, after the SGD task is finished.
+This would be after the third week and it would allow us
+to benchmark our implementation on a far smaller scale than
+ResNet-50 would provide.
+So presentable results should be achieved early in the dissertation
+phase, even if after the Inference and SGD tasks problems are
+encountered.
+This ensures a successful completion of the dissertation, even if
+the implementation should not be completable in its full extend.
+
 \def\cg{\cellcolor{green!50}{}}
 \def\crd{\cellcolor{red!50}{}}
 \def\cb{\cellcolor{blue!50}{}}
@@ -576,28 +577,28 @@ overcome.
 There are three main risks that will endanger the progress
 of the dissertation:
 \begin{itemize}
-  \item Alan Stokes dies
+  \item Losing direct access to SpiNNaker knowledge
   \item Hardware destruction
   \item Failure to implement ResNet-50 on SpiNNaker
+  \item University closes, because of Corvid-19
 \end{itemize}
 
 Alan Stokes is one of the dissertation's supervisors and part
 of the core team of SpiNNaker developers.
 He is the main source of information concerning the
 SpiNNaker hardware and runtime.
-His death would put the dissertation in grave jeopardy.
-A death of a person is always coupled to mental
-difficulties and traumas for the bereaved.
-Also, a lot of necessary knowledge needed for this
-dissertation would be lost.
-%Psychic help in form of a psychiatrist would hopefully help
-%with overcoming a trauma following Alan Stoke's death.
-Concerning the lost knowledge about SpiNNaker: there exists a google
-group with most of the people using SpiNNaker in it, including the
-other members of the SpiNNaker core team.
-The google group already is the second point of contact
-concerning SpiNNaker and would therefore simply be upgraded to
-first.
+In the case he should not be able to participate and help
+during this project, the successful completion of the implementation
+and benchmarking phases would be in jeopardy.
+To cope with this case, a second source of SpiNNaker knowledge was
+already established.
+There exists a google group with most of the people using SpiNNaker in
+it, including the other members of the SpiNNaker core team.
+The SpiNNaker core team has the goal of answering any question asked
+in the group within 24 hours.
+Therefore, the risk of failure is reduced to the risk of having to
+adjust the benchmark, because the implementation phase will take
+longer.
 
 There is a SpiNNaker board (see
 Appendix~\ref{sec:spinn_photos} for a picture of a
@@ -640,6 +641,23 @@ So, even if the final benchmark will not be a success,
 presentable results for the dissertation will still be
 available.
 
+The last risk would be the event of a quarantine in Edinburgh,
+where the university campus will be closed.
+Already events are canceled and regions in Europe are put under
+quarantine, because of the Corvid-19 virus
+\citep{borghese_et_al_2020}.
+In case of campus closure, direct contact to the supervisors would be
+lost.
+Meetings and discussions would have to be remotely over Skype or an
+other service.
+This is currently the main way of communication and would not impact
+the project.
+The dedicated SpiNNaker board is also stored on campus.
+Like stated above, remote access to the supercomputer in Manchester
+is possible.
+While taking the dedicated SpiNNaker board away from campus would be
+possible, it would increase the risk of hardware destruction.
+
 % }}}
 
 \section{Preliminary Findings} % {{{
@@ -656,7 +674,7 @@ There a three main pieces of knowledge gained for the
 dissertation phase: (\romannumeral 1) the main problem
 will be the author's ability to program ResNet-50 on
 SpiNNaker, which is not a trivial task, (\romannumeral 2)
-implementing a tensorflow backend is not a feasible thing
+implementing a Tensorflow backend is not a feasible thing
 to do in the short time for the dissertation and
 (\romannumeral 3) the discovery of the MLPerf benchmark,
 which gives us a perfect setting for finding out, if
@@ -684,9 +702,9 @@ From the beginning it was clear, that the initially
 proposed benchmark against the ssn tool (see
 Section~\ref{sec:proposal}) is not the desired one and
 really only an afterthought.
-At the beginning tensorflow was much more of a focal point.
+At the beginning Tensorflow was much more of a focal point.
 But because of the difficulties of implementing a backend
-for tensorflow and the fact that it is yet unknown if
+for Tensorflow and the fact that it is yet unknown if
 SpiNNaker is even a good platform for deep learning, a
 benchmark for finding this out should be the first step,
 before one can worry about how to interface SpiNNaker with
@@ -710,18 +728,18 @@ of the art accelerators, like GPU or TPU clusters.
 
 Because programming SpiNNaker is hard enough of a task,
 having to interface the complex SpiNNaker runtime with the
-complex tensorflow runtime was simply deemed too difficult.
-At the beginning, implementing a tensorflow backend seemed
+complex Tensorflow runtime was simply deemed too difficult.
+At the beginning, implementing a Tensorflow backend seemed
 sensible.
 Tensorflow already offers interfaces to state of the art
 accelerators like GPUs and TPUs.
 Research on how to implement hardware backends to
-tensorflow revealed, that the tensorflow community
-recommends working with tensorflow's extended linear
+Tensorflow revealed, that the Tensorflow community
+recommends working with Tensorflow's extended linear
 algebra compiler (XLA).
 A description of XLA can be found at:
 \url{https://www.tensorflow.org/xla}.
-Instead of having to implement every tensorflow core
+Instead of having to implement every Tensorflow core
 operation, one has only to implement a XLA backend, which
 is significantly simpler and more scalable
 \citep{xla_backend}.
@@ -739,7 +757,7 @@ effort \citep{xla_backend}.
 Interfacing SpiNNaker with XLA in the time span of the
 dissertation is not deemed possible.
 
-Another point not in favor of a tensorflow backend would be
+Another point not in favor of a Tensorflow backend would be
 the fact, that SpiNNaker's neuromorphic architecture is
 quite different from the architecture of common deep
 learning accelerators and libraries.
@@ -750,21 +768,21 @@ fast linear algebra operations.
 SpiNNaker is designed to run small neurons communicating
 with each other over unstable spiking events
 \citep{furber_et_al_2007}.
-Deep learning operations in tensorflow and on state of the
+Deep learning operations in Tensorflow and on state of the
 are accelerators are implemented on a layer-level with
 matrix operations \citep{goodfellow2016}.
 Deep learning offers an abstraction much more convenient
 and closer to SpiNNaker's architecture than matrix
 operations over the layers of a deep neural network: the
 neurons inside each layer.
-For tensorflow, we would have to implement fast and
+For Tensorflow, we would have to implement fast and
 distributed linear algebra operations.
 This is not what SpiNNaker originally was designed for.
 Instead, implementing deep neural networks on the
 abstraction level of neurons instead of layers of neurons
 seems a more natural fit.
 
-With removing tensorflow from the project proposal, we
+With removing Tensorflow from the project proposal, we
 were able to reduce a fairly big chunk of work, which we
 probably would not have been able to fit into the time
 span of the dissertation.
@@ -786,7 +804,7 @@ benchmark on a different architecture, which will safe
 a lot of time needed for implementing ResNet-50 on
 SpiNNaker.
 
-With removing tensorflow from the project proposal and
+With removing Tensorflow from the project proposal and
 having the MLPerf benchmark for comparison, we are able
 to reduce the tasks to do for a successful dissertation to
 a minimum.
@@ -903,7 +921,7 @@ the images were preprocessed and reformatted to the
 TFRecord format \citep{tf2015}.
 Chapter four concerns itself with the optimization of the
 VGG16 neural network, mainly through different parameters
-which are passed to tensorflow, which is used for
+which are passed to Tensorflow, which is used for
 implementing VGG16.
 It thoroughly describes how one can distribute training
 across multiple GPUs.
