@@ -25,7 +25,7 @@ Actions
 
 * Finished
 
-  - **Jonas Faßbender:** Incorporated feedback into the
+  - **Jonas Faßbender:** Incorporate feedback into the
     presentation slides
 
   - **Jonas Faßbender:** Literature research on different

@@ -49,20 +49,6 @@ Proposed API
    print("loss: ", s[0], "accuracy: ", s[1])
 
 
-TODO
-----
-
-* Learn how to program spinnaker
-
-* Start with work plan
-
-* Look at ResNet-50v1.5 implementation in more detail
-
-* Look at MLPerf benchmark in more detail (what are the
-  parameters for the closed division training benchmark and
-  what are the exact rules)
-
-
 Links
 -----
 
