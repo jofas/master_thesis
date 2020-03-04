@@ -663,19 +663,17 @@ possible, it would increase the risk of hardware destruction.
 \section{Preliminary Findings} % {{{
 \label{sec:prelim}
 
-This section will present the preliminary findings at the
-point of writing this paper.
+This section will present the preliminary findings.
 The research phase until now has been all about setting the
 right background for a successful dissertation phase.
 Like stated in Section~\ref{sec:proposal}, the final
 project proposal has changed quite a bit from the initial
 one, thanks to the preliminary findings.
-There a three main pieces of knowledge gained for the
-dissertation phase: (\romannumeral 1) the main problem
-will be the author's ability to program ResNet-50 on
-SpiNNaker, which is not a trivial task, (\romannumeral 2)
-implementing a Tensorflow backend is not a feasible thing
-to do in the short time for the dissertation and
+There a three main pieces of knowledge gained:
+(\romannumeral 1) the main problem will be the author's ability to
+program ResNet-50 on SpiNNaker, which is not a trivial task,
+(\romannumeral 2) implementing a Tensorflow backend is not a feasible
+thing to do in the short time for the dissertation and
 (\romannumeral 3) the discovery of the MLPerf benchmark,
 which gives us a perfect setting for finding out, if
 SpiNNaker can compete with state of the art hardware for
@@ -689,12 +687,8 @@ and therefore the programming model differs drastically
 from more common ones.
 To overcome the difficulties of programming on SpiNNaker
 will be the major challenge of the dissertation.
-Therefore it was clear from the beginning, that every task,
-that does not directly concern itself with getting a
-running version of a deep neural network on
-SpiNNaker and the writing of the dissertation must be
-minimized to the maximum amount possible or even better be
-removed completely from the dissertation phase.
+Every task not directly concerned with implementing and writing the
+report must be minimized or even removed completely.
 
 This was accomplished by the preliminary research in two
 major ways.
@@ -751,9 +745,8 @@ implementations:
   \item Non-CPUs with LLVM backend
   \item Non-CPUs without LLVM backend
 \end{enumerate}
-SpiNNaker would fall under category three, Non-CPU without
-LLVM backend, which is the category requiring the most
-effort \citep{xla_backend}.
+SpiNNaker would fall under category three, which is the category
+requiring the most effort \citep{xla_backend}.
 Interfacing SpiNNaker with XLA in the time span of the
 dissertation is not deemed possible.
 
@@ -764,10 +757,18 @@ learning accelerators and libraries.
 Tensorflow implements fast linear algebra operations on
 heterogeneous and distributed hardware \citep{tf2015}.
 Accelerators like GPUs and TPUs are designed for doing
-fast linear algebra operations.
-SpiNNaker is designed to run small neurons communicating
-with each other over unstable spiking events
-\citep{furber_et_al_2007}.
+fast linear algebra operations using instruction level parallelism.
+For example, NVIDIA GPUs come with Tensor Cores.
+A Tensor Core is a specialized piece of hardware performing a
+$4\times4$ fused multiply-add-accumulate matrix operation (MAC) per
+clock cycle \citep{markidis_et_al_2018}.
+Google's first version of the TPU comes with $256\times256$ MACs
+performing 8-bit integer operations \citep{tpus}.
+The ARM cores on SpiNNaker on the other hand do not have a fast MAC
+unit.
+It is designed to run small neurons communicating with each other over
+unstable spiking events \citep{furber_et_al_2007}.
+
 Deep learning operations in Tensorflow and on state of the
 are accelerators are implemented on a layer-level with
 matrix operations \citep{goodfellow2016}.
@@ -776,11 +777,18 @@ and closer to SpiNNaker's architecture than matrix
 operations over the layers of a deep neural network: the
 neurons inside each layer.
 For Tensorflow, we would have to implement fast and
-distributed linear algebra operations.
-This is not what SpiNNaker originally was designed for.
+distributed linear algebra operations, without having the benefit
+of MAC units.
+This is not what SpiNNaker originally was designed for and would
+most certainly lead to an unoptimal implementation.
 Instead, implementing deep neural networks on the
-abstraction level of neurons instead of layers of neurons
-seems a more natural fit.
+abstraction level of neurons instead of layers is a more natural fit.
+
+% runtime
+%
+% spinnaker on level of runtime not hardware
+%
+%
 
 With removing Tensorflow from the project proposal, we
 were able to reduce a fairly big chunk of work, which we
