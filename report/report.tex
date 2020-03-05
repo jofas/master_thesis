@@ -671,11 +671,10 @@ project proposal has changed quite a bit from the initial
 one, thanks to the preliminary findings.
 There a three main pieces of knowledge gained:
 (\romannumeral 1) the main problem will be the author's ability to
-program ResNet-50 on SpiNNaker, which is not a trivial task,
+program ResNet-50 on SpiNNaker,
 (\romannumeral 2) implementing a Tensorflow backend is not a feasible
-thing to do in the short time for the dissertation and
-(\romannumeral 3) the discovery of the MLPerf benchmark,
-which gives us a perfect setting for finding out, if
+thing to do and (\romannumeral 3) the discovery of the MLPerf
+benchmark, which gives us a perfect setting for finding out, if
 SpiNNaker can compete with state of the art hardware for
 deep learning.
 
@@ -768,6 +767,8 @@ The ARM cores on SpiNNaker on the other hand do not have a fast MAC
 unit.
 It is designed to run small neurons communicating with each other over
 unstable spiking events \citep{furber_et_al_2007}.
+This does not require fast matrix operations, so there are no
+dedicated hardware units for it in the core.
 
 Deep learning operations in Tensorflow and on state of the
 are accelerators are implemented on a layer-level with
@@ -781,14 +782,53 @@ distributed linear algebra operations, without having the benefit
 of MAC units.
 This is not what SpiNNaker originally was designed for and would
 most certainly lead to an unoptimal implementation.
-Instead, implementing deep neural networks on the
-abstraction level of neurons instead of layers is a more natural fit.
+Implementing deep neural networks on the abstraction level of neurons
+instead of layers is a more natural fit.
 
-% runtime
-%
-% spinnaker on level of runtime not hardware
-%
-%
+The last argument against a Tensorflow backend was the difference of
+programming SpiNNaker, compared to other accelerators.
+TPUs and GPUs do not come with the complexity of a runtime environment
+like SpiNNaker.
+GPUs and the TPU come with their own instruction set.
+The TPU, for example, has a CISC instruction set, with instructions
+like \texttt{MatrixMultiply}, \texttt{Read\_Host\_Memory} or
+\texttt{Write\_Host\_Memory} \citep{tpus}.
+Both GPUs and the TPU have a User Space Driver, which compiles the
+Tensorflow API to their respective instruction set, generating a
+binary loaded in the instruction buffer of the device \citep{tpus}.
+
+SpiNNaker can not be utilized, simply by generating an application
+binary that gets loaded and executed on the device.
+A SpiNNaker program is written as a graph, much like a Tensorflow
+graph.
+A vertex does some sort of computation and data is communicated over
+edges.
+While edges in a Tensorflow graph are used for passing tensors between
+vertices, edges in a SpiNNaker graph are used to multicast small
+packages (40 or 72 bits) from a vertex to the vertices it is connected
+to \citep{spinn_proj, tf2015}.
+This design is derived from neurons in the human brain, which
+communicate the same way (spike events) \citep{spinn_proj}.
+In order to write a SpiNNaker program, one has to write all vertex
+types used in the graph using the C programming language, calling
+SpiNNaker intrinsic functions (e.g. \texttt{spin1\_send\_mc\_packet}
+for sending a multicast to the connected vertices).
+The graph representation of the program is build on the host,
+which also sets up the SpiNNaker device it is connected to.
+For this a Python interface is provided, which is called a frontend.
+For the dissertation project, we will use the SpiNNaker Graph
+Frontend, designed for general computing.
+There is also a frontend for spiking neural networks using
+the PyNN modeling language \citep{davison_et_al_2009}.
+
+Integrating the complex Tensorflow runtime with the complex
+SpiNNaker runtime was not deemed possible (limiting factor is the
+small time span for the project), nor useful.
+In order to---one day, not as part of this project---integrate current
+state of the art deep learning libraries with SpiNNaker, we think it
+is more sensible to support the ONNX (Open Neural Network Exchange)
+format, based on an optimized deep learning library for SpiNNaker
+\citep{bai2020}.
 
 With removing Tensorflow from the project proposal, we
 were able to reduce a fairly big chunk of work, which we
