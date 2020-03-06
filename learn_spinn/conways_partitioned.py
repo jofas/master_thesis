@@ -70,28 +70,42 @@ def main():
 
     # contain the vertices for the connection aspect
     vertices = [[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)]
+
+
+    """
     streamers = np.array(
         [[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)]
     )
+    """
 
-    # build vertices
+    # build vertices {{{
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
             vert = ConwayBasicCell(
                 "cell_{}".format((x * X_SIZE) + y),
                 (x, y) in active_states)
 
+            """
             streamer = LivePacketGatherMachineVertex(
                 "streamer_{}".format((x * X_SIZE) + y),
                 port = 19995,#17895,
                 hostname="192.168.2.200",
             )
+            """
 
             front_end.add_machine_vertex_instance(vert)
-            front_end.add_machine_vertex_instance(streamer)
+            #front_end.add_machine_vertex_instance(streamer)
 
             vertices[x][y] = vert
-            streamers[x, y] = streamer
+            #streamers[x, y] = streamer
+    # }}}
+
+    streamer = LivePacketGatherMachineVertex(
+        "streamer_label",
+        port = 19995,#17895,
+        hostname="192.168.2.200",
+    )
+    front_end.add_machine_vertex_instance(streamer)
 
     # build edges {{{
     for x in range(0, X_SIZE):
@@ -121,27 +135,16 @@ def main():
             front_end.add_machine_edge_instance(
                 MachineEdge(
                     vertices[x][y],
-                    streamers[x, y],
-                    label="edge_{}".format(vertices[x][y].label)
+                    streamer,
+                    label="stream_edge_{}".format(vertices[x][y].label)
                 ),
                 ConwayBasicCell.PARTITION_ID
             )
     # }}}
 
-    conf = get_simulator().config
-    print(conf)
-    for x in conf.defaults():
-        print(x)
-    print(conf.defaults())
-
     db_notify_port = 19995
     db_notify_host = "192.168.2.200"
-
-    db_ack_port = None#
-    #helpful_functions.read_config_int(
-    #    conf, "Database", "listen_port")
-
-    print(db_notify_port, db_notify_host, db_ack_port)
+    db_ack_port = None
 
     database_socket = SocketAddress(
             listen_port=db_ack_port,
@@ -150,15 +153,17 @@ def main():
 
     get_simulator().add_socket_address(database_socket)
 
-    labels = [s.label for s in streamers.flatten()]
+    #labels = [s.label for s in streamers.flatten()]
     conn = LiveEventConnection(
-       None, receive_labels=labels, local_port=19995#17895
+       streamer.label, receive_labels=[streamer.label], local_port=19995,
+       machine_vertices = True#17895
     )
 
     def cb(label, time, stuff):
         print("received: {}, {}, {}".format(label, time, stuff))
 
-    for label in labels: conn.add_receive_callback(label, cb)
+    #for label in labels: conn.add_receive_callback(label, cb)
+    conn.add_receive_callback(streamer.label, cb)
 
     # run the simulation
     front_end.run(runtime)
@@ -207,6 +212,15 @@ def visualize_conways(data):
         ))
 
 
+def check_correctness(data):
+    generated_output = np.array([data[:,:,time].flatten()
+        for time in range(0, runtime)])
+
+    correct_output = import_data()
+
+    assert (correct_output == generated_output).all()
+
+
 def export_data(data):
     with open("test.csv", "w") as f:
         w = csv.writer(f)
@@ -218,15 +232,6 @@ def import_data():
     with open("test.csv", "r") as f:
         r = csv.reader(f)
         return np.array([row for row in r], dtype=np.int32)
-
-
-def check_correctness(data):
-    generated_output = np.array([data[:,:,time].flatten()
-        for time in range(0, runtime)])
-
-    correct_output = import_data()
-
-    assert (correct_output == generated_output).all()
 
 
 if __name__ == "__main__":
