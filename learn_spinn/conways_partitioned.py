@@ -15,7 +15,10 @@
 
 import os
 
+from spinnman.messages.eieio import EIEIOType
+
 from pacman.model.graphs.machine import MachineEdge
+
 import spinnaker_graph_front_end as front_end
 
 from spinn_front_end_common.utilities.connections import \
@@ -23,8 +26,6 @@ from spinn_front_end_common.utilities.connections import \
 
 from spinn_front_end_common.utilities.globals_variables import \
     get_simulator
-
-from spinn_front_end_common.utilities import helpful_functions
 
 from spinn_front_end_common.utility_models import \
     LivePacketGatherMachineVertex
@@ -46,7 +47,7 @@ arr_to_askii = np.vectorize(to_askii, otypes=[np.str])
 active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 
 runtime = 50
-# machine_time_step = 100
+machine_time_step = 1000
 
 X_SIZE = 7
 Y_SIZE = 7
@@ -58,56 +59,57 @@ def main():
     # set up the front end and ask for the detected machines dimensions
     front_end.setup(
         n_chips_required=n_chips,
-        model_binary_folder=os.path.dirname(__file__)
+        model_binary_folder=os.path.dirname(__file__),
+        #machine_time_step=machine_time_step,
+        time_scale_factor=100
     )
 
-    # figure out if machine can handle simulation
-    cores = (front_end
-        .get_number_of_available_cores_on_machine())
+    check_board_size()
 
-    if cores <= (X_SIZE * Y_SIZE):
-        raise KeyError("Don't have enough cores to run simulation")
+    vertices = add_cc_machine_vertices()
 
-    # contain the vertices for the connection aspect
-    vertices = [[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)]
+    streamer = add_lpg_machine_vertex("streamer_instance")
 
+    build_edges(vertices, streamer)
 
-    """
-    streamers = np.array(
-        [[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)]
+    add_db_sock()
+
+    labels = [cc.label for cc in vertices.flatten()]
+
+    conn = LiveEventConnection(
+       streamer.label, receive_labels=labels, local_port=19995,
+       machine_vertices = True
     )
-    """
 
-    # build vertices {{{
+    def cb(label, time, stuff):
+        print("received: {}, {}, {}".format(label, time, stuff))
+
+    for label in labels: conn.add_receive_callback(label, cb)
+
+    # run the simulation
+    front_end.run(runtime)
+
+    # get recorded data
+    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
+
+    # get the data per vertex
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
-            vert = ConwayBasicCell(
-                "cell_{}".format((x * X_SIZE) + y),
-                (x, y) in active_states)
+            recorded_data[x, y, :] = vertices[x][y].get_data(
+                front_end.buffer_manager(),
+                front_end.placements().get_placement_of_vertex(vertices[x][y]))
 
-            """
-            streamer = LivePacketGatherMachineVertex(
-                "streamer_{}".format((x * X_SIZE) + y),
-                port = 19995,#17895,
-                hostname="192.168.2.200",
-            )
-            """
 
-            front_end.add_machine_vertex_instance(vert)
-            #front_end.add_machine_vertex_instance(streamer)
+    #export_data(recorded_data)
+    #check_correctness(recorded_data)
+    #visualize_conways(recorded_data)
 
-            vertices[x][y] = vert
-            #streamers[x, y] = streamer
-    # }}}
+    # clear the machine
+    front_end.stop()
+    conn.close()
 
-    streamer = LivePacketGatherMachineVertex(
-        "streamer_label",
-        port = 19995,#17895,
-        hostname="192.168.2.200",
-    )
-    front_end.add_machine_vertex_instance(streamer)
 
-    # build edges {{{
+def build_edges(cc_machine_vertices, lpg_machine_vertex):
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
 
@@ -126,24 +128,57 @@ def main():
                     (y + 1) % Y_SIZE, "NW")]
 
             for (dest_x, dest_y, compass) in positions:
-                front_end.add_machine_edge_instance(
-                    MachineEdge(
-                        vertices[x][y], vertices[dest_x][dest_y],
-                        label=compass), ConwayBasicCell.PARTITION_ID)
+                front_end.add_machine_edge_instance(MachineEdge(
+                    cc_machine_vertices[x, y],
+                    cc_machine_vertices[dest_x, dest_y],
+                    label=compass
+                ), ConwayBasicCell.PARTITION_ID)
 
-            # connect streamer with vertices
-            front_end.add_machine_edge_instance(
-                MachineEdge(
-                    vertices[x][y],
-                    streamer,
-                    label="stream_edge_{}".format(vertices[x][y].label)
-                ),
-                ConwayBasicCell.PARTITION_ID
+            front_end.add_machine_edge_instance(MachineEdge(
+                cc_machine_vertices[x, y],
+                lpg_machine_vertex,
+                label="stream_edge_{}".format(cc_machine_vertices[x, y].label)
+            ), ConwayBasicCell.PARTITION_ID)
+
+
+def check_board_size():
+    cores = front_end.get_number_of_available_cores_on_machine()
+
+    if cores <= (X_SIZE * Y_SIZE):
+        raise KeyError("Don't have enough cores to run simulation")
+
+
+def add_cc_machine_vertices():
+    vertices = np.array([[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)])
+
+    for x in range(0, X_SIZE):
+        for y in range(0, Y_SIZE):
+            vert = ConwayBasicCell(
+                "cell_{}".format((x * X_SIZE) + y), (x, y) in active_states
             )
-    # }}}
 
+            front_end.add_machine_vertex_instance(vert)
+            vertices[x, y] = vert
+
+    return vertices
+
+
+def add_lpg_machine_vertex(label):
+    streamer = LivePacketGatherMachineVertex(
+        label, port=19995, hostname="localhost", strip_sdp=True,
+        message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
+        use_payload_prefix=False,
+        #number_of_packets_sent_per_time_step=49,
+    )
+
+    front_end.add_machine_vertex_instance(streamer)
+
+    return streamer
+
+
+def add_db_sock():
     db_notify_port = 19995
-    db_notify_host = "192.168.2.200"
+    db_notify_host = "localhost" #"192.168.2.200"
     db_ack_port = None
 
     database_socket = SocketAddress(
@@ -152,54 +187,6 @@ def main():
             notify_port_no=db_notify_port)
 
     get_simulator().add_socket_address(database_socket)
-
-    #labels = [s.label for s in streamers.flatten()]
-    conn = LiveEventConnection(
-       streamer.label, receive_labels=[streamer.label], local_port=19995,
-       machine_vertices = True#17895
-    )
-
-    def cb(label, time, stuff):
-        print("received: {}, {}, {}".format(label, time, stuff))
-
-    #for label in labels: conn.add_receive_callback(label, cb)
-    conn.add_receive_callback(streamer.label, cb)
-
-    # run the simulation
-    front_end.run(runtime)
-
-    conn.close()
-
-    """
-    for x in range(0, X_SIZE):
-        for y in range(0, Y_SIZE):
-            data = streamers[x][y].get_provenance_data_from_machine(
-                front_end.transceiver(),
-                front_end.placements().get_placement_of_vertex(
-                    streamers[x][y]
-                )
-            )
-
-            print(x, y, data)
-    """
-
-    # get recorded data
-    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
-
-    # get the data per vertex
-    for x in range(0, X_SIZE):
-        for y in range(0, Y_SIZE):
-            recorded_data[x, y, :] = vertices[x][y].get_data(
-                front_end.buffer_manager(),
-                front_end.placements().get_placement_of_vertex(vertices[x][y]))
-
-
-    #export_data(recorded_data)
-    check_correctness(recorded_data)
-    #visualize_conways(recorded_data)
-
-    # clear the machine
-    front_end.stop()
 
 
 def visualize_conways(data):
