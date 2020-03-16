@@ -91,15 +91,14 @@ dissertation project ``Deep Learning on SpiNNaker''
 SpiNNaker is a novel neuromorphic, massively parallel and
 energy efficient computer architecture designed for the
 task of modeling the human brain.
-The goal of ``Deep Learning on SpiNNaker'' is to find out
-if SpiNNaker can be used to accelerate the training of
-deep neural networks \citep[see e.g.][]{goodfellow2016}.
+The goal of this dissertation project is to investigate the
+acceleration of training deep neural networks on SpiNNaker.
 The preliminary research done for the dissertation phase
 in the summer of 2020 is described and all relevant
 findings are presented.
 Changes made to the initial project proposal are discussed.
-An outline in the form of a work plan and relevant background
-information are also presented.
+An outline for the dissertation phase in the form of a work plan,
+risk analysis and relevant background information are also presented.
 A literature review of \citet{nita_2018} is given at the
 end of this report.
 \end{abstract}
@@ -133,11 +132,11 @@ designed for.
 Understanding the human brain is one of the biggest
 frontiers in science and there are many ideas on how one
 can model such a complex and still mostly unknown structure.
-There are many different proposed neuromorphic computer architectures
-and ideas on how to do it, from early analogue approaches for vision
-systems like presented in \citet{mead1989} to large scale digital
-architectures like Blue Brain \citep{markram2006}; all
-aiming to implement different types of neurons and models
+There are many different proposed neuromorphic computer architectures.
+From early analogue approaches for vision systems like presented in
+\citet{mead1989} to large scale digital architectures like Blue Brain
+\citep{markram2006}.
+All are aiming to implement different types of neurons and models
 efficiently \citep{furber_et_al_2007}.
 
 SpiNNaker is an architecture for the large scale and
@@ -188,15 +187,14 @@ implementing neural decision systems and
 (\romannumeral 3) computer science: new approach to
 supercomputing and massive parallelism \citep{spinn_proj}.
 The dissertation project will concern itself with (\romannumeral 3)
-and one of the research areas of computer science, which has emerged a
-s a driving force behind advancements in many fields like speech and
-image recognition, drug discovery and genomics:
-deep learning \citep{lecun_et_al_2015}.
+in the context of utilizing SpiNNaker for the acceleration of training
+deep neural networks.
 
-Deep learning is a promising field and deep neural
-networks are at the center of important achievements, like described
-above.
-But deep neural networks face a major problem: the sheer
+Deep learning is one of the research areas of computer science, which
+has emerged a s a driving force behind advancements in many fields
+like speech and image recognition, drug discovery and genomics
+\citep{lecun_et_al_2015}.
+Deep neural networks face a major problem: the sheer
 amount of computation needed for training them.
 Researchers at OpenAI have estimated that the amount of
 computation needed for training state-of-the-art deep
@@ -206,8 +204,8 @@ In order to cope with such unprecedented amounts of
 computation and energy, the search for specialized hardware is well
 underway.
 Current hardware trends for accelerating the training of deep neural
-networks are ASICs like TPUs and general purpose GPUs
-\citep{tpus, mittal_et_al_2019}.
+networks are ASICs (application specific integrated circuits) like
+TPUs and general purpose GPUs \citep{tpus, mittal_et_al_2019}.
 
 The goal of this dissertation project will be to analyze if SpiNNaker
 could be an energy efficient, scalable and fast alternative to the
@@ -273,7 +271,7 @@ in two meaningful ways: (\romannumeral 1) we will implement
 deep learning algorithms and layers directly on SpiNNaker,
 instead of implementing a Tensorflow backend (see
 Section~\ref{sec:prelim}) and (\romannumeral 2) a different
-benchmark to measure the performance of SpiNNaker.
+benchmark to measure the performance of SpiNNaker will be used.
 At first glance, implementing a Tensorflow backend in order to
 enable deep learning on SpiNNaker seemed wise.
 Tensorflow already supports various hardware as its targets, like
@@ -325,7 +323,7 @@ images, organized according to the WordNet hierarchy into
 over 21 thousand so-called synsets (synonym sets)
 \citep{imagenet, wordnet}.
 The ILSVRC is an annual competition running since 2010.
-It has produced many famous models, e.g. AlexNet, VGG16 or
+It has produced many well-known models, e.g. AlexNet, VGG16 or
 ResNet-50 \citep{alexnet, simonyan_et_al_2014,
   he_et_al_2015}.
 We intend to benchmark by training the most complex of
@@ -345,22 +343,21 @@ SpiNNaker, instead of providing a backend to Tensorflow.
 We will benchmark this implementation and SpiNNaker against
 other benchmarks based on state-of-the-art deep learning
 libraries and accelerators for fast training of neural
-networks, instead of benchmarking our implementation
-against the snn toolbox.
-For this benchmark we will train the famous ResNet-50 model
+networks, instead of against the snn toolbox.
+For this benchmark we will train the ResNet-50 model
 based on the settings described above and compare our
 results against the results others generated with the same
-setting but with different libraries and hardware, presented below.
+settings but with different libraries and hardware, presented below.
 
 % }}}
 
 \section{Related Work} % {{{
 \label{sec:related_work}
 
-This section will focus itself with related work important
-for the final project proposal.
+This section lists and describes related work important for the final
+project proposal.
 The main focus lies on benchmarks with which we can
-compare our implementation on SpiNNaker with state-of-the-art
+compare our implementation on SpiNNaker to state-of-the-art
 deep learning libraries and---more importantly---hardware.
 Further literature of importance for this project, e.g.
 \citet{he_et_al_2015}, \citet{goodfellow2016} or
@@ -458,7 +455,7 @@ down into more fine-grained subtasks:
       \item Log
       \item Benchmark
       \item Conclusion
-      \item Proof reading
+      \item Proof reading/editing
     \end{itemize}
 \end{itemize}
 There are a few dependencies between the subtasks.
@@ -546,7 +543,7 @@ the implementation should not be completable in its full extend.
     \hline
     \quad Conclusion &&&&&&&&&&&&\cb & \\
     \hline
-    \quad Proof reading &&&&&& &\cb &&&&&\cb &\cb \\
+    \quad Proof reading/editing &&&&&& &\cb &&&&&\cb &\cb \\
     \hline
   \end{tabu}
   \caption{Gantt chart displaying the work plan for the
@@ -562,7 +559,7 @@ the implementation should not be completable in its full extend.
 This section will look at risks for the successful
 completion of the dissertation and how they can be
 overcome.
-There are three main risks that will endanger the progress
+There are four main risks that will endanger the progress
 of the dissertation:
 \begin{itemize}
   \item Losing direct access to SpiNNaker knowledge
@@ -593,7 +590,7 @@ Appendix~\ref{sec:spinn_photos} for a picture of a
 SpiNNaker board) allocated for work on this dissertation.
 A SpiNNaker board is a costly piece of hardware.
 While the destruction of the board would put the author
-into financial problems, it is not endangering the
+into financial problems, it would not endanger the
 successful completion of the dissertation, since there is
 the supercomputer in Manchester (see
 Appendix~\ref{sec:spinn_photos} for a picture of the
@@ -611,7 +608,7 @@ So is writing software for a complex runtime such as the
 SpiNNaker runtime.
 The benchmark proposed is more ambitious than the originally proposed
 benchmark.
-It could be, that unknown complications make it impossible to
+It could be that unknown complications make it impossible to
 implement ResNet-50 on SpiNNaker in the time span of the dissertation.
 However, even if the final benchmark is impossible to achieve
 due to an unfinished implementation, there is the log
@@ -684,7 +681,7 @@ A proper benchmark for finding this out should be the first step,
 before one can worry about how to interface SpiNNaker with
 already established libraries for deep learning.
 
-Another reason why the initial benchmark was disregarded, is the fact
+Another reason for disregarding the initial benchmark is the fact
 that training deep learning neural networks is the computationally
 expensive operation for which high performance solutions must be
 developed.
@@ -730,7 +727,7 @@ Interfacing SpiNNaker with XLA in the time span of the
 dissertation is not deemed possible.
 
 Another point against a Tensorflow backend would be
-the fact, that SpiNNaker's neuromorphic architecture is
+the fact that SpiNNaker's neuromorphic architecture is
 quite different from the architecture of common deep
 learning accelerators and libraries.
 Tensorflow implements fast linear algebra operations on
@@ -760,7 +757,7 @@ neurons inside each layer.
 For Tensorflow, we would have to implement fast and
 distributed linear algebra operations, without having the benefit
 of MAC units.
-This is not what SpiNNaker originally was designed for and would
+This is not what SpiNNaker was originally designed for and would
 most certainly lead to an sub-optimal implementation.
 Implementing deep neural networks on the abstraction level of neurons
 instead of layers is a more natural fit.
@@ -795,7 +792,7 @@ SpiNNaker intrinsic functions (e.g. \texttt{spin1\_send\_mc\_packet}
 for sending a multicast to the connected vertices).
 The graph representation of the program is build on the host,
 which also sets up the SpiNNaker device it is connected to.
-For this a Python interface is provided, which is called a frontend.
+For this, a Python interface is provided, which is called a frontend.
 For the dissertation project, we will use the SpiNNaker Graph
 Frontend, designed for general computing.
 There is also a frontend for spiking neural networks using
@@ -810,7 +807,7 @@ is more sensible to support the ONNX (Open Neural Network Exchange)
 format, based on an optimized deep learning library for SpiNNaker
 \citep{bai2020}.
 
-With removing Tensorflow from the project proposal, we
+With the removal of Tensorflow from the project proposal, we
 were able to reduce a fairly big chunk of work, which we
 probably would not have been able to fit into the time
 span of the dissertation.
@@ -824,7 +821,7 @@ was disregarded---we were planning on comparing the
 SpiNNaker implementation against a deep neural network
 running on a different supercomputer, such as Cirrus
 \citep{cirrus}.
-That would have meant, that we would have to conduct two
+That would have meant that we would have to conduct two
 benchmarks, one on SpiNNaker, another one on Cirrus.
 Thanks to MLPerf and the other benchmarks presented in
 Section~\ref{sec:related_work}, we can remove the
@@ -923,7 +920,7 @@ Linear scaling is an overly optimistic assumption and it would have
 been better, if \citet{nita_2018} had used another CPU benchmark for
 its comparison, for example \citet{you2017}.
 The single node of the Team EPCC cluster with its six
-NVIDIA V100 GPUs generates a throughput of 2,052 images per
+NVIDIA V100 GPUs generated a throughput of 2,052 images per
 second, while a single backend node of Cirrus (two Intel
 Xeon E5-2695 processors, each with 18 physical cores) can
 generate a throughput of just 18 images per second.
