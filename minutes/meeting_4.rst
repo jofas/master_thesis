@@ -64,4 +64,4 @@ Feedback I have to incorporate into the report is:
 DONM
 ----
 
-Tuesday 17rd of March, 16:00, room 2.56
+Tuesday 17th of March, 16:00, room 2.56
