@@ -18,6 +18,8 @@ import os
 from spinnman.messages.eieio import EIEIOType
 
 from pacman.model.graphs.machine import MachineEdge
+from pacman.model.constraints.placer_constraints import \
+    ChipAndCoreConstraint
 
 import spinnaker_graph_front_end as front_end
 
@@ -29,6 +31,9 @@ from spinn_front_end_common.utilities.globals_variables import \
 
 from spinn_front_end_common.utility_models import \
     LivePacketGatherMachineVertex
+
+from spinn_front_end_common.utilities.utility_objs import \
+    LivePacketGatherParameters
 
 from spinn_utilities.socket_address import SocketAddress
 
@@ -60,7 +65,7 @@ def main():
     front_end.setup(
         n_chips_required=n_chips,
         model_binary_folder=os.path.dirname(__file__),
-        #machine_time_step=machine_time_step,
+        machine_time_step=machine_time_step,
         time_scale_factor=100
     )
 
@@ -164,10 +169,20 @@ def add_cc_machine_vertices():
 
 
 def add_lpg_machine_vertex(label):
+    args = LivePacketGatherParameters(
+        port = 1995,
+        hostname = "localhost",
+        strip_sdp = True,
+        message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
+        use_payload_prefix = False,
+    )
+
     streamer = LivePacketGatherMachineVertex(
-        label, port=19995, hostname="localhost", strip_sdp=True,
-        message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
-        use_payload_prefix=False,
+        args, label,
+        #, port=19995, hostname="localhost", strip_sdp=True,
+        #message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
+        #use_payload_prefix=False,
+        constraints=[ChipAndCoreConstraint(x=0, y=0)],
         #number_of_packets_sent_per_time_step=49,
     )
 

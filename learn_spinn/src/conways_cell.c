@@ -275,6 +275,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
             data_specification_get_region(SYSTEM_REGION, data),
             APPLICATION_NAME_HASH, timer_period, &simulation_ticks,
             &infinite_run, &time, SDP, DMA)) {
+        log_error("failed to set up the simulation interface");
         return false;
     }
 
@@ -304,6 +305,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
     // initialise my input_buffer for receiving packets
     input_buffer = circular_buffer_initialize(256);
     if (input_buffer == 0) {
+        log_error("failed initializing receiving buffer");
         return false;
     }
     log_info("input_buffer initialised");
