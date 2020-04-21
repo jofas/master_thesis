@@ -82,7 +82,7 @@ def main():
     labels = [cc.label for cc in vertices.flatten()]
 
     conn = LiveEventConnection(
-       streamer.label, receive_labels=labels, local_port=19995,
+       streamer.label, receive_labels=labels, local_port=19999,
        machine_vertices = True
     )
 
@@ -114,7 +114,7 @@ def main():
     conn.close()
 
 
-def build_edges(cc_machine_vertices, lpg_machine_vertex):
+def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
 
@@ -144,16 +144,18 @@ def build_edges(cc_machine_vertices, lpg_machine_vertex):
                 lpg_machine_vertex,
                 label="stream_edge_{}".format(cc_machine_vertices[x, y].label)
             ), ConwayBasicCell.PARTITION_ID)
+# }}}
 
 
-def check_board_size():
+def check_board_size(): # {{{
     cores = front_end.get_number_of_available_cores_on_machine()
 
     if cores <= (X_SIZE * Y_SIZE):
         raise KeyError("Don't have enough cores to run simulation")
+# }}}
 
 
-def add_cc_machine_vertices():
+def add_cc_machine_vertices(): # {{{
     vertices = np.array([[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)])
 
     for x in range(0, X_SIZE):
@@ -166,15 +168,20 @@ def add_cc_machine_vertices():
             vertices[x, y] = vert
 
     return vertices
+# }}}
 
 
 def add_lpg_machine_vertex(label):
+    # some wrong lpg config???
+
     args = LivePacketGatherParameters(
-        port = 1995,
+        port = 19999,
         hostname = "localhost",
-        strip_sdp = True,
-        message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
-        use_payload_prefix = False,
+        #strip_sdp = True,
+        #message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
+        #use_payload_prefix = False,
+        #payload_as_time_stamps = False,
+        #number_of_packets_sent_per_time_step=49,
     )
 
     streamer = LivePacketGatherMachineVertex(
@@ -192,7 +199,7 @@ def add_lpg_machine_vertex(label):
 
 
 def add_db_sock():
-    db_notify_port = 19995
+    db_notify_port = 19999
     db_notify_host = "localhost" #"192.168.2.200"
     db_ack_port = None
 
