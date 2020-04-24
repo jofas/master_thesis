@@ -54,8 +54,8 @@ active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 runtime = 50
 machine_time_step = 1000
 
-X_SIZE = 7
-Y_SIZE = 7
+X_SIZE = 5
+Y_SIZE = 5
 
 n_chips = (X_SIZE * Y_SIZE) // 15
 
@@ -95,14 +95,14 @@ def main():
     front_end.run(runtime)
 
     # get recorded data
-    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
+    #recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
 
     # get the data per vertex
-    for x in range(0, X_SIZE):
-        for y in range(0, Y_SIZE):
-            recorded_data[x, y, :] = vertices[x][y].get_data(
-                front_end.buffer_manager(),
-                front_end.placements().get_placement_of_vertex(vertices[x][y]))
+    #for x in range(0, X_SIZE):
+    #    for y in range(0, Y_SIZE):
+    #        recorded_data[x, y, :] = vertices[x][y].get_data(
+    #            front_end.buffer_manager(),
+    #            front_end.placements().get_placement_of_vertex(vertices[x][y]))
 
 
     #export_data(recorded_data)
@@ -160,9 +160,18 @@ def add_cc_machine_vertices(): # {{{
 
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
-            vert = ConwayBasicCell(
-                "cell_{}".format((x * X_SIZE) + y), (x, y) in active_states
-            )
+            if x * X_SIZE + y < 16:
+                vert = ConwayBasicCell(
+                    "cell_{}".format((x * X_SIZE) + y),
+                    (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
+                    constraints=[ChipAndCoreConstraint(x=1, y=1)],
+                )
+            else:
+                vert = ConwayBasicCell(
+                    "cell_{}".format((x * X_SIZE) + y),
+                    (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
+                    constraints=[ChipAndCoreConstraint(x=1, y=0)],
+                )
 
             front_end.add_machine_vertex_instance(vert)
             vertices[x, y] = vert
@@ -177,10 +186,10 @@ def add_lpg_machine_vertex(label):
     args = LivePacketGatherParameters(
         port = 19999,
         hostname = "localhost",
-        #strip_sdp = True,
-        #message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
-        #use_payload_prefix = False,
-        #payload_as_time_stamps = False,
+        strip_sdp = True,
+        message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
+        use_payload_prefix = False,
+        payload_as_time_stamps = False,
         #number_of_packets_sent_per_time_step=49,
     )
 

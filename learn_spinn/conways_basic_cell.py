@@ -15,6 +15,7 @@
 
 from enum import Enum
 import struct
+import math
 from spinn_utilities.overrides import overrides
 from pacman.executor.injection_decorator import inject_items
 from pacman.model.graphs.machine import MachineVertex
@@ -44,7 +45,11 @@ class ConwayBasicCell(
 
     PARTITION_ID = "NEIGHBOR_CONNECT"
 
-    TRANSMISSION_DATA_SIZE = 2 * BYTES_PER_WORD  # has key and key
+    _MAX_OFFSET_DENOMINATOR = 10
+    _INSTANCE_COUNTER = 0
+    _ALL_VERTICES = 0
+
+    PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD  # has key and key
     STATE_DATA_SIZE = BYTES_PER_WORD  # 1 or 2 based off dead or alive
     # alive states, dead states
     NEIGHBOUR_INITIAL_STATES_SIZE = 2 * BYTES_PER_WORD
@@ -54,13 +59,19 @@ class ConwayBasicCell(
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
         names=[('SYSTEM', 0),
-               ('TRANSMISSIONS', 1),
+               ('PARAMS', 1),
                ('STATE', 2),
                ('NEIGHBOUR_INITIAL_STATES', 3),
                ('RESULTS', 4)])
 
-    def __init__(self, label, state):
-        super(ConwayBasicCell, self).__init__(label, "conways_cell.aplx")
+    def __init__(self, label, state, constraints=[]):
+        super(ConwayBasicCell, self).__init__(
+            label,
+            "conways_cell.aplx",
+            constraints=constraints
+        )
+
+        ConwayBasicCell._ALL_VERTICES += 1
 
         # app specific data items
         self._state = bool(state)
@@ -79,8 +90,8 @@ class ConwayBasicCell(
 
         # reserve memory regions
         spec.reserve_memory_region(
-            region=self.DATA_REGIONS.TRANSMISSIONS.value,
-            size=self.TRANSMISSION_DATA_SIZE, label="inputs")
+            region=self.DATA_REGIONS.PARAMS.value,
+            size=self.PARAMS_DATA_SIZE, label="params")
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.STATE.value,
             size=self.STATE_DATA_SIZE, label="state")
@@ -130,9 +141,29 @@ class ConwayBasicCell(
             self, self.PARTITION_ID)
 
         spec.switch_write_focus(
-            region=self.DATA_REGIONS.TRANSMISSIONS.value)
+            region=self.DATA_REGIONS.PARAMS.value)
         spec.write_value(0 if key is None else 1)
         spec.write_value(0 if key is None else key)
+
+        max_offset =  machine_time_step * time_scale_factor \
+                   // ConwayBasicCell._MAX_OFFSET_DENOMINATOR
+
+        offset = int(
+              math.ceil(max_offset / ConwayBasicCell._ALL_VERTICES)
+            * ConwayBasicCell._INSTANCE_COUNTER
+        )
+
+        spec.write_value(offset)
+
+        ConwayBasicCell._INSTANCE_COUNTER += 1
+
+        """
+        print("{}: ALL: {}, COUNTER: {}".format(
+            self.label,
+            ConwayBasicCell._ALL_VERTICES,
+            ConwayBasicCell._INSTANCE_COUNTER
+        ))
+        """
 
         # write state value
         spec.switch_write_focus(
@@ -176,7 +207,7 @@ class ConwayBasicCell(
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
-        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.TRANSMISSION_DATA_SIZE +
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE +
                        self.STATE_DATA_SIZE +
                        self.NEIGHBOUR_INITIAL_STATES_SIZE +
                        recording_utilities.get_recording_header_size(1) +

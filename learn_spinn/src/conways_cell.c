@@ -56,7 +56,7 @@ uint cpsr = 0;
 //! human readable definitions of each region in SDRAM
 typedef enum regions_e {
     SYSTEM_REGION,
-    TRANSMISSIONS,
+    PARAMS,
     STATE,
     NEIGHBOUR_INITIAL_STATES,
     RECORDED_DATA
@@ -77,10 +77,11 @@ typedef enum states_values {
 } states_values;
 
 //! definitions of each element in the transmission region
-typedef struct transmission_region {
+typedef struct params_region {
     uint32_t has_key;
     uint32_t my_key;
-} transmission_region_t;
+    uint32_t timer_offset;
+} params_region_t;
 
 //! definitions of each element in the initial state region
 typedef struct state {
@@ -92,6 +93,11 @@ typedef struct neighbour_states {
     uint32_t alive_states;
     uint32_t dead_states;
 } neighbour_states_t;
+
+
+// pointer to sdram region containing the parameters of the conway
+// cell
+params_region_t *params_sdram;
 
 
 /****f* conways.c/receive_data
@@ -165,14 +171,14 @@ void send_state(void) { // {{{
     dead_states_recieved_this_tick = 0;
 
     // send my new state to the simulation neighbours
-    log_debug("sending my state of %d via multicast with key %d",
+    log_info("sending my state of %d via multicast with key %d",
 	    my_state, my_key);
 
     while (!spin1_send_mc_packet(my_key, my_state, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
 
-    log_debug("sent my state via multicast");
+    log_info("sent my state via multicast");
 } // }}}
 
 void next_state(void) { // {{{
@@ -223,13 +229,14 @@ void update(uint ticks, uint b) { // {{{
     }
 
     if (time == 0) {
-        next_state();
+        log_info("Send my first state!");
+
+        //next_state();
         send_state();
 
         // ????
-        recording_record(0, &my_state, 4);
+        //recording_record(0, &my_state, 4);
 
-        log_debug("Send my first state!");
     } else {
         read_input_buffer();
 
@@ -243,9 +250,9 @@ void update(uint ticks, uint b) { // {{{
         send_state();
 
         // ???
-        recording_record(0, &my_state, 4);
+        //recording_record(0, &my_state, 4);
 
-        recording_do_timestep_update(time);
+        //recording_do_timestep_update(time);
     }
 } // }}}
 
@@ -280,16 +287,16 @@ static bool initialize(uint32_t *timer_period) { // {{{
     }
 
     // initialise transmission keys
-    transmission_region_t *transmission_sdram =
-	    data_specification_get_region(TRANSMISSIONS, data);
-    if (!transmission_sdram->has_key) {
+    params_sdram = data_specification_get_region(PARAMS, data);
+    if (!params_sdram->has_key) {
         log_error(
         	"this conways cell can't affect anything, deduced as an error,"
         	"please fix the application fabric and try again");
         return false;
     }
-    my_key = transmission_sdram->my_key;
+    my_key = params_sdram->my_key;
     log_info("my key is %d", my_key);
+    log_info("my offset is %d", params_sdram->timer_offset);
 
     // read my state
     state_t *state_sdram = data_specification_get_region(STATE, data);
@@ -310,11 +317,17 @@ static bool initialize(uint32_t *timer_period) { // {{{
     }
     log_info("input_buffer initialised");
 
-    bool success = recording_initialize(
-	    data_specification_get_region(RECORDED_DATA, data),
-	    &recording_flags);
+    void *rec_region = data_specification_get_region(RECORDED_DATA, data);
+
     log_info("Recording flags = 0x%08x", recording_flags);
+    bool success = recording_initialize(
+	    &rec_region,
+      //data_specification_get_region(RECORDED_DATA, data),
+	    &recording_flags);
+
+
     return success;
+    return true;
 } // }}}
 
 /****f* conways.c/c_main
@@ -341,8 +354,10 @@ void c_main(void) { // {{{
     }
 
     // set timer tick value to configured value
-    log_info("setting timer to execute every %d microseconds", timer_period);
-    spin1_set_timer_tick(timer_period);
+    log_info("setting timer to execute every %d microseconds with an
+      offset of %d", timer_period, params_sdram->timer_offset);
+    spin1_set_timer_tick_and_phase( timer_period
+                                  , params_sdram->timer_offset );
 
     // register callbacks
     spin1_callback_on(MCPL_PACKET_RECEIVED, receive_data, MC_PACKET);
