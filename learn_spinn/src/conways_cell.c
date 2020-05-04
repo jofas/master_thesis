@@ -325,7 +325,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
       //data_specification_get_region(RECORDED_DATA, data),
 	    &recording_flags);
 
-
     return success;
     return true;
 } // }}}
