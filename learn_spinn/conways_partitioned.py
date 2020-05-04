@@ -82,7 +82,7 @@ def main():
     labels = [cc.label for cc in vertices.flatten()]
 
     conn = LiveEventConnection(
-       streamer.label, receive_labels=labels, local_port=19999,
+       streamer.label, receive_labels=labels, local_port=22222,#19999,
        machine_vertices = True
     )
 
@@ -208,9 +208,9 @@ def add_lpg_machine_vertex(label):
 
 
 def add_db_sock():
-    db_notify_port = 19999
-    db_notify_host = "localhost" #"192.168.2.200"
-    db_ack_port = None
+    db_notify_port = 22222#None#19999
+    db_notify_host = "localhost"
+    db_ack_port = 19999#None
 
     database_socket = SocketAddress(
             listen_port=db_ack_port,
