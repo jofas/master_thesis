@@ -59,6 +59,9 @@ Y_SIZE = 5
 
 n_chips = (X_SIZE * Y_SIZE) // 15
 
+NOTIFY_PORT = 22222
+ACK_PORT = 19999
+HOST = "localhost"
 
 def main():
     # set up the front end and ask for the detected machines dimensions
@@ -82,7 +85,7 @@ def main():
     labels = [cc.label for cc in vertices.flatten()]
 
     conn = LiveEventConnection(
-       streamer.label, receive_labels=labels, local_port=22222,#19999,
+       streamer.label, receive_labels=labels, local_port=ACK_PORT,
        machine_vertices = True
     )
 
@@ -181,11 +184,9 @@ def add_cc_machine_vertices(): # {{{
 
 
 def add_lpg_machine_vertex(label):
-    # some wrong lpg config???
-
     args = LivePacketGatherParameters(
-        port = 19999,
-        hostname = "localhost",
+        port = ACK_PORT,
+        hostname = HOST,
         strip_sdp = True,
         message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
         use_payload_prefix = False,
@@ -194,12 +195,7 @@ def add_lpg_machine_vertex(label):
     )
 
     streamer = LivePacketGatherMachineVertex(
-        args, label,
-        #, port=19995, hostname="localhost", strip_sdp=True,
-        #message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
-        #use_payload_prefix=False,
-        constraints=[ChipAndCoreConstraint(x=0, y=0)],
-        #number_of_packets_sent_per_time_step=49,
+        args, label, constraints=[ChipAndCoreConstraint(x=0, y=0)],
     )
 
     front_end.add_machine_vertex_instance(streamer)
@@ -208,14 +204,10 @@ def add_lpg_machine_vertex(label):
 
 
 def add_db_sock():
-    db_notify_port = 22222#None#19999
-    db_notify_host = "localhost"
-    db_ack_port = 19999#None
-
     database_socket = SocketAddress(
-            listen_port=db_ack_port,
-            notify_host_name=db_notify_host,
-            notify_port_no=db_notify_port)
+            listen_port=ACK_PORT,
+            notify_host_name=HOST,
+            notify_port_no=NOTIFY_PORT)
 
     get_simulator().add_socket_address(database_socket)
 
