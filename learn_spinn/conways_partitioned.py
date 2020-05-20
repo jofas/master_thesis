@@ -43,12 +43,6 @@ import numpy as np
 
 import csv
 
-def to_askii(bool):
-    return "X" if bool else "O"
-
-arr_to_askii = np.vectorize(to_askii, otypes=[np.str])
-
-
 active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 
 runtime = 50
@@ -64,7 +58,6 @@ ACK_PORT = 19999
 HOST = "localhost"
 
 def main():
-    # set up the front end and ask for the detected machines dimensions
     front_end.setup(
         n_chips_required=n_chips,
         model_binary_folder=os.path.dirname(__file__),
@@ -85,7 +78,7 @@ def main():
     labels = [cc.label for cc in vertices.flatten()]
 
     conn = LiveEventConnection(
-       streamer.label, receive_labels=labels, local_port=ACK_PORT,
+       streamer.label, receive_labels=labels, local_port=NOTIFY_PORT,
        machine_vertices = True
     )
 
@@ -94,25 +87,10 @@ def main():
 
     for label in labels: conn.add_receive_callback(label, cb)
 
-    # run the simulation
     front_end.run(runtime)
 
-    # get recorded data
-    #recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
+    #extract_and_process_data()
 
-    # get the data per vertex
-    #for x in range(0, X_SIZE):
-    #    for y in range(0, Y_SIZE):
-    #        recorded_data[x, y, :] = vertices[x][y].get_data(
-    #            front_end.buffer_manager(),
-    #            front_end.placements().get_placement_of_vertex(vertices[x][y]))
-
-
-    #export_data(recorded_data)
-    #check_correctness(recorded_data)
-    #visualize_conways(recorded_data)
-
-    # clear the machine
     front_end.stop()
     conn.close()
 
@@ -150,14 +128,6 @@ def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
 # }}}
 
 
-def check_board_size(): # {{{
-    cores = front_end.get_number_of_available_cores_on_machine()
-
-    if cores <= (X_SIZE * Y_SIZE):
-        raise KeyError("Don't have enough cores to run simulation")
-# }}}
-
-
 def add_cc_machine_vertices(): # {{{
     vertices = np.array([[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)])
 
@@ -167,7 +137,7 @@ def add_cc_machine_vertices(): # {{{
                 vert = ConwayBasicCell(
                     "cell_{}".format((x * X_SIZE) + y),
                     (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
-                    constraints=[ChipAndCoreConstraint(x=1, y=1)],
+                    constraints=[ChipAndCoreConstraint(x=0, y=1)],
                 )
             else:
                 vert = ConwayBasicCell(
@@ -175,6 +145,14 @@ def add_cc_machine_vertices(): # {{{
                     (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
                     constraints=[ChipAndCoreConstraint(x=1, y=0)],
                 )
+
+            """
+            vert = ConwayBasicCell(
+                "cell_{}".format((x * X_SIZE) + y),
+                (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
+                constraints=[ChipAndCoreConstraint(x=1, y=0)],
+            )
+            """
 
             front_end.add_machine_vertex_instance(vert)
             vertices[x, y] = vert
@@ -212,7 +190,28 @@ def add_db_sock():
     get_simulator().add_socket_address(database_socket)
 
 
+def extract_and_process_data(visualize=False, export=False):
+    # get recorded data
+    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
+
+    # get the data per vertex
+    for x in range(0, X_SIZE):
+        for y in range(0, Y_SIZE):
+            recorded_data[x, y, :] = vertices[x][y].get_data(
+                front_end.buffer_manager(),
+                front_end.placements().get_placement_of_vertex(vertices[x][y]))
+
+
+    if export: export_data(recorded_data)
+
+    check_correctness(recorded_data)
+
+    if visualize: visualize_conways(recorded_data)
+
+
 def visualize_conways(data):
+    arr_to_askii = np.vectorize(lambda x: "X" if x else "O", otypes=[np.str])
+
     data = arr_to_askii(data)
 
     for time in range(0, runtime):
@@ -242,6 +241,14 @@ def import_data():
     with open("test.csv", "r") as f:
         r = csv.reader(f)
         return np.array([row for row in r], dtype=np.int32)
+
+
+def check_board_size(): # {{{
+    cores = front_end.get_number_of_available_cores_on_machine()
+
+    if cores <= (X_SIZE * Y_SIZE):
+        raise KeyError("Don't have enough cores to run simulation")
+# }}}
 
 
 if __name__ == "__main__":
