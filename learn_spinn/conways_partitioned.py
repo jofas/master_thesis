@@ -26,6 +26,9 @@ import spinnaker_graph_front_end as front_end
 from spinn_front_end_common.utilities.connections import \
     LiveEventConnection
 
+# 19999
+from spinn_front_end_common.utilities.constants import NOTIFY_PORT
+
 from spinn_front_end_common.utilities.globals_variables import \
     get_simulator
 
@@ -48,14 +51,13 @@ active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 runtime = 50
 machine_time_step = 1000
 
-X_SIZE = 5
-Y_SIZE = 5
+X_SIZE = 4
+Y_SIZE = 4
 
 n_chips = (X_SIZE * Y_SIZE) // 15
 
-NOTIFY_PORT = 22222
-ACK_PORT = 19999
-HOST = "localhost"
+ACK_PORT = 22222
+HOST = "127.0.0.1"
 
 def main():
     front_end.setup(
@@ -78,8 +80,7 @@ def main():
     labels = [cc.label for cc in vertices.flatten()]
 
     conn = LiveEventConnection(
-       streamer.label, receive_labels=labels, local_port=NOTIFY_PORT,
-       machine_vertices = True
+       streamer.label, receive_labels=labels, machine_vertices = True
     )
 
     def cb(label, time, stuff):
@@ -177,15 +178,15 @@ def add_lpg_machine_vertex(label):
     )
 
     front_end.add_machine_vertex_instance(streamer)
-
     return streamer
 
 
 def add_db_sock():
     database_socket = SocketAddress(
-            listen_port=ACK_PORT,
-            notify_host_name=HOST,
-            notify_port_no=NOTIFY_PORT)
+        listen_port=ACK_PORT,
+        notify_host_name=HOST,
+        notify_port_no=NOTIFY_PORT
+    )
 
     get_simulator().add_socket_address(database_socket)
 
