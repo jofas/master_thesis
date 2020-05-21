@@ -89,7 +89,7 @@ def main():
     for label in labels: conn.add_receive_callback(label, cb)
 
     #front_end.run(runtime)
-    front_end.run_until_complete(runtime + 10)#runtime)
+    front_end.run_until_complete()#runtime + 10)#runtime)
     #front_end.run_until_complete()
 
     #extract_and_process_data()

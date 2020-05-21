@@ -178,7 +178,9 @@ void update(uint ticks, uint b) { // {{{
         simulation_handle_pause_resume(NULL);
         log_info("Simulation complete.");
         // switch to state where host is ready to read
-        simulation_ready_to_read();
+        //simulation_ready_to_read();
+
+        sark_cpu_state(CPU_STATE_EXIT);
         return;
     }
 
@@ -222,7 +224,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
     // Get the timing details and set up the simulation interface
     if (!simulation_initialise(
             data_specification_get_region(SYSTEM_REGION, data),
-            APPLICATION_NAME_HASH, timer_period, &simulation_ticks,
+            APPLICATION_NAME_HASH, timer_period, NULL,//&simulation_ticks,
             NULL, NULL, SDP, DMA)) {
         log_error("failed to set up the simulation interface");
         return false;
