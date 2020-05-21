@@ -164,7 +164,7 @@ def add_cc_machine_vertices(): # {{{
                 vert = ConwayBasicCell(
                     "cell_{}".format((x * X_SIZE) + y),
                     (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
-                    constraints=[ChipAndCoreConstraint(x=1, y=1)],
+                    constraints=[ChipAndCoreConstraint(x=0, y=1)],
                 )
             else:
                 vert = ConwayBasicCell(
