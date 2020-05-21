@@ -88,7 +88,9 @@ def main():
 
     for label in labels: conn.add_receive_callback(label, cb)
 
-    front_end.run(runtime)
+    #front_end.run(runtime)
+    front_end.run_until_complete(runtime)
+    #front_end.run_until_complete()
 
     #extract_and_process_data()
 
@@ -130,7 +132,7 @@ def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
 
 
 def add_cc_machine_vertices(): # {{{
-    vertices = np.array([[None for _ in range(X_SIZE)] for _ in range(Y_SIZE)])
+    vertices = np.array([[None for _ in range(Y_SIZE)] for _ in range(X_SIZE)])
 
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):

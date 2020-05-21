@@ -224,9 +224,22 @@ void update(uint ticks, uint b) { // {{{
 
         // switch to state where host is ready to read
         simulation_ready_to_read();
-
         return;
     }
+
+    /*
+    if ((time >= simulation_ticks) && (infinite_run == TRUE)) {
+      // Finalise any recordings that are in progress, writing back the final
+      // amounts of samples recorded to SDRAM
+      if (recording_flags > 0) {
+          log_info("updating recording regions");
+          recording_finalise();
+      }
+
+      sark_cpu_state(CPU_STATE_WAIT);
+      log_info("Set CPU state to WAIT");
+    }
+    */
 
     if (time == 0) {
         log_info("Send my first state!");
@@ -352,7 +365,6 @@ void c_main(void) { // {{{
         rt_error(RTE_SWERR);
     }
 
-    // set timer tick value to configured value
     log_info("setting timer to execute every %d microseconds with an
       offset of %d", timer_period, params_sdram->timer_offset);
     spin1_set_timer_tick_and_phase( timer_period
