@@ -45,15 +45,13 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     _INSTANCE_COUNTER = 0
     _ALL_VERTICES = 0
 
-    PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD  # has key and key
-    STATE_DATA_SIZE = BYTES_PER_WORD  # 1 or 2 based off dead or alive
+    PARAMS_DATA_SIZE = 4 * BYTES_PER_WORD  # has key and key
 
     # Regions for populations
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
         names=[('SYSTEM', 0),
                ('PARAMS', 1),
-               ('STATE', 2),
                ])
 
     def __init__(self, label, state, constraints=[]):
@@ -76,6 +74,7 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
             self, spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor,
             data_n_time_steps):
+
         # Generate the system data region for simulation .c requirements
         generate_system_data_region(spec, self.DATA_REGIONS.SYSTEM.value,
                                     self, machine_time_step, time_scale_factor)
@@ -84,9 +83,6 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.PARAMS.value,
             size=self.PARAMS_DATA_SIZE, label="params")
-        spec.reserve_memory_region(
-            region=self.DATA_REGIONS.STATE.value,
-            size=self.STATE_DATA_SIZE, label="state")
 
         # check got right number of keys and edges going into me
         partitions = \
@@ -141,8 +137,6 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
         """
 
         # write state value
-        spec.switch_write_focus(
-            region=self.DATA_REGIONS.STATE.value)
         spec.write_value(int(bool(self._state)))
 
         # End-of-Spec:
@@ -168,8 +162,7 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
-        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE +
-                       self.STATE_DATA_SIZE )
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE)
         per_timestep_sdram = 0
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))

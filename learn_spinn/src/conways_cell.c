@@ -26,13 +26,12 @@
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
+uint32_t my_state = 0;
 
 /*! buffer used to store spikes */
 static circular_buffer input_buffer;
 static uint32_t current_payload;
 
-//! conways specific data items
-uint32_t my_state = 0;
 int alive_states_recieved_this_tick = 0;
 int dead_states_recieved_this_tick = 0;
 
@@ -52,7 +51,6 @@ uint cpsr = 0;
 typedef enum regions_e {
     SYSTEM_REGION,
     PARAMS,
-    STATE,
 } regions_e;
 
 //! values for the priority for each callback
@@ -74,40 +72,13 @@ typedef struct params_region {
     uint32_t has_key;
     uint32_t my_key;
     uint32_t timer_offset;
+    uint32_t my_state;
 } params_region_t;
-
-//! definitions of each element in the initial state region
-typedef struct state {
-    uint32_t initial_state;
-} state_t;
-
-//! definitions of each element in the initial neighbour state region
-typedef struct neighbour_states {
-    uint32_t alive_states;
-    uint32_t dead_states;
-} neighbour_states_t;
-
 
 // pointer to sdram region containing the parameters of the conway
 // cell
 params_region_t *params_sdram;
 
-
-/****f* conways.c/receive_data
- *
- * SUMMARY
- *  This function is used as a callback for packet received events.
- * receives data from 8 neighbours and updates the states params
- *
- * SYNOPSIS
- *  void receive_data (uint key, uint payload)
- *
- * INPUTS
- *   uint key: packet routing key - provided by the RTS
- *   uint payload: packet payload - provided by the RTS
- *
- * SOURCE
- */
 void receive_data(uint key, uint payload) { // {{{
     use(key);
     //log_info("the key i've received is %d\n", key);
@@ -230,9 +201,6 @@ void update(uint ticks, uint b) { // {{{
     }
 } // }}}
 
-//! \brief this method is to catch strange behaviour
-//! \param[in] key: the key being received
-//! \param[in] unknown: second arg with no state. set to zero by default
 void receive_data_void(uint key, uint unknown) { // {{{
     use(key);
     use(unknown);
@@ -262,19 +230,19 @@ static bool initialize(uint32_t *timer_period) { // {{{
 
     // initialise transmission keys
     params_sdram = data_specification_get_region(PARAMS, data);
+
     if (!params_sdram->has_key) {
         log_error(
         	"this conways cell can't affect anything, deduced as an error,"
         	"please fix the application fabric and try again");
         return false;
     }
+
     my_key = params_sdram->my_key;
+    my_state = params_sdram->my_state;
+
     log_info("my key is %d", my_key);
     log_info("my offset is %d", params_sdram->timer_offset);
-
-    // read my state
-    state_t *state_sdram = data_specification_get_region(STATE, data);
-    my_state = state_sdram->initial_state;
     log_info("my initial state is %d", my_state);
 
     // initialise my input_buffer for receiving packets
@@ -288,17 +256,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
     return true;
 } // }}}
 
-/****f* conways.c/c_main
- *
- * SUMMARY
- *  This function is called at application start-up.
- *  It is used to register event callbacks and begin the simulation.
- *
- * SYNOPSIS
- *  int c_main()
- *
- * SOURCE
- */
 void c_main(void) { // {{{
     log_info("starting conway_cell");
 
@@ -313,6 +270,7 @@ void c_main(void) { // {{{
 
     log_info("setting timer to execute every %d microseconds with an
       offset of %d", timer_period, params_sdram->timer_offset);
+
     spin1_set_timer_tick_and_phase( timer_period
                                   , params_sdram->timer_offset );
 
