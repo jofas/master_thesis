@@ -47,8 +47,6 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
 
     PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD  # has key and key
     STATE_DATA_SIZE = BYTES_PER_WORD  # 1 or 2 based off dead or alive
-    # alive states, dead states
-    NEIGHBOUR_INITIAL_STATES_SIZE = 2 * BYTES_PER_WORD
 
     # Regions for populations
     DATA_REGIONS = Enum(
@@ -56,7 +54,6 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
         names=[('SYSTEM', 0),
                ('PARAMS', 1),
                ('STATE', 2),
-               ('NEIGHBOUR_INITIAL_STATES', 3),
                ])
 
     def __init__(self, label, state, constraints=[]):
@@ -90,9 +87,6 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.STATE.value,
             size=self.STATE_DATA_SIZE, label="state")
-        spec.reserve_memory_region(
-            region=self.DATA_REGIONS.NEIGHBOUR_INITIAL_STATES.value,
-            size=self.NEIGHBOUR_INITIAL_STATES_SIZE, label="neighour_states")
 
         # check got right number of keys and edges going into me
         partitions = \
@@ -151,20 +145,6 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
             region=self.DATA_REGIONS.STATE.value)
         spec.write_value(int(bool(self._state)))
 
-        # write neighbours data state
-        spec.switch_write_focus(
-            region=self.DATA_REGIONS.NEIGHBOUR_INITIAL_STATES.value)
-        alive = 0
-        dead = 0
-        for edge in edges:
-            if edge.pre_vertex.state:
-                alive += 1
-            else:
-                dead += 1
-
-        spec.write_value(alive)
-        spec.write_value(dead)
-
         # End-of-Spec:
         spec.end_specification()
 
@@ -189,8 +169,7 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE +
-                       self.STATE_DATA_SIZE +
-                       self.NEIGHBOUR_INITIAL_STATES_SIZE)
+                       self.STATE_DATA_SIZE )
         per_timestep_sdram = 0
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))

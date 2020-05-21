@@ -53,7 +53,6 @@ typedef enum regions_e {
     SYSTEM_REGION,
     PARAMS,
     STATE,
-    NEIGHBOUR_INITIAL_STATES,
 } regions_e;
 
 //! values for the priority for each callback
@@ -256,7 +255,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
     if (!simulation_initialise(
             data_specification_get_region(SYSTEM_REGION, data),
             APPLICATION_NAME_HASH, timer_period, &simulation_ticks,
-            NULL, &time, SDP, DMA)) {
+            NULL, NULL, SDP, DMA)) {
         log_error("failed to set up the simulation interface");
         return false;
     }
@@ -277,12 +276,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
     state_t *state_sdram = data_specification_get_region(STATE, data);
     my_state = state_sdram->initial_state;
     log_info("my initial state is %d", my_state);
-
-    // read neighbour states for initial tick
-    neighbour_states_t *neigbhour_state_sdram =
-	    data_specification_get_region(NEIGHBOUR_INITIAL_STATES, data);
-    alive_states_recieved_this_tick = neigbhour_state_sdram->alive_states;
-    dead_states_recieved_this_tick = neigbhour_state_sdram->dead_states;
 
     // initialise my input_buffer for receiving packets
     input_buffer = circular_buffer_initialize(256);
