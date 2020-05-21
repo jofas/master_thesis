@@ -30,16 +30,12 @@ from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
 from spinn_front_end_common.interface.buffer_management.buffer_models import (
     AbstractReceiveBuffersToHost)
-from spinn_front_end_common.interface.buffer_management import (
-    recording_utilities)
 from spinnaker_graph_front_end.utilities import SimulatorVertex
 from spinnaker_graph_front_end.utilities.data_utils import (
     generate_system_data_region)
 
 
-class ConwayBasicCell(
-        SimulatorVertex, MachineDataSpecableVertex,
-        AbstractReceiveBuffersToHost):
+class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     """ Cell which represents a cell within the 2d fabric
     """
 
@@ -53,7 +49,6 @@ class ConwayBasicCell(
     STATE_DATA_SIZE = BYTES_PER_WORD  # 1 or 2 based off dead or alive
     # alive states, dead states
     NEIGHBOUR_INITIAL_STATES_SIZE = 2 * BYTES_PER_WORD
-    RECORDING_ELEMENT_SIZE = STATE_DATA_SIZE  # A recording of the state
 
     # Regions for populations
     DATA_REGIONS = Enum(
@@ -62,7 +57,7 @@ class ConwayBasicCell(
                ('PARAMS', 1),
                ('STATE', 2),
                ('NEIGHBOUR_INITIAL_STATES', 3),
-               ('RESULTS', 4)])
+               ])
 
     def __init__(self, label, state, constraints=[]):
         super(ConwayBasicCell, self).__init__(
@@ -98,17 +93,6 @@ class ConwayBasicCell(
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.NEIGHBOUR_INITIAL_STATES.value,
             size=self.NEIGHBOUR_INITIAL_STATES_SIZE, label="neighour_states")
-        spec.reserve_memory_region(
-            region=self.DATA_REGIONS.RESULTS.value,
-            size=recording_utilities.get_recording_header_size(1))
-
-        # get recorded buffered regions sorted
-        spec.switch_write_focus(self.DATA_REGIONS.RESULTS.value)
-        spec.write_array(recording_utilities.get_recording_header_array(
-            [self.RECORDING_ELEMENT_SIZE * data_n_time_steps]))
-
-
-        # TODO: here add second partition
 
         # check got right number of keys and edges going into me
         partitions = \
@@ -133,10 +117,6 @@ class ConwayBasicCell(
                     " please fix.")
 
         # write key needed to transmit with
-
-        # here get a scond key for the vertex, so I can connect it
-        # with the streaming output
-
         key = routing_info.get_first_key_from_pre_vertex(
             self, self.PARTITION_ID)
 
@@ -145,6 +125,7 @@ class ConwayBasicCell(
         spec.write_value(0 if key is None else 1)
         spec.write_value(0 if key is None else key)
 
+        # compute offset for setting phase of conways cell
         max_offset =  machine_time_step * time_scale_factor \
                    // ConwayBasicCell._MAX_OFFSET_DENOMINATOR
 
@@ -209,10 +190,8 @@ class ConwayBasicCell(
     def resources_required(self):
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE +
                        self.STATE_DATA_SIZE +
-                       self.NEIGHBOUR_INITIAL_STATES_SIZE +
-                       recording_utilities.get_recording_header_size(1) +
-                       recording_utilities.get_recording_data_constant_size(1))
-        per_timestep_sdram = self.RECORDING_ELEMENT_SIZE
+                       self.NEIGHBOUR_INITIAL_STATES_SIZE)
+        per_timestep_sdram = 0
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
 
@@ -222,12 +201,3 @@ class ConwayBasicCell(
 
     def __repr__(self):
         return self.label
-
-    @overrides(AbstractReceiveBuffersToHost.get_recorded_region_ids)
-    def get_recorded_region_ids(self):
-        return [0]
-
-    @overrides(AbstractReceiveBuffersToHost.get_recording_region_base_address)
-    def get_recording_region_base_address(self, txrx, placement):
-        return locate_memory_region_for_placement(
-            placement, self.DATA_REGIONS.RESULTS.value, txrx)

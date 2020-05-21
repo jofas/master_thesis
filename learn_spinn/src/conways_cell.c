@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! imports
 #include "spin1_api.h"
 #include "common-typedefs.h"
 #include <data_specification.h>
 #include <simulation.h>
 #include <debug.h>
 #include <circular_buffer.h>
-#include <recording.h>
+
+#define STEPS 50
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
@@ -41,11 +41,9 @@ uint32_t size_written = 0;
 
 //! control value, which says how many timer ticks to run for before exiting
 static uint32_t simulation_ticks = 0;
+
 static uint32_t time = 0;
 data_specification_metadata_t *data = NULL;
-
-//! The recording flags
-static uint32_t recording_flags = 0;
 
 //! int as a bool to represent if this simulation should run forever
 static uint32_t infinite_run;
@@ -59,7 +57,6 @@ typedef enum regions_e {
     PARAMS,
     STATE,
     NEIGHBOUR_INITIAL_STATES,
-    RECORDED_DATA
 } regions_e;
 
 //! values for the priority for each callback
@@ -209,47 +206,20 @@ void update(uint ticks, uint b) { // {{{
 
     // check that the run time hasn't already elapsed and thus needs to be
     // killed
-    if ((infinite_run != TRUE) && (time >= simulation_ticks)) {
+    if ((infinite_run != TRUE) && (time >= STEPS)) {
         // fall into the pause resume mode of operating
         simulation_handle_pause_resume(NULL);
-
-        // Finalise any recordings that are in progress, writing back the final
-        // amounts of samples recorded to SDRAM
-        if (recording_flags > 0) {
-            log_info("updating recording regions");
-            recording_finalise();
-        }
-
         log_info("Simulation complete.");
-
         // switch to state where host is ready to read
         simulation_ready_to_read();
         return;
     }
-
-    /*
-    if ((time >= simulation_ticks) && (infinite_run == TRUE)) {
-      // Finalise any recordings that are in progress, writing back the final
-      // amounts of samples recorded to SDRAM
-      if (recording_flags > 0) {
-          log_info("updating recording regions");
-          recording_finalise();
-      }
-
-      sark_cpu_state(CPU_STATE_WAIT);
-      log_info("Set CPU state to WAIT");
-    }
-    */
 
     if (time == 0) {
         log_info("Send my first state!");
 
         //next_state();
         send_state();
-
-        // ????
-        //recording_record(0, &my_state, 4);
-
     } else {
         read_input_buffer();
 
@@ -261,11 +231,6 @@ void update(uint ticks, uint b) { // {{{
         do_safety_check();
 
         send_state();
-
-        // ???
-        //recording_record(0, &my_state, 4);
-
-        //recording_do_timestep_update(time);
     }
 } // }}}
 
@@ -330,15 +295,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
     }
     log_info("input_buffer initialised");
 
-    void *rec_region = data_specification_get_region(RECORDED_DATA, data);
-
-    log_info("Recording flags = 0x%08x", recording_flags);
-    bool success = recording_initialize(
-	    &rec_region,
-      //data_specification_get_region(RECORDED_DATA, data),
-	    &recording_flags);
-
-    return success;
     return true;
 } // }}}
 
