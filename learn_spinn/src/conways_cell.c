@@ -45,9 +45,6 @@ static uint32_t simulation_ticks = 0;
 static uint32_t time = 0;
 data_specification_metadata_t *data = NULL;
 
-//! int as a bool to represent if this simulation should run forever
-static uint32_t infinite_run;
-
 // value for turning on and off interrupts
 uint cpsr = 0;
 
@@ -206,7 +203,7 @@ void update(uint ticks, uint b) { // {{{
 
     // check that the run time hasn't already elapsed and thus needs to be
     // killed
-    if ((infinite_run != TRUE) && (time >= STEPS)) {
+    if (time >= STEPS) {
         // fall into the pause resume mode of operating
         simulation_handle_pause_resume(NULL);
         log_info("Simulation complete.");
@@ -259,7 +256,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
     if (!simulation_initialise(
             data_specification_get_region(SYSTEM_REGION, data),
             APPLICATION_NAME_HASH, timer_period, &simulation_ticks,
-            &infinite_run, &time, SDP, DMA)) {
+            NULL, &time, SDP, DMA)) {
         log_error("failed to set up the simulation interface");
         return false;
     }
