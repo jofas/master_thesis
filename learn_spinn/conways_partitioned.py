@@ -83,19 +83,39 @@ def main():
        streamer.label, receive_labels=labels, machine_vertices = True
     )
 
-    def cb(label, time, stuff):
-        print("received: {}, {}, {}".format(label, time, stuff))
+    # this stuff is needed for processing the received states
+    receive_counter = {l : 0 for l in labels}
 
-    for label in labels: conn.add_receive_callback(label, cb)
+    map_label_to_pos = {}
+    for x in range(0, X_SIZE):
+        for y in range(0, Y_SIZE):
+            map_label_to_pos[vertices[x, y].label] = (x, y)
+
+    recorded_states = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
+
+    def receive_state_callback(label, _, state): # {{{
+        z    = receive_counter[label]
+        x, y = map_label_to_pos[label]
+
+        recorded_states[x, y, z] = state
+
+        receive_counter[label] += 1
+
+        print("received: {} at timestep {}: {}".format(label, z + 1, state))
+    # }}}
+
+    for label in labels:
+        conn.add_receive_callback(label, receive_state_callback)
 
     #front_end.run(runtime)
     front_end.run_until_complete(runtime)
     #front_end.run_until_complete()
 
-    #extract_and_process_data()
-
     front_end.stop()
     conn.close()
+
+    check_correctness(recorded_states)
+    #visualize_conways(recorded_states)
 
 
 def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
@@ -165,7 +185,7 @@ def add_cc_machine_vertices(): # {{{
 # }}}
 
 
-def add_lpg_machine_vertex(label):
+def add_lpg_machine_vertex(label): # {{{
     args = LivePacketGatherParameters(
         port = ACK_PORT,
         hostname = HOST,
@@ -173,7 +193,6 @@ def add_lpg_machine_vertex(label):
         message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
         use_payload_prefix = False,
         payload_as_time_stamps = False,
-        #number_of_packets_sent_per_time_step=49,
     )
 
     streamer = LivePacketGatherMachineVertex(
@@ -182,9 +201,10 @@ def add_lpg_machine_vertex(label):
 
     front_end.add_machine_vertex_instance(streamer)
     return streamer
+# }}}
 
 
-def add_db_sock():
+def add_db_sock(): # {{{
     database_socket = SocketAddress(
         listen_port=ACK_PORT,
         notify_host_name=HOST,
@@ -192,59 +212,50 @@ def add_db_sock():
     )
 
     get_simulator().add_socket_address(database_socket)
+# }}}
 
 
-def extract_and_process_data(visualize=False, export=False):
-    # get recorded data
-    recorded_data = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
-
-    # get the data per vertex
-    for x in range(0, X_SIZE):
-        for y in range(0, Y_SIZE):
-            recorded_data[x, y, :] = vertices[x][y].get_data(
-                front_end.buffer_manager(),
-                front_end.placements().get_placement_of_vertex(vertices[x][y]))
-
-
-    if export: export_data(recorded_data)
-
-    check_correctness(recorded_data)
-
-    if visualize: visualize_conways(recorded_data)
-
-
-def visualize_conways(data):
+def visualize_conways(data): # {{{
     arr_to_askii = np.vectorize(lambda x: "X" if x else "O", otypes=[np.str])
 
     data = arr_to_askii(data)
 
     for time in range(0, runtime):
         print("at time {}\n{}".format(
-            time, "".join([ "".join(data[:,y,time]) + "\n"
+            time + 1, "".join([ "".join(data[:,y,time]) + "\n"
                 for y in range(X_SIZE - 1, 0, -1)])
         ))
+# }}}
 
 
-def check_correctness(data):
+def check_correctness(data): # {{{
     generated_output = np.array([data[:,:,time].flatten()
         for time in range(0, runtime)])
 
     correct_output = import_data()
 
-    assert (correct_output == generated_output).all()
+    # I think correct_output is one farther up than generated_output
+    # so correct_output[:-1,:] should be equal to
+    # generated_output[1:,:] (removed the initial neighbor states from
+    # the conway's cell so the new simulation is one timestep behind
+    # the original program)
+    assert (correct_output[:-1,:] == generated_output[1:,:]).all()
+# }}}
 
 
-def export_data(data):
+def export_data(data): # {{{
     with open("test.csv", "w") as f:
         w = csv.writer(f)
         for time in range(0, runtime):
             w.writerow(data[:,:,time].flatten())
+# }}}
 
 
-def import_data():
+def import_data(): # {{{
     with open("test.csv", "r") as f:
         r = csv.reader(f)
         return np.array([row for row in r], dtype=np.int32)
+# }}}
 
 
 def check_board_size(): # {{{
