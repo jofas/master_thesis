@@ -51,8 +51,8 @@ active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 runtime = 50
 machine_time_step = 1000
 
-X_SIZE = 4
-Y_SIZE = 4
+X_SIZE = 7
+Y_SIZE = 7
 
 n_chips = (X_SIZE * Y_SIZE) // 15
 
@@ -89,7 +89,7 @@ def main():
     for label in labels: conn.add_receive_callback(label, cb)
 
     #front_end.run(runtime)
-    front_end.run_until_complete()#runtime + 10)#runtime)
+    front_end.run_until_complete(runtime)
     #front_end.run_until_complete()
 
     #extract_and_process_data()
@@ -136,6 +136,7 @@ def add_cc_machine_vertices(): # {{{
 
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
+            """
             if x * X_SIZE + y < 16:
                 vert = ConwayBasicCell(
                     "cell_{}".format((x * X_SIZE) + y),
@@ -152,10 +153,10 @@ def add_cc_machine_vertices(): # {{{
             """
             vert = ConwayBasicCell(
                 "cell_{}".format((x * X_SIZE) + y),
-                (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
-                constraints=[ChipAndCoreConstraint(x=1, y=0)],
+                #(x * X_SIZE + y) % 2 == 0,
+                (x, y) in active_states
+                #constraints=[ChipAndCoreConstraint(x=1, y=0)],
             )
-            """
 
             front_end.add_machine_vertex_instance(vert)
             vertices[x, y] = vert

@@ -178,9 +178,9 @@ void update(uint ticks, uint b) { // {{{
         simulation_handle_pause_resume(NULL);
         log_info("Simulation complete.");
         // switch to state where host is ready to read
-        //simulation_ready_to_read();
+        simulation_ready_to_read();
 
-        sark_cpu_state(CPU_STATE_EXIT);
+        //sark_cpu_state(CPU_STATE_EXIT);
         return;
     }
 
