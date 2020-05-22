@@ -112,10 +112,11 @@ def main():
     #front_end.run_until_complete()
 
     front_end.stop()
-    conn.close()
 
     check_correctness(recorded_states)
     #visualize_conways(recorded_states)
+
+    conn.close()
 
 
 def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
