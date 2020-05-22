@@ -70,13 +70,19 @@
 \bibliographystyle{plainnat}
 \bibpunct{(}{)}{;}{a}{,}{,}
 
-\begin{document}
+\newenvironment{declaration}
+{\centerline{\large\bf Declaration}\vspace{0.7ex}%
+  \bgroup\leftskip 20pt\rightskip 20pt\noindent\ignorespaces}%
+{\par\egroup\vskip 0.25ex}
+
 
 \def\title{Deep Learning on SpiNNaker}
 \def\author{Jonas Fassbender \\ \textit{jonas@fassbender.dev}}
 \date{}
 
-\newpage
+\ShortHeadings{Jonas Fassbender}{\title}
+
+\begin{document}
 
 % titlepage {{{
 \begin{titlepage}
@@ -154,6 +160,33 @@ Edinburgh, August 2020
 
 \pagenumbering{roman}
 
+% here thanks
+
+% declaration {{{
+\hspace{0pt}
+\vfill
+
+\begin{declaration}
+I declare that this dissertation was composed by myself, that the work
+contained herein is my own except where explicitly stated otherwise in
+the text, and that this work has not been submitted for any other
+degree or professional qualification except as specified.
+~\\
+~\\
+~\\
+\begin{tabu}{Xc}
+  &Jonas Fassbender \\
+  &August 2020
+\end{tabu}
+\end{declaration}
+
+\vfill
+\hspace{0pt}
+% }}}
+
+\newpage
+
+% abstract {{{
 \hspace{0pt}
 \vfill
 
@@ -162,6 +195,7 @@ Edinburgh, August 2020
 
 \vfill
 \hspace{0pt}
+% }}}
 
 \newpage
 
@@ -169,7 +203,33 @@ Edinburgh, August 2020
 
 \newpage
 
+% listoffigures
+
+% listoftables
+
 \pagenumbering{arabic}
+
+% fancy page (maybe above arabic -- depends on page numbers)
+
+\section{Introduction}
+
+\section{Background}
+
+\subsection{An Introduction to Deep Learning}
+
+\subsection{Computer Vision: ImageNet and the ILSVRC}
+
+\subsection{Benchmarking Deep Learning Systems: The MLPerf Benchmark}
+
+\subsection{SpiNNaker as a Neuromorphic Computer Architecture}
+
+\section{Deep Learning on SpiNNaker: SpiDNN}
+
+\section{Benchmark}
+
+\section{Discussion}
+
+\section{Conclusion}
 
 \bibliography{library.bib}
 \addcontentsline{toc}{section}{References}
