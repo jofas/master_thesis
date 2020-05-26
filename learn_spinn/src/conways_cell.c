@@ -180,7 +180,7 @@ void update(uint ticks, uint b) { // {{{
         // switch to state where host is ready to read
         simulation_ready_to_read();
 
-        //sark_cpu_state(CPU_STATE_EXIT);
+        //sark_cpu_state(CPU_STATE_WAIT);
         return;
     }
 

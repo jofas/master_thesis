@@ -18,6 +18,7 @@ import os
 from spinnman.messages.eieio import EIEIOType
 
 from pacman.model.graphs.machine import MachineEdge
+
 from pacman.model.constraints.placer_constraints import \
     ChipAndCoreConstraint
 
@@ -38,6 +39,9 @@ from spinn_front_end_common.utility_models import \
 from spinn_front_end_common.utilities.utility_objs import \
     LivePacketGatherParameters
 
+from spinn_front_end_common.interface.interface_functions import \
+    ApplicationFinisher
+
 from spinn_utilities.socket_address import SocketAddress
 
 from conways_basic_cell import ConwayBasicCell
@@ -45,6 +49,9 @@ from conways_basic_cell import ConwayBasicCell
 import numpy as np
 
 import csv
+
+from threading import Thread, Condition
+
 
 active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 
@@ -85,6 +92,7 @@ def main():
 
     # this stuff is needed for processing the received states
     receive_counter = {l : 0 for l in labels}
+    receive_counter["overall"] = 0
 
     map_label_to_pos = {}
     for x in range(0, X_SIZE):
@@ -93,6 +101,8 @@ def main():
 
     recorded_states = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
 
+    received_all = Condition()
+
     def receive_state_callback(label, _, state): # {{{
         z    = receive_counter[label]
         x, y = map_label_to_pos[label]
@@ -100,17 +110,47 @@ def main():
         recorded_states[x, y, z] = state
 
         receive_counter[label] += 1
+        receive_counter["overall"] += 1
 
-        print("received: {} at timestep {}: {}".format(label, z + 1, state))
+        #print("received: {} at timestep {}: {}".format(label, z + 1, state))
+
+        received_all.acquire()
+        if receive_counter["overall"] == len(labels) * 50:
+            print("FINISHING SIMULATION")
+            ApplicationFinisher()(
+                front_end._sim()._load_outputs["APPID"],
+                front_end.transceiver(),
+                front_end._sim()._load_outputs["ExecutableTypes"]
+            )
+            received_all.notify()
+        received_all.release()
     # }}}
 
     for label in labels:
         conn.add_receive_callback(label, receive_state_callback)
 
+    wait_till_sim_done = Condition()
+
+    """
+    def finalize():
+        received_all.wait()
+        print("SIMULATION DONE. SENDING SHUTDOWN REQUEST")
+
+        wait_till_sim_done.acquire()
+        wait_till_sim_done.notify()
+        wait_till_sim_done.release()
+
+    Thread(target=finalize).start()
+    """
+
+    front_end.run(None)
     #front_end.run(runtime)
-    front_end.run_until_complete(runtime)
+    #front_end.run_until_complete(runtime)
     #front_end.run_until_complete()
 
+    # here acquire some lock that is held by a different thread
+    print("FRONT END FINISHED. WAITING TO STOP")
+    received_all.wait()
     front_end.stop()
 
     check_correctness(recorded_states)
@@ -157,26 +197,9 @@ def add_cc_machine_vertices(): # {{{
 
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
-            """
-            if x * X_SIZE + y < 16:
-                vert = ConwayBasicCell(
-                    "cell_{}".format((x * X_SIZE) + y),
-                    (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
-                    constraints=[ChipAndCoreConstraint(x=0, y=1)],
-                )
-            else:
-                vert = ConwayBasicCell(
-                    "cell_{}".format((x * X_SIZE) + y),
-                    (x * X_SIZE + y) % 2 == 0, #(x, y) in active_states
-                    constraints=[ChipAndCoreConstraint(x=1, y=0)],
-                )
-
-            """
             vert = ConwayBasicCell(
                 "cell_{}".format((x * X_SIZE) + y),
-                #(x * X_SIZE + y) % 2 == 0,
                 (x, y) in active_states
-                #constraints=[ChipAndCoreConstraint(x=1, y=0)],
             )
 
             front_end.add_machine_vertex_instance(vert)
