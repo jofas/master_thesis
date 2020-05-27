@@ -129,20 +129,6 @@ def main():
     for label in labels:
         conn.add_receive_callback(label, receive_state_callback)
 
-    wait_till_sim_done = Condition()
-
-    """
-    def finalize():
-        received_all.wait()
-        print("SIMULATION DONE. SENDING SHUTDOWN REQUEST")
-
-        wait_till_sim_done.acquire()
-        wait_till_sim_done.notify()
-        wait_till_sim_done.release()
-
-    Thread(target=finalize).start()
-    """
-
     front_end.run(None)
     #front_end.run(runtime)
     #front_end.run_until_complete(runtime)
