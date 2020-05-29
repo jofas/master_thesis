@@ -141,13 +141,13 @@ The University of Edinburgh
 ~\\
 \begin{tabular}{rl}
   First supervisor: &Caoimhín Laoide-Kemp \\
-                    &EPCC \\
+                    &EPCC, University of Edinburgh \\
   &\\
   Second supervisor: &Dr Kevin Stratford \\
-                     &EPCC \\
+                     &EPCC, University of Edinburgh \\
   &\\
   Third supervisor: &Dr Alan Stokes \\
-                    &University of Manchester \\
+                    &APT, University of Manchester \\
 \end{tabular}
 ~\\
 ~\\
@@ -228,12 +228,49 @@ domains like particle physics, drug discovery, genomics or gaming
 Deep learning has become so ubiquitous that we are changing the
 way we build modern hardware to account for its computational demands.
 From the way edge devices like mobile phones or embedded systems are
-designed over modern CPUs to specialized hardware for deep learning
-models \citep{TODO}.
-Whole supercomputers are build solely for deep learning \citep{TODO}.
+build over modern CPUs to specialized hardware designed only for deep
+learning models \citep{deng_2019, boitano_2020, perez_2017,
+  jouppi_et_al_2017}.
+Whole state-of-the-art supercomputers are build solely for deep
+learning \citep{langston_2020}.
+Hardware manifacturers are faced with a major challenge in meeting the
+computational demands arising from inference and more importantly
+training deep learning models.
+OpenAI researchers have estimated that the computational costs of
+training increases exponentially; approximately every 3.4 months the
+cost doubles \citep{amodei_et_al_2019}.
+With the end of Moore's Law chip makers have to get creative in
+scaling up computing the same way machine learning researchers are
+scaling up their models \citep{simonite_2016}.
+Production and research into new hardware designs for deep learning
+are well on the way.
 
-Another field besides deep learning has high computational demands for
-specific algorithms: neuroscience.
+Another field which has high computational demands for very specific
+tasks and algorithms is neuroscience.
+Neuroscience has long been linked to deep learning, which has its
+origin in reasearch done by neuroscientists
+\citep{mcculloch_et_al_1943}.
+While in the recent past deep learning research has been more focused
+on mathematical topics like statistcs and probability theory,
+optimization or linear algebra, researchers are again looking over to
+neuroscience in order to further improve the capabilities of deep
+learning models \citep{marblestone_et_al_2016}.
+But not only the algorithms used by neuroscientists are drawing
+interest from the deep learning community.
+Computational neuroscience has long been trying to develop hardware
+for the efficient modeling of the human brain.
+Neuromorphic computer architectures are being developed to meet the
+demands for efficient computing for running large-scale spiking neural
+networks used for modeling brain functions \citep{furber}.
+% here some stuff linking dl to neuromorphic computers
+
+% small section about spinnaker
+
+% dl on spinnaker
+
+% results
+
+% layout
 
 \section{Background}
 
@@ -285,13 +322,15 @@ specific algorithms: neuroscience.
 % find more about DL on SpiNNaker
 
 
-\section{Deep Learning on SpiNNaker: SpiDNN}
+\section{Deep Learning on SpiNNaker}
 
 \section{Benchmark}
 
 \section{Discussion}
 
 \section{Conclusion}
+
+\section{Next Steps}
 
 \bibliography{library.bib}
 \addcontentsline{toc}{section}{References}
