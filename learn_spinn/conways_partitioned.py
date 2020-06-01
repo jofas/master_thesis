@@ -93,6 +93,7 @@ def main():
     # this stuff is needed for processing the received states
     receive_counter = {l : 0 for l in labels}
     receive_counter["overall"] = 0
+    receive_counter["finished"] = False
 
     map_label_to_pos = {}
     for x in range(0, X_SIZE):
@@ -102,18 +103,28 @@ def main():
     recorded_states = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
 
     def receive_state_callback(label, _, state): # {{{
-        z    = receive_counter[label]
-        x, y = map_label_to_pos[label]
+        z = receive_counter[label]
 
-        recorded_states[x, y, z] = state
+        # application finisher takes longer that the simulation for
+        # another time step. That way too many packets are received
+        # which we don't want to add in our recorded data.
+        if z < 50:
+            x, y = map_label_to_pos[label]
 
-        receive_counter[label] += 1
-        receive_counter["overall"] += 1
+            recorded_states[x, y, z] = state
 
-        #print("received: {} at timestep {}: {}".format(label, z + 1, state))
+            receive_counter[label] += 1
+            receive_counter["overall"] += 1
 
-        if receive_counter["overall"] == len(labels) * 50:
+            #print("received: {} at timestep {}: {}".format(label, z + 1, state))
+
+        elif receive_counter["overall"] == len(labels) * 50 \
+                and not receive_counter["finished"]:
+
+            receive_counter["finished"] = True
+
             print("FINISHING SIMULATION")
+
             ApplicationFinisher()(
                 front_end._sim()._load_outputs["APPID"],
                 front_end.transceiver(),
@@ -130,7 +141,7 @@ def main():
     front_end.stop()
 
     check_correctness(recorded_states)
-    visualize_conways(recorded_states)
+    #visualize_conways(recorded_states)
 
     conn.close()
 

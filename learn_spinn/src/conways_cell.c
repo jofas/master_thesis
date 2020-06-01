@@ -22,8 +22,6 @@
 #include <debug.h>
 #include <circular_buffer.h>
 
-#define STEPS 50
-
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
 uint32_t my_state = 0;
@@ -170,19 +168,6 @@ void update(uint ticks, uint b) { // {{{
     time++;
 
     log_info("on tick %d of %d", time, simulation_ticks);
-
-    // check that the run time hasn't already elapsed and thus needs to be
-    // killed
-    if (time >= STEPS) {
-        // fall into the pause resume mode of operating
-        simulation_handle_pause_resume(NULL);
-        log_info("Simulation complete.");
-        // switch to state where host is ready to read
-        simulation_ready_to_read();
-
-        //sark_cpu_state(CPU_STATE_WAIT);
-        return;
-    }
 
     if (time == 0) {
         log_info("Send my first state!");
