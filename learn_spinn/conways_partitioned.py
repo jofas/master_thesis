@@ -101,8 +101,6 @@ def main():
 
     recorded_states = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
 
-    received_all = Condition()
-
     def receive_state_callback(label, _, state): # {{{
         z    = receive_counter[label]
         x, y = map_label_to_pos[label]
@@ -114,7 +112,6 @@ def main():
 
         #print("received: {} at timestep {}: {}".format(label, z + 1, state))
 
-        received_all.acquire()
         if receive_counter["overall"] == len(labels) * 50:
             print("FINISHING SIMULATION")
             ApplicationFinisher()(
@@ -122,25 +119,18 @@ def main():
                 front_end.transceiver(),
                 front_end._sim()._load_outputs["ExecutableTypes"]
             )
-            received_all.notify()
-        received_all.release()
+            front_end.stop_run()
     # }}}
 
     for label in labels:
         conn.add_receive_callback(label, receive_state_callback)
 
     front_end.run(None)
-    #front_end.run(runtime)
-    #front_end.run_until_complete(runtime)
-    #front_end.run_until_complete()
 
-    # here acquire some lock that is held by a different thread
-    print("FRONT END FINISHED. WAITING TO STOP")
-    received_all.wait()
     front_end.stop()
 
     check_correctness(recorded_states)
-    #visualize_conways(recorded_states)
+    visualize_conways(recorded_states)
 
     conn.close()
 
