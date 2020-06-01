@@ -25,6 +25,7 @@
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
 uint32_t my_state = 0;
+bool has_received_state = false;
 
 /*! buffer used to store spikes */
 static circular_buffer input_buffer;
@@ -82,7 +83,13 @@ void receive_data(uint key, uint payload) { // {{{
     //log_info("the key i've received is %d\n", key);
     //log_info("the payload i've received is %d\n", payload);
     // If there was space to add spike to incoming spike queue
-    if (!circular_buffer_add(input_buffer, payload)) {
+
+    if (!has_received_state) {
+      if (key == my_key) {
+        my_state = payload;
+        has_received_state = true;
+      }
+    } else if (!circular_buffer_add(input_buffer, payload)) {
         log_info("Could not add state");
     }
 } // }}}
@@ -162,30 +169,34 @@ void next_state(void) { // {{{
 } // }}}
 
 void update(uint ticks, uint b) { // {{{
-    use(b);
-    use(ticks);
+  use(b);
+  use(ticks);
 
+
+  log_info("on tick %d of %d", time, simulation_ticks);
+
+  if (has_received_state) {
     time++;
 
-    log_info("on tick %d of %d", time, simulation_ticks);
-
     if (time == 0) {
-        log_info("Send my first state!");
+      log_info("Send my first state!");
 
-        //next_state();
-        send_state();
+      //next_state();
+      send_state();
+
     } else {
-        read_input_buffer();
+      read_input_buffer();
 
-        // find my next state
-        next_state();
+      // find my next state
+      next_state();
 
-        // do a safety check on number of states. Not like we can fix it
-        // if we've missed events
-        do_safety_check();
+      // do a safety check on number of states. Not like we can fix it
+      // if we've missed events
+      do_safety_check();
 
-        send_state();
+      send_state();
     }
+  }
 } // }}}
 
 void receive_data_void(uint key, uint unknown) { // {{{

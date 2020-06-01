@@ -34,7 +34,8 @@ from spinn_front_end_common.utilities.globals_variables import \
     get_simulator
 
 from spinn_front_end_common.utility_models import \
-    LivePacketGatherMachineVertex
+    LivePacketGatherMachineVertex, \
+    ReverseIPTagMulticastSourceMachineVertex
 
 from spinn_front_end_common.utilities.utility_objs import \
     LivePacketGatherParameters
@@ -78,16 +79,19 @@ def main():
 
     vertices = add_cc_machine_vertices()
 
-    streamer = add_lpg_machine_vertex("streamer_instance")
+    stream_in  = add_reverse_ip_tag_vertex("stream_in_instance")
+    stream_out = add_lpg_machine_vertex("stream_out_instance")
 
-    build_edges(vertices, streamer)
+    build_edges(vertices, stream_in, stream_out)
 
     add_db_sock()
 
     labels = [cc.label for cc in vertices.flatten()]
 
     conn = LiveEventConnection(
-       streamer.label, receive_labels=labels, machine_vertices = True
+       stream_out.label, receive_labels=labels,
+       send_labels=["stream_in_instance"],
+       machine_vertices = True
     )
 
     # this stuff is needed for processing the received states
@@ -133,8 +137,18 @@ def main():
             front_end.stop_run()
     # }}}
 
+    def send_state_callback(label, conn):
+        print("CONNNNNNNN ", conn._atom_id_to_key)
+
+        #for label in labels:
+        #    state = int(bool(vertices[map_label_to_pos[label]]._state))
+        conn.send_events_with_payloads(label, [(0, 0) for _ in labels])
+
     for label in labels:
         conn.add_receive_callback(label, receive_state_callback)
+
+    conn.add_start_resume_callback( "stream_in_instance"
+                                  , send_state_callback )
 
     front_end.run(None)
 
@@ -146,7 +160,7 @@ def main():
     conn.close()
 
 
-def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
+def build_edges(cc_machine_vertices, stream_in, stream_out): # {{{
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
 
@@ -173,8 +187,18 @@ def build_edges(cc_machine_vertices, lpg_machine_vertex): # {{{
 
             front_end.add_machine_edge_instance(MachineEdge(
                 cc_machine_vertices[x, y],
-                lpg_machine_vertex,
-                label="stream_edge_{}".format(cc_machine_vertices[x, y].label)
+                stream_in,
+                label="stream_in_edge_{}".format(
+                    cc_machine_vertices[x, y].label
+                )
+            ), ConwayBasicCell.PARTITION_ID)
+
+            front_end.add_machine_edge_instance(MachineEdge(
+                cc_machine_vertices[x, y],
+                stream_out,
+                label="stream_out_edge_{}".format(
+                    cc_machine_vertices[x, y].label
+                )
             ), ConwayBasicCell.PARTITION_ID)
 # }}}
 
@@ -196,6 +220,19 @@ def add_cc_machine_vertices(): # {{{
 # }}}
 
 
+def add_reverse_ip_tag_vertex(label): # {{{
+    stream_in = ReverseIPTagMulticastSourceMachineVertex(
+        n_keys = X_SIZE * Y_SIZE,
+        label  = label,
+        constraints=[ChipAndCoreConstraint(x=0, y=0)],
+        enable_injection = True
+    )
+
+    front_end.add_machine_vertex_instance(stream_in)
+    return stream_in
+# }}}
+
+
 def add_lpg_machine_vertex(label): # {{{
     args = LivePacketGatherParameters(
         port = ACK_PORT,
@@ -206,12 +243,12 @@ def add_lpg_machine_vertex(label): # {{{
         payload_as_time_stamps = False,
     )
 
-    streamer = LivePacketGatherMachineVertex(
+    stream_out = LivePacketGatherMachineVertex(
         args, label, constraints=[ChipAndCoreConstraint(x=0, y=0)],
     )
 
-    front_end.add_machine_vertex_instance(streamer)
-    return streamer
+    front_end.add_machine_vertex_instance(stream_out)
+    return stream_out
 # }}}
 
 
