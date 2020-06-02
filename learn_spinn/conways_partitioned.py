@@ -51,18 +51,19 @@ import numpy as np
 
 import csv
 
-from threading import Thread, Condition
+from threading import Thread, Condition, Lock
 
 
 active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 
 runtime = 50
-machine_time_step = 1000
+machine_time_step = 500 # don't play with that
 
 X_SIZE = 7
 Y_SIZE = 7
 
-n_chips = (X_SIZE * Y_SIZE) // 15
+# times two because of injectors
+n_chips = (X_SIZE * Y_SIZE * 2) // 15
 
 ACK_PORT = 22222
 HOST = "127.0.0.1"
@@ -76,21 +77,22 @@ def main():
     )
 
     check_board_size()
+    add_db_sock()
+
+    stream_in_vertices = add_reverse_ip_tag_vertices()
 
     vertices = add_cc_machine_vertices()
 
-    stream_in  = add_reverse_ip_tag_vertex("stream_in_instance")
     stream_out = add_lpg_machine_vertex("stream_out_instance")
 
-    build_edges(vertices, stream_in, stream_out)
-
-    add_db_sock()
+    build_edges(vertices, stream_in_vertices, stream_out)
 
     labels = [cc.label for cc in vertices.flatten()]
+    stream_in_labels = [st.label for st in stream_in_vertices.flatten()]
 
     conn = LiveEventConnection(
        stream_out.label, receive_labels=labels,
-       send_labels=["stream_in_instance"],
+       send_labels=stream_in_labels,
        machine_vertices = True
     )
 
@@ -100,11 +102,15 @@ def main():
     receive_counter["finished"] = False
 
     map_label_to_pos = {}
+    map_injector_to_pos = {}
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
             map_label_to_pos[vertices[x, y].label] = (x, y)
+            map_injector_to_pos[stream_in_vertices[x, y].label] = (x, y)
 
     recorded_states = np.empty((X_SIZE, Y_SIZE, runtime), dtype=np.int32)
+
+    lock_finished = Lock()
 
     def receive_state_callback(label, _, state): # {{{
         z = receive_counter[label]
@@ -122,33 +128,27 @@ def main():
 
             #print("received: {} at timestep {}: {}".format(label, z + 1, state))
 
-        elif receive_counter["overall"] == len(labels) * 50 \
-                and not receive_counter["finished"]:
+        elif receive_counter["overall"] == len(labels) * 50:
+            lock_finished.acquire()
+            if not receive_counter["finished"]:
+                receive_counter["finished"] = True
 
-            receive_counter["finished"] = True
-
-            print("FINISHING SIMULATION")
-
-            ApplicationFinisher()(
-                front_end._sim()._load_outputs["APPID"],
-                front_end.transceiver(),
-                front_end._sim()._load_outputs["ExecutableTypes"]
-            )
-            front_end.stop_run()
+                print("FINISHING SIMULATION")
+                front_end.stop_run()
+            lock_finished.release()
     # }}}
 
     def send_state_callback(label, conn):
-        print("CONNNNNNNN ", conn._atom_id_to_key)
-
+        state = int(bool(vertices[map_injector_to_pos[label]]._state))
         #for label in labels:
         #    state = int(bool(vertices[map_label_to_pos[label]]._state))
-        conn.send_events_with_payloads(label, [(0, 0) for _ in labels])
+        conn.send_event_with_payload(label, 0, state)
 
     for label in labels:
         conn.add_receive_callback(label, receive_state_callback)
 
-    conn.add_start_resume_callback( "stream_in_instance"
-                                  , send_state_callback )
+    for label in stream_in_labels:
+        conn.add_start_resume_callback(label, send_state_callback)
 
     front_end.run(None)
 
@@ -160,7 +160,7 @@ def main():
     conn.close()
 
 
-def build_edges(cc_machine_vertices, stream_in, stream_out): # {{{
+def build_edges(cc_machine_vertices, stream_in_vertices, stream_out): # {{{
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
 
@@ -186,8 +186,8 @@ def build_edges(cc_machine_vertices, stream_in, stream_out): # {{{
                 ), ConwayBasicCell.PARTITION_ID)
 
             front_end.add_machine_edge_instance(MachineEdge(
+                stream_in_vertices[x, y],
                 cc_machine_vertices[x, y],
-                stream_in,
                 label="stream_in_edge_{}".format(
                     cc_machine_vertices[x, y].label
                 )
@@ -220,16 +220,21 @@ def add_cc_machine_vertices(): # {{{
 # }}}
 
 
-def add_reverse_ip_tag_vertex(label): # {{{
-    stream_in = ReverseIPTagMulticastSourceMachineVertex(
-        n_keys = X_SIZE * Y_SIZE,
-        label  = label,
-        constraints=[ChipAndCoreConstraint(x=0, y=0)],
-        enable_injection = True
-    )
+def add_reverse_ip_tag_vertices(): # {{{
+    vertices = np.array([[None for _ in range(Y_SIZE)] for _ in range(X_SIZE)])
 
-    front_end.add_machine_vertex_instance(stream_in)
-    return stream_in
+    for x in range(0, X_SIZE):
+        for y in range(0, Y_SIZE):
+            vert = ReverseIPTagMulticastSourceMachineVertex(
+                n_keys = 1,
+                label = "stream_in_{}".format((x * X_SIZE) + y),
+                enable_injection = True
+            )
+
+            front_end.add_machine_vertex_instance(vert)
+            vertices[x, y] = vert
+
+    return vertices
 # }}}
 
 

@@ -24,6 +24,7 @@
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
+uint stream_in_key = 0;
 uint32_t my_state = 0;
 bool has_received_state = false;
 
@@ -36,9 +37,6 @@ int dead_states_recieved_this_tick = 0;
 
 //! recorded data items
 uint32_t size_written = 0;
-
-//! control value, which says how many timer ticks to run for before exiting
-static uint32_t simulation_ticks = 0;
 
 static uint32_t time = 0;
 data_specification_metadata_t *data = NULL;
@@ -70,6 +68,7 @@ typedef enum states_values {
 typedef struct params_region {
     uint32_t has_key;
     uint32_t my_key;
+    uint32_t stream_in_key;
     uint32_t timer_offset;
     uint32_t my_state;
 } params_region_t;
@@ -84,11 +83,10 @@ void receive_data(uint key, uint payload) { // {{{
     //log_info("the payload i've received is %d\n", payload);
     // If there was space to add spike to incoming spike queue
 
-    if (!has_received_state) {
-      if (key == my_key) {
+    if (key == stream_in_key) {
         my_state = payload;
         has_received_state = true;
-      }
+        log_info("received my state: %d from %d", payload, key);
     } else if (!circular_buffer_add(input_buffer, payload)) {
         log_info("Could not add state");
     }
@@ -173,7 +171,7 @@ void update(uint ticks, uint b) { // {{{
   use(ticks);
 
 
-  log_info("on tick %d of %d", time, simulation_ticks);
+  log_info("on tick %d", time);
 
   if (has_received_state) {
     time++;
@@ -220,7 +218,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
     // Get the timing details and set up the simulation interface
     if (!simulation_initialise(
             data_specification_get_region(SYSTEM_REGION, data),
-            APPLICATION_NAME_HASH, timer_period, NULL,//&simulation_ticks,
+            APPLICATION_NAME_HASH, timer_period, NULL,
             NULL, NULL, SDP, DMA)) {
         log_error("failed to set up the simulation interface");
         return false;
@@ -238,6 +236,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
 
     my_key = params_sdram->my_key;
     my_state = params_sdram->my_state;
+    stream_in_key = params_sdram->stream_in_key;
 
     log_info("my key is %d", my_key);
     log_info("my offset is %d", params_sdram->timer_offset);

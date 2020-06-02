@@ -33,9 +33,12 @@ from spinn_front_end_common.interface.buffer_management.buffer_models import (
 from spinnaker_graph_front_end.utilities import SimulatorVertex
 from spinnaker_graph_front_end.utilities.data_utils import (
     generate_system_data_region)
-
+from spinn_front_end_common.interface.provenance import \
+    ProvidesProvenanceDataFromMachineImpl
 
 class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
+    #,
+    #    ProvidesProvenanceDataFromMachineImpl):
     """ Cell which represents a cell within the 2d fabric
     """
 
@@ -45,7 +48,7 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     _INSTANCE_COUNTER = 0
     _ALL_VERTICES = 0
 
-    PARAMS_DATA_SIZE = 4 * BYTES_PER_WORD  # has key and key
+    PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
     # Regions for populations
     DATA_REGIONS = Enum(
@@ -94,7 +97,7 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
 
         # check for duplicates
         edges = list(machine_graph.get_edges_ending_at_vertex(self))
-        if len(edges) != 8:
+        if len(edges) != 9: # 9, because of the Injector
             raise ConfigurationException(
                 "I've not got the right number of connections. I have {} "
                 "instead of 8".format(
@@ -105,6 +108,8 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
                 raise ConfigurationException(
                     "I'm connected to myself, this is deemed an error"
                     " please fix.")
+            elif "stream_in" in edge.pre_vertex.label:
+                stream_in_key = edge.pre_vertex.virtual_key
 
         # write key needed to transmit with
         key = routing_info.get_first_key_from_pre_vertex(
@@ -114,6 +119,7 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
             region=self.DATA_REGIONS.PARAMS.value)
         spec.write_value(0 if key is None else 1)
         spec.write_value(0 if key is None else key)
+        spec.write_value(0 if stream_in_key is None else stream_in_key)
 
         # compute offset for setting phase of conways cell
         max_offset =  machine_time_step * time_scale_factor \
@@ -153,6 +159,12 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     @property
     def state(self):
         return self._state
+
+    """
+    @property
+    @overrides(ProvidesProvenanceDataFromMachineImpl._provenance_region_id)
+    def _provenance_region_id(self):
+    """
 
     def __repr__(self):
         return self.label
