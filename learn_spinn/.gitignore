@@ -1,0 +1,7 @@
+reports/
+__pycache__/
+application_generated_data_files/
+build/
+modified_src/
+*.aplx
+*.dict
