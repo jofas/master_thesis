@@ -21,6 +21,7 @@
 #include <simulation.h>
 #include <debug.h>
 #include <circular_buffer.h>
+#include <math.h>
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
@@ -280,6 +281,12 @@ void c_main(void) { // {{{
 
     // Start the time at "-1" so that the first tick will be 0
     time = UINT32_MAX;
+
+
+    float x = 2.0;
+    float y = 2.0;
+
+    log_info("%f ^ %f = %f", x, y, pow(x, y));
 
     simulation_run();
 } // }}}
