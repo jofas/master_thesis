@@ -1,5 +1,5 @@
 reports/
-__pycache__/
+/**/__pycache__/
 application_generated_data_files/
 build/
 modified_src/

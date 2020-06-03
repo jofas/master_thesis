@@ -37,8 +37,6 @@ from spinn_front_end_common.interface.provenance import \
     ProvidesProvenanceDataFromMachineImpl
 
 class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
-    #,
-    #    ProvidesProvenanceDataFromMachineImpl):
     """ Cell which represents a cell within the 2d fabric
     """
 
