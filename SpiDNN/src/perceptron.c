@@ -25,9 +25,9 @@
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
-uint stream_in_key = 0;
-uint32_t my_state = 0;
-bool has_received_state = false;
+uint min_pre_key;
+uint n_weights;
+float *weights;
 
 /*! buffer used to store spikes */
 static circular_buffer input_buffer;
@@ -39,7 +39,7 @@ int dead_states_recieved_this_tick = 0;
 //! recorded data items
 uint32_t size_written = 0;
 
-static uint32_t time = 0;
+static uint32_t time;
 data_specification_metadata_t *data = NULL;
 
 // value for turning on and off interrupts
@@ -49,6 +49,7 @@ uint cpsr = 0;
 typedef enum regions_e {
     SYSTEM_REGION,
     PARAMS,
+    WEIGHTS,
 } regions_e;
 
 //! values for the priority for each callback
@@ -69,21 +70,22 @@ typedef enum states_values {
 typedef struct params_region {
     uint32_t has_key;
     uint32_t my_key;
-    uint32_t stream_in_key;
+    uint32_t min_pre_key;
     uint32_t timer_offset;
-    uint32_t my_state;
+    uint32_t n_weights;
 } params_region_t;
 
 // pointer to sdram region containing the parameters of the conway
 // cell
 params_region_t *params_sdram;
+float *weights_sdram;
 
 void receive_data(uint key, uint payload) { // {{{
     use(key);
     //log_info("the key i've received is %d\n", key);
     //log_info("the payload i've received is %d\n", payload);
     // If there was space to add spike to incoming spike queue
-
+    /*
     if (key == stream_in_key) {
         my_state = payload;
         has_received_state = true;
@@ -91,6 +93,7 @@ void receive_data(uint key, uint payload) { // {{{
     } else if (!circular_buffer_add(input_buffer, payload)) {
         log_info("Could not add state");
     }
+    */
 } // }}}
 
 void do_safety_check(void) { // {{{
@@ -139,10 +142,10 @@ void send_state(void) { // {{{
     dead_states_recieved_this_tick = 0;
 
     // send my new state to the simulation neighbours
-    log_info("sending my state of %d via multicast with key %d",
-	    my_state, my_key);
+    //log_info("sending my state of %d via multicast with key %d",
+	  //  my_state, my_key);
 
-    while (!spin1_send_mc_packet(my_key, my_state, WITH_PAYLOAD)) {
+    while (!spin1_send_mc_packet(my_key, 0, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
 
@@ -151,6 +154,7 @@ void send_state(void) { // {{{
 
 void next_state(void) { // {{{
     // calculate new state from the total received so far
+    /*
     if (my_state == ALIVE) {
         if (alive_states_recieved_this_tick <= 1) {
             my_state = DEAD;
@@ -165,17 +169,18 @@ void next_state(void) { // {{{
     } else if (alive_states_recieved_this_tick == 3) {
         my_state = ALIVE;
     }
+    */
 } // }}}
 
 void update(uint ticks, uint b) { // {{{
   use(b);
   use(ticks);
 
+  time++;
 
   log_info("on tick %d", time);
 
-  if (has_received_state) {
-    time++;
+  //if (has_received_state) {
 
     if (time == 0) {
       log_info("Send my first state!");
@@ -195,7 +200,7 @@ void update(uint ticks, uint b) { // {{{
 
       send_state();
     }
-  }
+  //}
 } // }}}
 
 void receive_data_void(uint key, uint unknown) { // {{{
@@ -236,12 +241,16 @@ static bool initialize(uint32_t *timer_period) { // {{{
     }
 
     my_key = params_sdram->my_key;
-    my_state = params_sdram->my_state;
-    stream_in_key = params_sdram->stream_in_key;
+    min_pre_key = params_sdram->min_pre_key;
+    n_weights = params_sdram->n_weights;
 
     log_info("my key is %d", my_key);
     log_info("my offset is %d", params_sdram->timer_offset);
-    log_info("my initial state is %d", my_state);
+    log_info("my min_pre_key is %d", min_pre_key);
+    log_info("my n_weights is %d", n_weights);
+
+    weights_sdram = data_specification_get_region(WEIGHTS, data);
+
 
     // initialise my input_buffer for receiving packets
     input_buffer = circular_buffer_initialize(256);
@@ -276,17 +285,18 @@ void c_main(void) { // {{{
     spin1_callback_on(MCPL_PACKET_RECEIVED, receive_data, MC_PACKET);
     spin1_callback_on(TIMER_TICK, update, TIMER);
 
-    // start execution
-    log_info("Starting\n");
+
+    weights = (float *)malloc(n_weights);
+
+    for(uint i=0; i<n_weights; i++) {
+      weights[i] = weights_sdram[i];
+      log_info("weight at %d: %f", i, weights[i]);
+    }
 
     // Start the time at "-1" so that the first tick will be 0
     time = UINT32_MAX;
 
-
-    float x = 2.0;
-    float y = 2.0;
-
-    log_info("%f ^ %f = %f", x, y, pow(x, y));
-
+    // start execution
+    log_info("Starting\n");
     simulation_run();
 } // }}}

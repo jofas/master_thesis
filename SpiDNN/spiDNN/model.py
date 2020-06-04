@@ -111,6 +111,7 @@ class Model:
                 # maybe time out
                 pass
 
+        # TODO
         def extractor_callback(label, _, val):
             # label to position in column-vector of result matrix
             #
@@ -126,9 +127,9 @@ class Model:
         for label in receive_labels:
             conn.add_receive_callback(label, extractor_callback)
 
-        # TODO: weights on machine
+        # TODO: perceptron
 
-        #front_end.run()
+        front_end.run(1)
 
         front_end.stop()
         conn.close()
