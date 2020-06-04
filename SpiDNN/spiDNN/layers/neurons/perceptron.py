@@ -1,23 +1,33 @@
-from enum import Enum
-import struct
-import math
 from spinn_utilities.overrides import overrides
+
 from pacman.executor.injection_decorator import inject_items
+
 from pacman.model.graphs.machine import MachineVertex
+
 from pacman.model.resources import ResourceContainer, VariableSDRAM
+
 from pacman.utilities.utility_calls import is_single
+
 from spinn_front_end_common.utilities.constants import (
     SYSTEM_BYTES_REQUIREMENT, BYTES_PER_WORD)
+
 from spinn_front_end_common.utilities.exceptions import ConfigurationException
+
 from spinn_front_end_common.utilities.helpful_functions import (
     locate_memory_region_for_placement)
+
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
+
 from spinn_front_end_common.interface.buffer_management.buffer_models import (
     AbstractReceiveBuffersToHost)
+
 from spinnaker_graph_front_end.utilities import SimulatorVertex
+
 from spinnaker_graph_front_end.utilities.data_utils import (
     generate_system_data_region)
+
+from data_specification.enums import DataType
 
 
 from spiDNN.util import absolute_path_from_home
@@ -26,6 +36,15 @@ import spiDNN.globals as globals
 
 
 import sys
+
+import math
+
+from enum import Enum
+
+import struct
+
+
+import numpy as np
 
 
 class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
@@ -37,7 +56,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
     PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
-    # Regions for populations
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
         names=[("SYSTEM", 0), ("PARAMS", 1), ("WEIGHTS", 2)]
@@ -50,7 +68,8 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
             "perceptron.aplx"
         )
 
-        self.weights = weights
+        self.weights = np.array(weights, dtype=np.float32)
+        self._weight_container_size = len(self.weights) * BYTES_PER_WORD
         # TODO: here generate offset for timer
 
     @inject_items({"data_n_time_steps": "DataNTimeSteps"})
@@ -77,7 +96,7 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.WEIGHTS.value,
-            size=len(self.weights) * BYTES_PER_WORD,
+            size=self._weight_container_size,
             label="weights"
         )
 
@@ -131,14 +150,15 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
             region=self.DATA_REGIONS.WEIGHTS.value)
 
         # weights
-        spec.write_array(self.weights)
+        spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
         spec.end_specification()
 
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
-        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE)
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE
+                                                + self._weight_container_size)
         per_timestep_sdram = 0
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))

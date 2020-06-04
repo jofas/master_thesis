@@ -251,7 +251,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
 
     weights_sdram = data_specification_get_region(WEIGHTS, data);
 
-
     // initialise my input_buffer for receiving packets
     input_buffer = circular_buffer_initialize(256);
     if (input_buffer == 0) {
@@ -263,10 +262,18 @@ static bool initialize(uint32_t *timer_period) { // {{{
     return true;
 } // }}}
 
+void copy_sdram_weights_to_dtcm() { // {{{
+  weights = (float *)malloc(n_weights);
+
+  for(uint i=0; i<n_weights; i++) {
+    weights[i] = weights_sdram[i];
+    //log_info("weight at %d: %f", i, weights[i]);
+  }
+} // }}}
+
 void c_main(void) { // {{{
     log_info("starting conway_cell");
 
-    // Load DTCM data
     uint32_t timer_period;
 
     // initialise the model
@@ -285,13 +292,7 @@ void c_main(void) { // {{{
     spin1_callback_on(MCPL_PACKET_RECEIVED, receive_data, MC_PACKET);
     spin1_callback_on(TIMER_TICK, update, TIMER);
 
-
-    weights = (float *)malloc(n_weights);
-
-    for(uint i=0; i<n_weights; i++) {
-      weights[i] = weights_sdram[i];
-      log_info("weight at %d: %f", i, weights[i]);
-    }
+    copy_sdram_weights_to_dtcm();
 
     // Start the time at "-1" so that the first tick will be 0
     time = UINT32_MAX;

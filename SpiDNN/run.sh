@@ -1,5 +1,5 @@
 rm -r reports/*
-python3 conways_partitioned.py
+python3 main.py
 
 # ugly solution for moving data from horribly named time stamp
 # directory to reports for easier use of cat and grep
