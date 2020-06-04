@@ -30,11 +30,11 @@ class Model:
     def add(self, layer, layer_name=None):
         # TODO: here control correct usage
 
-        if layer_name != None:
-            layer.name = layer_name
-        else:
+        if layer_name is None:
             name = type(layer).__name__
             layer.name = "{}{}".format(len(self._layers), name)
+        else:
+            layer.name = layer_name
 
         # generate random weights
         if len(self._layers) > 0:

@@ -48,11 +48,6 @@ import numpy as np
 
 
 class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
-    #PARTITION_ID = "NEIGHBOR_CONNECT"
-
-    #_MAX_OFFSET_DENOMINATOR = 10
-    #_INSTANCE_COUNTER = 0
-    #_ALL_VERTICES = 0
 
     PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
@@ -167,6 +162,12 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         return self.label
 
         """ OFFSET
+
+        #PARTITION_ID = "NEIGHBOR_CONNECT"
+        #_MAX_OFFSET_DENOMINATOR = 10
+        #_INSTANCE_COUNTER = 0
+        #_ALL_VERTICES = 0
+
         # compute offset for setting phase of conways cell
         max_offset =  machine_time_step * time_scale_factor \
                    // ConwayBasicCell._MAX_OFFSET_DENOMINATOR
