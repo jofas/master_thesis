@@ -42,15 +42,14 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         value="DATA_REGIONS",
         names=[ ("SYSTEM",  0)
               , ("PARAMS",  1)
-              , ("WEIGHTS", 2),
-              ]
+              , ("WEIGHTS", 2) ]
     )
 
     def __init__(self, layer, id, weights):
 
         super(Perceptron, self).__init__(
             "{}_{}".format(layer.name, id),
-            absolute_path_from_home("perceptron.aplx")
+            "perceptron.aplx"
         )
 
         self.weights = weights
