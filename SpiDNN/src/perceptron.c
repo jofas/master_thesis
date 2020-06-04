@@ -19,6 +19,7 @@
 #include "common-typedefs.h"
 #include <data_specification.h>
 #include <simulation.h>
+#include <sark.h>
 #include <debug.h>
 #include <circular_buffer.h>
 #include <math.h>
@@ -29,12 +30,12 @@ uint min_pre_key;
 uint n_weights;
 float *weights;
 
-/*! buffer used to store spikes */
-static circular_buffer input_buffer;
-static uint32_t current_payload;
+bool received_potential = false;
+float potential;
 
-int alive_states_recieved_this_tick = 0;
-int dead_states_recieved_this_tick = 0;
+/*! buffer used to store spikes */
+//static circular_buffer input_buffer;
+static uint32_t current_payload;
 
 //! recorded data items
 uint32_t size_written = 0;
@@ -80,76 +81,43 @@ typedef struct params_region {
 params_region_t *params_sdram;
 float *weights_sdram;
 
-void receive_data(uint key, uint payload) { // {{{
+void reset_potential() {
+  potential = weights[n_weights - 1];
+}
+
+// currently only sigmoid
+float activate() {
+  potential = exp(potential) / (exp(potential) + 1.);
+}
+
+void receive_data(uint key, float payload) { // {{{
     use(key);
-    //log_info("the key i've received is %d\n", key);
-    //log_info("the payload i've received is %d\n", payload);
-    // If there was space to add spike to incoming spike queue
-    /*
-    if (key == stream_in_key) {
-        my_state = payload;
-        has_received_state = true;
-        log_info("received my state: %d from %d", payload, key);
-    } else if (!circular_buffer_add(input_buffer, payload)) {
-        log_info("Could not add state");
-    }
-    */
+
+    // TODO: receive all before received_potential
+    //       is set to true (with a counter)
+    log_info("received payload: %f", payload);
+
+    received_potential = true;
+
+    potential += weights[key - min_pre_key] * payload;
+
 } // }}}
 
-void do_safety_check(void) { // {{{
-    // do a safety check on number of states. Not like we can fix it
-    // if we've missed events
-    cpsr = spin1_int_disable();
-    int total = alive_states_recieved_this_tick +
-	    dead_states_recieved_this_tick;
-    if (total != 8){
-         log_error("didn't receive the correct number of states");
-         log_error("only received %d states", total);
-    }
-    log_debug("only received %d alive states",
-	    alive_states_recieved_this_tick);
-    log_debug("only received %d dead states",
-	    dead_states_recieved_this_tick);
-    spin1_mode_restore(cpsr);
-} // }}}
+void send_potential(void) { // {{{
+    // presses potential through the activation function
+    activate();
 
-void read_input_buffer(void) { // {{{
-    cpsr = spin1_int_disable();
-    circular_buffer_print_buffer(input_buffer);
+    uint send_bytes;
+    sark_mem_cpy((void *)&send_bytes, &potential, sizeof(float));
 
-    // pull payloads from input_buffer. Filter for alive and dead states
-    for (uint32_t counter = 0; counter < 8; counter++) {
-        bool success = circular_buffer_get_next(input_buffer, &current_payload);
-        if (success) {
-            if (current_payload == DEAD) {
-                 dead_states_recieved_this_tick += 1;
-            } else if (current_payload == ALIVE) {
-                 alive_states_recieved_this_tick += 1;
-            } else {
-                 log_error("Not recognised payload");
-            }
-        } else {
-            log_debug("couldn't read state from my neighbours.");
-        }
-
-    }
-    spin1_mode_restore(cpsr);
-} // }}}
-
-void send_state(void) { // {{{
-    // reset for next iteration
-    alive_states_recieved_this_tick = 0;
-    dead_states_recieved_this_tick = 0;
-
-    // send my new state to the simulation neighbours
-    //log_info("sending my state of %d via multicast with key %d",
-	  //  my_state, my_key);
-
-    while (!spin1_send_mc_packet(my_key, 0, WITH_PAYLOAD)) {
+    while (!spin1_send_mc_packet(my_key, send_bytes, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
 
-    log_info("sent my state via multicast");
+    log_info("sent potential %f", potential);
+
+    reset_potential();
+
 } // }}}
 
 void next_state(void) { // {{{
@@ -178,10 +146,13 @@ void update(uint ticks, uint b) { // {{{
 
   time++;
 
-  log_info("on tick %d", time);
+  if (received_potential) {
+    log_info("on tick %d I'm sending a potential", time);
+    send_potential();
+    received_potential = false;
+  }
 
-  //if (has_received_state) {
-
+  /*
     if (time == 0) {
       log_info("Send my first state!");
 
@@ -200,7 +171,7 @@ void update(uint ticks, uint b) { // {{{
 
       send_state();
     }
-  //}
+  */
 } // }}}
 
 void receive_data_void(uint key, uint unknown) { // {{{
@@ -244,13 +215,14 @@ static bool initialize(uint32_t *timer_period) { // {{{
     min_pre_key = params_sdram->min_pre_key;
     n_weights = params_sdram->n_weights;
 
-    log_info("my key is %d", my_key);
-    log_info("my offset is %d", params_sdram->timer_offset);
-    log_info("my min_pre_key is %d", min_pre_key);
-    log_info("my n_weights is %d", n_weights);
+    //log_info("my key is %d", my_key);
+    //log_info("my offset is %d", params_sdram->timer_offset);
+    //log_info("my min_pre_key is %d", min_pre_key);
+    //log_info("my n_weights is %d", n_weights);
 
     weights_sdram = data_specification_get_region(WEIGHTS, data);
 
+    /*
     // initialise my input_buffer for receiving packets
     input_buffer = circular_buffer_initialize(256);
     if (input_buffer == 0) {
@@ -258,6 +230,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
         return false;
     }
     log_info("input_buffer initialised");
+    */
 
     return true;
 } // }}}
@@ -294,10 +267,12 @@ void c_main(void) { // {{{
 
     copy_sdram_weights_to_dtcm();
 
+    reset_potential();
+
     // Start the time at "-1" so that the first tick will be 0
     time = UINT32_MAX;
 
     // start execution
-    log_info("Starting\n");
+    log_info("\nStarting simulation\n");
     simulation_run();
 } // }}}

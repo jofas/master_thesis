@@ -1,5 +1,8 @@
 import spinnaker_graph_front_end as front_end
 
+from spinn_front_end_common.utilities.globals_variables import \
+    get_simulator
+
 from spinn_front_end_common.utilities.connections import \
     LiveEventConnection
 
@@ -16,10 +19,19 @@ from pacman.model.constraints.placer_constraints import \
 
 from pacman.model.graphs.machine import MachineEdge
 
+from spinn_utilities.socket_address import SocketAddress
 
-from spiDNN.util import absolute_path_from_home
+
+from spiDNN.util import absolute_path_from_home, ReceivingLiveOutputProgress, \
+    uint32t_to_float, float_to_uint32t
 
 import spiDNN.globals as globals
+
+
+import time
+
+
+import numpy as np
 
 
 class Model:
@@ -45,6 +57,8 @@ class Model:
         return self
 
     def predict(self, X):
+        # TODO: make sure X is np.float32
+
         # TODO: inject different end units depending whether
         #       simulation will train the model or do inference
 
@@ -71,6 +85,8 @@ class Model:
 
         self._setup_front_end()
 
+        self._add_db_sock()
+
         self._generate_machine_graph()
 
         # TODO: wrapper around end_unit so it can easily be integrated
@@ -88,51 +104,61 @@ class Model:
 
         conn = LiveEventConnection(
             end_unit.label,
-            send_labels=send_labels,
             receive_labels=receive_labels,
+            send_labels=send_labels,
             machine_vertices=True
         )
 
-        # TODO: write what callbacks should do
-        #
-        # injector: send X
-        #
-        # extractor: write to result matrix
+        send_label_to_pos = \
+            {label: i for i, label in enumerate(send_labels)}
+
         def injector_callback(label, conn):
-            # label to position in column-vector of X
-            #
-            # then send cell
-            #
-            # maybe timeout before sending the next cell
-            for x in X:
-                # send x[send_label_to_pos[label]]
-                # maybe time out
-                pass
+
+            for i, x in enumerate(X):
+                print("sending {} at step {} to neuron: {}".format(
+                    x[send_label_to_pos[label]], i, label
+                ))
+
+                conn.send_event_with_payload(label, 0,
+                    float_to_uint32t(x[send_label_to_pos[label]]))
+
+                time.sleep(1)
+
+            #conn.send_events_with_payloads(label,
+            #    [(0, float(x[send_label_to_pos[label]])) for x in X])
+
+
+        rlop = ReceivingLiveOutputProgress(X.shape[0], receive_labels)
+
+        result = np.empty(
+            (X.shape[0], len(receive_labels)), dtype=np.float32
+        )
 
         # TODO
         def extractor_callback(label, _, val):
-            # label to position in column-vector of result matrix
-            #
-            # maintain counter for row (for each column, easier than
-            # anything else)
-            #
-            # write data to cell (like conways basically)
-            pass
+            val = uint32t_to_float(val)
+            print("received val: {}, neuron: {}".format(val, label))
+            x = rlop.received(label)
+            y = rlop.label_to_pos(label)
 
-        for label in send_labels:
-            conn.add_start_resume_callback(label, injector_callback)
+            result[x, y] = val
+
+            if rlop.simulation_finished:
+                front_end.stop_run()
+
 
         for label in receive_labels:
             conn.add_receive_callback(label, extractor_callback)
 
-        # TODO: perceptron
+        for label in send_labels:
+            conn.add_start_resume_callback(label, injector_callback)
 
-        front_end.run(1)
+        front_end.run()
 
         front_end.stop()
         conn.close()
 
-        return None
+        return result
 
     def _setup_front_end(self):
         # + 1, because end_unit must be accounted for
@@ -176,3 +202,12 @@ class Model:
 
     def _all_atoms(self):
         return sum([layer.atoms for layer in self._layers])
+
+    def _add_db_sock(self):
+        database_socket = SocketAddress(
+            listen_port=globals.ack_port,
+            notify_host_name=globals.host,
+            notify_port_no=globals.notify_port
+        )
+
+        get_simulator().add_socket_address(database_socket)

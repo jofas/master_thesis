@@ -11,7 +11,9 @@ def main():
 
     print(model.weights)
 
-    test = np.array([[0., 0.], [0., 1.], [1., 0.], [1., 1.]])
+    test = np.array(
+        [[0., 0.], [0., 1.], [1., 0.], [1., 1.]], dtype=np.float32
+    )
 
     result = np.array([0, 1, 1, 0])
 
