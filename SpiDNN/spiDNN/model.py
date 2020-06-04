@@ -27,8 +27,7 @@ class Model:
         self.weights = []
         self._layers = []
 
-
-    def add(self, layer, layer_name = None):
+    def add(self, layer, layer_name=None):
         # TODO: here control correct usage
 
         if layer_name != None:
@@ -45,18 +44,17 @@ class Model:
         self._layers.append(layer)
         return self
 
-
     def predict(self, X):
         # TODO: inject different end units depending whether
         #       simulation will train the model or do inference
 
         end_unit_args = LivePacketGatherParameters(
-            port = globals.ack_port,
-            hostname = globals.host,
-            strip_sdp = True,
-            message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
-            use_payload_prefix = False,
-            payload_as_time_stamps = False
+            port=globals.ack_port,
+            hostname=globals.host,
+            strip_sdp=True,
+            message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
+            use_payload_prefix=False,
+            payload_as_time_stamps=False
         )
 
         end_unit = LivePacketGatherMachineVertex(
@@ -75,7 +73,7 @@ class Model:
 
         self._generate_machine_graph()
 
-        #TODO: wrapper around end_unit so it can easily be integrated
+        # TODO: wrapper around end_unit so it can easily be integrated
         #      into _generate_machine_graph()
         front_end.add_machine_vertex_instance(end_unit)
         for source_neuron in self._layers[-1].neurons:
@@ -90,9 +88,9 @@ class Model:
 
         conn = LiveEventConnection(
             end_unit.label,
-            send_labels = send_labels,
-            receive_labels = receive_labels,
-            machine_vertices = True
+            send_labels=send_labels,
+            receive_labels=receive_labels,
+            machine_vertices=True
         )
 
         # TODO: write what callbacks should do
@@ -136,17 +134,16 @@ class Model:
 
         return None
 
-
     def _setup_front_end(self):
         # + 1, because end_unit must be accounted for
         # TODO: incorporate maybe bigger end_units
         n_cores = self._all_atoms() + 1
 
         front_end.setup(
-            n_chips_required = n_cores // globals.cores_per_chip,
-            model_binary_folder = absolute_path_from_home(),
-            machine_time_step = globals.machine_time_step,
-            time_scale_factor = globals.time_scale_factor,
+            n_chips_required=n_cores // globals.cores_per_chip,
+            model_binary_folder=absolute_path_from_home(),
+            machine_time_step=globals.machine_time_step,
+            time_scale_factor=globals.time_scale_factor,
         )
 
         available_cores = \
@@ -157,11 +154,9 @@ class Model:
                 "SpiNNaker doesn't have enough cores to run Model"
             )
 
-
     def _generate_machine_graph(self):
         self._init_neurons()
         self._connect_layers()
-
 
     def _init_neurons(self):
         # Input unit needs to know how many neurons it is connected
@@ -174,12 +169,10 @@ class Model:
         for layer, weights in zip(self._layers[1:], self.weights):
             layer.init_neurons(weights)
 
-
     def _connect_layers(self):
         for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
             layer.connect(source_layer)
-
 
     def _all_atoms(self):
         return sum([layer.atoms for layer in self._layers])

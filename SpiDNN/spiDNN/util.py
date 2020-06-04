@@ -1,7 +1,7 @@
 import os
 
 
-def absolute_path_from_home(relative_path = None):
+def absolute_path_from_home(relative_path=None):
     home_path = os.path.dirname(__file__).split("/")[:-1]
 
     if relative_path == None:

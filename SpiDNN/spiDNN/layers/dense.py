@@ -12,14 +12,13 @@ from .neurons import Perceptron
 
 
 class Dense:
-    def __init__(self, atoms, activation, bias = True):
+    def __init__(self, atoms, activation, bias=True):
         self.atoms = atoms
         self.name = "uninitialized"
         self.neurons = []
 
         self.activation = activation
         self.bias = bias
-
 
     def init_neurons(self, weights):
         assert weights.shape[0] == self.atoms
@@ -29,7 +28,6 @@ class Dense:
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
 
-
     def connect(self, source_layer):
         for source_neuron in source_layer.neurons:
             for neuron in self.neurons:
@@ -38,7 +36,6 @@ class Dense:
                         source_neuron.label, neuron.label
                     )
                 ), globals.partition_name)
-
 
     def generate_weights(self, source_layer):
         # This is just weights representation. The weights are re-
@@ -53,7 +50,6 @@ class Dense:
             weights[:, -1] = 0.
 
         return weights
-
 
     @property
     def labels(self):

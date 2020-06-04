@@ -10,17 +10,15 @@ class Input:
         self.name = "uninitialized"
         self.neurons = []
 
-
     def init_neurons(self, atoms_next_layer):
         for i in range(0, self.atoms):
             neuron = ReverseIPTagMulticastSourceMachineVertex(
-                n_keys = atoms_next_layer,
-                label = "{}_{}".format(self.name, i),
-                enable_injection = True,
+                n_keys=atoms_next_layer,
+                label="{}_{}".format(self.name, i),
+                enable_injection=True,
             )
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
-
 
     @property
     def labels(self):

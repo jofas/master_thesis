@@ -40,9 +40,7 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
     # Regions for populations
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
-        names=[ ("SYSTEM",  0)
-              , ("PARAMS",  1)
-              , ("WEIGHTS", 2) ]
+        names=[("SYSTEM", 0), ("PARAMS", 1), ("WEIGHTS", 2)]
     )
 
     def __init__(self, layer, id, weights):
@@ -54,7 +52,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         self.weights = weights
         # TODO: here generate offset for timer
-
 
     @inject_items({"data_n_time_steps": "DataNTimeSteps"})
     @overrides(
@@ -73,17 +70,16 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         # reserve memory regions
         spec.reserve_memory_region(
-            region = self.DATA_REGIONS.PARAMS.value,
-            size = self.PARAMS_DATA_SIZE,
-            label = "params"
+            region=self.DATA_REGIONS.PARAMS.value,
+            size=self.PARAMS_DATA_SIZE,
+            label="params"
         )
 
         spec.reserve_memory_region(
-            region = self.DATA_REGIONS.WEIGHTS.value,
-            size = len(self.weights) * BYTES_PER_WORD,
-            label = "weights"
+            region=self.DATA_REGIONS.WEIGHTS.value,
+            size=len(self.weights) * BYTES_PER_WORD,
+            label="weights"
         )
-
 
         # check got right number of keys and edges going into me
         partitions = \
@@ -93,7 +89,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
             raise ConfigurationException(
                 "Can only handle one type of partition.")
 
-
         edges = list(machine_graph.get_edges_ending_at_vertex(self))
 
         min_pre_key = sys.maxsize
@@ -102,7 +97,8 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
             pre_key = routing_info.get_first_key_from_pre_vertex(
                 edge.pre_vertex, globals.partition_name)
 
-            if pre_key < min_pre_key: min_pre_key = pre_key
+            if pre_key < min_pre_key:
+                min_pre_key = pre_key
 
             # TODO: recurrent neurons???
             if edge.pre_vertex == self:
@@ -112,7 +108,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         key = routing_info.get_first_key_from_pre_vertex(
             self, globals.partition_name)
-
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.PARAMS.value)
@@ -132,16 +127,13 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         # n_weights
         spec.write_value(len(self.weights))
 
-
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)
 
         # weights
         spec.write_array(self.weights)
 
-
         spec.end_specification()
-
 
     @property
     @overrides(MachineVertex.resources_required)
@@ -151,10 +143,8 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
 
-
     def __repr__(self):
         return self.label
-
 
         """ OFFSET
         # compute offset for setting phase of conways cell
@@ -170,4 +160,3 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         ConwayBasicCell._INSTANCE_COUNTER += 1
         """
-

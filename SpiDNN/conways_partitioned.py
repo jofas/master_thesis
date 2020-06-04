@@ -57,7 +57,7 @@ from threading import Thread, Condition, Lock
 active_states = [(2, 2), (3, 2), (3, 3), (4, 3), (2, 4)]
 
 runtime = 50
-machine_time_step = 500 # don't play with that
+machine_time_step = 500  # don't play with that
 
 X_SIZE = 7
 Y_SIZE = 7
@@ -67,6 +67,7 @@ n_chips = (X_SIZE * Y_SIZE * 2) // 15
 
 ACK_PORT = 22222
 HOST = "127.0.0.1"
+
 
 def main():
     front_end.setup(
@@ -91,13 +92,13 @@ def main():
     stream_in_labels = [st.label for st in stream_in_vertices.flatten()]
 
     conn = LiveEventConnection(
-       stream_out.label, receive_labels=labels,
-       send_labels=stream_in_labels,
-       machine_vertices = True
+        stream_out.label, receive_labels=labels,
+        send_labels=stream_in_labels,
+        machine_vertices=True
     )
 
     # this stuff is needed for processing the received states
-    receive_counter = {l : 0 for l in labels}
+    receive_counter = {l: 0 for l in labels}
     receive_counter["overall"] = 0
     receive_counter["finished"] = False
 
@@ -112,7 +113,7 @@ def main():
 
     lock_finished = Lock()
 
-    def receive_state_callback(label, _, state): # {{{
+    def receive_state_callback(label, _, state):  # {{{
         z = receive_counter[label]
 
         # application finisher takes longer that the simulation for
@@ -140,7 +141,7 @@ def main():
 
     def send_state_callback(label, conn):
         state = int(bool(vertices[map_injector_to_pos[label]]._state))
-        #for label in labels:
+        # for label in labels:
         #    state = int(bool(vertices[map_label_to_pos[label]]._state))
         conn.send_event_with_payload(label, 0, state)
 
@@ -155,12 +156,12 @@ def main():
     front_end.stop()
 
     check_correctness(recorded_states)
-    #visualize_conways(recorded_states)
+    # visualize_conways(recorded_states)
 
     conn.close()
 
 
-def build_edges(cc_machine_vertices, stream_in_vertices, stream_out): # {{{
+def build_edges(cc_machine_vertices, stream_in_vertices, stream_out):  # {{{
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
 
@@ -203,7 +204,7 @@ def build_edges(cc_machine_vertices, stream_in_vertices, stream_out): # {{{
 # }}}
 
 
-def add_cc_machine_vertices(): # {{{
+def add_cc_machine_vertices():  # {{{
     vertices = np.array([[None for _ in range(Y_SIZE)] for _ in range(X_SIZE)])
 
     for x in range(0, X_SIZE):
@@ -220,15 +221,15 @@ def add_cc_machine_vertices(): # {{{
 # }}}
 
 
-def add_reverse_ip_tag_vertices(): # {{{
+def add_reverse_ip_tag_vertices():  # {{{
     vertices = np.array([[None for _ in range(Y_SIZE)] for _ in range(X_SIZE)])
 
     for x in range(0, X_SIZE):
         for y in range(0, Y_SIZE):
             vert = ReverseIPTagMulticastSourceMachineVertex(
-                n_keys = 1,
-                label = "stream_in_{}".format((x * X_SIZE) + y),
-                enable_injection = True
+                n_keys=1,
+                label="stream_in_{}".format((x * X_SIZE) + y),
+                enable_injection=True
             )
 
             front_end.add_machine_vertex_instance(vert)
@@ -238,14 +239,14 @@ def add_reverse_ip_tag_vertices(): # {{{
 # }}}
 
 
-def add_lpg_machine_vertex(label): # {{{
+def add_lpg_machine_vertex(label):  # {{{
     args = LivePacketGatherParameters(
-        port = ACK_PORT,
-        hostname = HOST,
-        strip_sdp = True,
-        message_type = EIEIOType.KEY_PAYLOAD_32_BIT,
-        use_payload_prefix = False,
-        payload_as_time_stamps = False,
+        port=ACK_PORT,
+        hostname=HOST,
+        strip_sdp=True,
+        message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
+        use_payload_prefix=False,
+        payload_as_time_stamps=False,
     )
 
     stream_out = LivePacketGatherMachineVertex(
@@ -257,7 +258,7 @@ def add_lpg_machine_vertex(label): # {{{
 # }}}
 
 
-def add_db_sock(): # {{{
+def add_db_sock():  # {{{
     database_socket = SocketAddress(
         listen_port=ACK_PORT,
         notify_host_name=HOST,
@@ -268,22 +269,22 @@ def add_db_sock(): # {{{
 # }}}
 
 
-def visualize_conways(data): # {{{
+def visualize_conways(data):  # {{{
     arr_to_askii = np.vectorize(lambda x: "X" if x else "O", otypes=[np.str])
 
     data = arr_to_askii(data)
 
     for time in range(0, runtime):
         print("at time {}\n{}".format(
-            time + 1, "".join([ "".join(data[:,y,time]) + "\n"
-                for y in range(X_SIZE - 1, 0, -1)])
+            time + 1, "".join(["".join(data[:, y, time]) + "\n"
+                               for y in range(X_SIZE - 1, 0, -1)])
         ))
 # }}}
 
 
-def check_correctness(data): # {{{
-    generated_output = np.array([data[:,:,time].flatten()
-        for time in range(0, runtime)])
+def check_correctness(data):  # {{{
+    generated_output = np.array([data[:, :, time].flatten()
+                                 for time in range(0, runtime)])
 
     correct_output = import_data()
 
@@ -292,26 +293,26 @@ def check_correctness(data): # {{{
     # generated_output[1:,:] (removed the initial neighbor states from
     # the conway's cell so the new simulation is one timestep behind
     # the original program)
-    assert (correct_output[:-1,:] == generated_output[1:,:]).all()
+    assert (correct_output[:-1, :] == generated_output[1:, :]).all()
 # }}}
 
 
-def export_data(data): # {{{
+def export_data(data):  # {{{
     with open("test.csv", "w") as f:
         w = csv.writer(f)
         for time in range(0, runtime):
-            w.writerow(data[:,:,time].flatten())
+            w.writerow(data[:, :, time].flatten())
 # }}}
 
 
-def import_data(): # {{{
+def import_data():  # {{{
     with open("test.csv", "r") as f:
         r = csv.reader(f)
         return np.array([row for row in r], dtype=np.int32)
 # }}}
 
 
-def check_board_size(): # {{{
+def check_board_size():  # {{{
     cores = front_end.get_number_of_available_cores_on_machine()
 
     if cores <= (X_SIZE * Y_SIZE):

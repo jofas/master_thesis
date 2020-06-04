@@ -36,6 +36,7 @@ from spinnaker_graph_front_end.utilities.data_utils import (
 from spinn_front_end_common.interface.provenance import \
     ProvidesProvenanceDataFromMachineImpl
 
+
 class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
     """ Cell which represents a cell within the 2d fabric
     """
@@ -92,10 +93,9 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
             raise ConfigurationException(
                 "Can only handle one type of partition.")
 
-
         # check for duplicates
         edges = list(machine_graph.get_edges_ending_at_vertex(self))
-        if len(edges) != 9: # 9, because of the Injector
+        if len(edges) != 9:  # 9, because of the Injector
             raise ConfigurationException(
                 "I've not got the right number of connections. I have {} "
                 "instead of 8".format(
@@ -120,11 +120,11 @@ class ConwayBasicCell(SimulatorVertex, MachineDataSpecableVertex):
         spec.write_value(0 if stream_in_key is None else stream_in_key)
 
         # compute offset for setting phase of conways cell
-        max_offset =  machine_time_step * time_scale_factor \
-                   // ConwayBasicCell._MAX_OFFSET_DENOMINATOR
+        max_offset = machine_time_step * time_scale_factor \
+            // ConwayBasicCell._MAX_OFFSET_DENOMINATOR
 
         offset = int(
-              math.ceil(max_offset / ConwayBasicCell._ALL_VERTICES)
+            math.ceil(max_offset / ConwayBasicCell._ALL_VERTICES)
             * ConwayBasicCell._INSTANCE_COUNTER
         )
 
