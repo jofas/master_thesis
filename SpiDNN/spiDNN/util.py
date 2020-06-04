@@ -36,7 +36,7 @@ class ReceivingLiveOutputProgress:
         self._receive_n_times = len(receive_labels) * receive_n_times
 
         self._label_to_pos = \
-                {label: i for i, label in enumerate(receive_labels)}
+            {label: i for i, label in enumerate(receive_labels)}
 
         self._lock_overall = Lock()
 

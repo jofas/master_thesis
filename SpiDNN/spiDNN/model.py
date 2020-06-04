@@ -119,14 +119,14 @@ class Model:
                     x[send_label_to_pos[label]], i, label
                 ))
 
-                conn.send_event_with_payload(label, 0,
-                    float_to_uint32t(x[send_label_to_pos[label]]))
+                conn.send_event_with_payload(
+                    label, 0, float_to_uint32t(x[send_label_to_pos[label]])
+                )
 
                 time.sleep(1)
 
-            #conn.send_events_with_payloads(label,
+            # conn.send_events_with_payloads(label,
             #    [(0, float(x[send_label_to_pos[label]])) for x in X])
-
 
         rlop = ReceivingLiveOutputProgress(X.shape[0], receive_labels)
 
@@ -145,7 +145,6 @@ class Model:
 
             if rlop.simulation_finished:
                 front_end.stop_run()
-
 
         for label in receive_labels:
             conn.add_receive_callback(label, extractor_callback)
