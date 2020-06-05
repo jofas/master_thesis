@@ -14,9 +14,8 @@ def main():
 
     y = np.array([0., 1., 1., 0.])
 
-
     kmodel = Sequential()
-    kmodel.add(KDense(4, activation="sigmoid", input_shape=(2,)))
+    kmodel.add(KDense(2, activation="relu", input_shape=(2,)))
     kmodel.add(KDense(1, activation="sigmoid"))
 
     kmodel.compile(
@@ -28,20 +27,14 @@ def main():
     kmodel.fit(X, y, epochs=1000, batch_size=4)
 
     model = Model().add(Input(2)) \
-                   .add(Dense(4, activation="sigmoid")) \
+                   .add(Dense(2, activation="relu")) \
                    .add(Dense(1, activation="sigmoid"))
 
     hidden_weights = kmodel.weights[0].read_value().numpy().T
     hidden_bias = kmodel.weights[1].read_value().numpy().reshape(-1, 1)
 
-    print(hidden_weights.shape)
-    print(hidden_bias.shape)
-
     output_weights = kmodel.weights[2].read_value().numpy().T
     output_bias = kmodel.weights[3].read_value().numpy().reshape(-1, 1)
-
-    print(output_weights.shape)
-    print(output_bias.shape)
 
     model.weights[0] = np.concatenate(
         (hidden_weights, hidden_bias), axis=1
@@ -69,7 +62,12 @@ def main():
 
     print(prediction)
 
-    print(kmodel.predict(X, batch_size=4))
+    p_ = kmodel.predict(X, batch_size=4)
+    print(p_)
+    #print(np.sum(p_, axis=1))
+
+    #print(hidden_weights)
+    #print(hidden_bias)
 
 
 if __name__ == "__main__":

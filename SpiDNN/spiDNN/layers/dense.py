@@ -37,6 +37,12 @@ class Dense:
     def connect(self, source_layer):
         for source_neuron in source_layer.neurons:
             for neuron in self.neurons:
+                # neuron needs to know what previous layer activation
+                # is, because it needs to do some work if previous
+                # layer has either ReLU or softmax as activation.
+                # Both are layer-based rather than on a neuron level.
+                neuron.set_pre_layer_activation(source_layer)
+
                 front_end.add_machine_edge_instance(MachineEdge(
                     source_neuron, neuron, label="{}_to_{}".format(
                         source_neuron.label, neuron.label

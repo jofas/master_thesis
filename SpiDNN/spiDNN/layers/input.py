@@ -9,6 +9,7 @@ class Input:
         self.atoms = atoms
         self.name = "uninitialized"
         self.neurons = []
+        self.activation = "identity"
 
     def init_neurons(self, atoms_next_layer):
         for i in range(0, self.atoms):

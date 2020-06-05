@@ -29,16 +29,13 @@ uint my_key;
 uint min_pre_key;
 uint n_weights;
 uint activation_function_id;
+uint pre_layer_activation_function_id;
+
 float *weights;
+
 float *potentials;
 bool  *received_potentials;
 uint received_potentials_counter = 0;
-
-bool received_potential = false;
-float potential;
-
-//! recorded data items
-uint32_t size_written = 0;
 
 static uint32_t time;
 data_specification_metadata_t *data = NULL;
@@ -84,6 +81,7 @@ typedef struct params_region { // {{{
     uint32_t timer_offset;
     uint32_t n_weights;
     uint32_t activation_function_id;
+    uint32_t pre_layer_activation_function_id;
 } params_region_t; // }}}
 
 // pointer to sdram region containing the parameters of the conway
@@ -91,46 +89,80 @@ typedef struct params_region { // {{{
 params_region_t *params_sdram;
 float *weights_sdram;
 
-float sum_potential() { // {{{
+float sum_pre_layer_potential() {
   float sum_potential = 0;
-  for (uint i = 0; i < n_weights; i++) {
+  for (uint i = 0; i < n_weights - 1; i++) {
     sum_potential += potentials[i];
   }
   return sum_potential;
+}
+
+float sum_potential() { // {{{
+  return sum_pre_layer_potential() + weights[n_weights - 1];
 } // }}}
 
-float relu() { // {{{
+float max_positive_pre_layer_potential() {
   float mx = .0;
-  for (uint i = 0; i < n_weights; i++) {
+  for (uint i = 0; i < n_weights - 1; i++) {
     if (potentials[i] > mx) mx = potentials[i];
   }
   return mx;
+}
+
+float max_positive_potential() { // {{{
+  float pre_layer_mx = max_positive_pre_layer_potential();
+  return pre_layer_mx > potentials[n_weights - 1] ?
+    pre_layer_mx : potentials[n_weights - 1];
 } // }}}
 
 float activate() { // {{{
-  float potential_ = sum_potential();
+  float potential = sum_potential();
 
   switch (activation_function_id) {
     case IDENTITY:
-      return potential_;
+      return potential;
 
     case RELU:
-      return relu();
+      return potential > .0 ? potential : .0;//max_positive_potential();
 
     case SIGMOID:
-      return 1. / (1. + exp(-potential_));
+      return 1. / (1. + exp(-potential));
 
     case TANH:
-      return tanh(potential_);
+      return tanh(potential);
 
     case SOFTMAX: // softmax is handled by neurons in the next layer
-      return potential_;
+      return potential;
 
     default:
       log_error("Unknown activation function - exiting!");
       rt_error(RTE_SWERR);
   }
 } // }}}
+
+void relu_from_pre_layer() { // {{{
+  float mx = max_positive_pre_layer_potential();
+  log_info("pre ReLU: setting received potential to %f", mx);
+  for (uint i = 0; i < n_weights - 1; i++) {
+    potentials[i] = mx;
+  }
+} // }}}
+
+void softmax_from_pre_layer() { // {{{
+  float potential = sum_pre_layer_potential();
+
+  for (uint i = 0; i < n_weights - 1; i++) {
+    potentials[i] = potentials[i] / potential;
+  }
+} // }}}
+
+void apply_pre_layer_activation() {
+  switch (pre_layer_activation_function_id) {
+    case SOFTMAX:
+      softmax_from_pre_layer();
+      break;
+  }
+}
 
 void reset_potentials() { // {{{
   for (uint i=0; i < n_weights - 1; i++) {
@@ -152,11 +184,17 @@ void receive_data(uint key, float payload) { // {{{
                properly processed yet - exiting!");
     rt_error(RTE_SWERR);
   } else {
-    potentials[idx] = payload * weights[idx];
+    potentials[idx] = payload;
     received_potentials[idx] = true;
     received_potentials_counter++;
   }
 } // }}}
+
+void apply_weights() {
+  for (uint i = 0; i < n_weights - 1; i++) {
+    potentials[i] *= weights[i];
+  }
+}
 
 void send_potential(float *potential) { // {{{
     uint send_bytes;
@@ -174,14 +212,20 @@ void update(uint ticks, uint b) { // {{{
   time++;
 
   if (received_potentials_counter == n_weights) {
-    log_info("on tick %d I'm sending a potential", time);
+    //log_info("on tick %d I'm sending a potential", time);
+
+    // transform received potentials for some activation functions the
+    // previous layer can have (ReLU and softmax)
+    apply_pre_layer_activation();
+
+    apply_weights();
 
     // presses potential through the activation function
     float potential = activate();
 
     send_potential(&potential);
 
-    log_info("sent potential %f", potential);
+    log_info("sent potential %f\n", potential);
 
     reset_potentials();
   }
@@ -210,60 +254,54 @@ void initialize_dtcm() { // {{{
 } // }}}
 
 static bool initialize(uint32_t *timer_period) { // {{{
-    log_info("Initialise: started");
+  log_info("Initialise: started");
 
-    // Get the address this core's DTCM data starts at from SRAM
-    data = data_specification_get_data_address();
+  // Get the address this core's DTCM data starts at from SRAM
+  data = data_specification_get_data_address();
 
-    // Read the header
-    if (!data_specification_read_header(data)) {
-        log_error("failed to read the data spec header");
-        return false;
-    }
+  // Read the header
+  if (!data_specification_read_header(data)) {
+    log_error("failed to read the data spec header");
+    return false;
+  }
 
-    // Get the timing details and set up the simulation interface
-    if (!simulation_initialise(
-            data_specification_get_region(SYSTEM_REGION, data),
-            APPLICATION_NAME_HASH, timer_period, NULL,
-            NULL, NULL, SDP, DMA)) {
-        log_error("failed to set up the simulation interface");
-        return false;
-    }
+  // Get the timing details and set up the simulation interface
+  if (!simulation_initialise(
+        data_specification_get_region(SYSTEM_REGION, data),
+        APPLICATION_NAME_HASH, timer_period, NULL,
+        NULL, NULL, SDP, DMA)) {
+    log_error("failed to set up the simulation interface");
+    return false;
+  }
 
-    // initialise transmission keys
-    params_sdram = data_specification_get_region(PARAMS, data);
+  // initialise transmission keys
+  params_sdram = data_specification_get_region(PARAMS, data);
 
-    if (!params_sdram->has_key) {
-        log_error(
-        	"this conways cell can't affect anything, deduced as an error,"
-        	"please fix the application fabric and try again");
-        return false;
-    }
+  if (!params_sdram->has_key) {
+    log_error(
+      "this conways cell can't affect anything, deduced as an error,"
+      "please fix the application fabric and try again");
+    return false;
+  }
 
-    my_key = params_sdram->my_key;
-    min_pre_key = params_sdram->min_pre_key;
-    n_weights = params_sdram->n_weights;
-    activation_function_id = params_sdram->activation_function_id;
+  my_key = params_sdram->my_key;
+  min_pre_key = params_sdram->min_pre_key;
+  n_weights = params_sdram->n_weights;
+  activation_function_id = params_sdram->activation_function_id;
+  pre_layer_activation_function_id =
+    params_sdram->pre_layer_activation_function_id;
 
-    //log_info("my key is %d", my_key);
-    //log_info("my offset is %d", params_sdram->timer_offset);
-    //log_info("my min_pre_key is %d", min_pre_key);
-    //log_info("my n_weights is %d", n_weights);
-    log_info("my activation_function_id is %d", activation_function_id);
+  //log_info("my key is %d", my_key);
+  //log_info("my offset is %d", params_sdram->timer_offset);
+  //log_info("my min_pre_key is %d", min_pre_key);
+  //log_info("my n_weights is %d", n_weights);
+  log_info("my activation_function_id is %d", activation_function_id);
+  log_info("my pre_layer_activation_function_id is %d",
+    pre_layer_activation_function_id);
 
-    weights_sdram = data_specification_get_region(WEIGHTS, data);
+  weights_sdram = data_specification_get_region(WEIGHTS, data);
 
-    /*
-    // initialise my input_buffer for receiving packets
-    input_buffer = circular_buffer_initialize(256);
-    if (input_buffer == 0) {
-        log_error("failed initializing receiving buffer");
-        return false;
-    }
-    log_info("input_buffer initialised");
-    */
-
-    return true;
+  return true;
 } // }}}
 
 void c_main(void) { // {{{
