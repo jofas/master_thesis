@@ -49,7 +49,7 @@ import numpy as np
 
 class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 6 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
@@ -65,6 +65,7 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         self.weights = np.array(weights, dtype=np.float32)
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
+        self._activation_function_id = globals.activations[layer.activation]
         # TODO: here generate offset for timer
 
     @inject_items({"data_n_time_steps": "DataNTimeSteps"})
@@ -140,6 +141,9 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         # n_weights
         spec.write_value(len(self.weights))
+
+        # activation_function_id
+        spec.write_value(self._activation_function_id)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)

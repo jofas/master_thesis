@@ -17,7 +17,13 @@ class Dense:
         self.name = "uninitialized"
         self.neurons = []
 
-        self.activation = activation
+        if activation in globals.activations:
+            self.activation = activation
+        else:
+            raise KeyError(
+                "Unexpected activation function: {}".format(activation)
+            )
+
         self.bias = bias
 
     def init_neurons(self, weights):

@@ -28,14 +28,14 @@
 uint my_key;
 uint min_pre_key;
 uint n_weights;
+uint activation_function_id;
 float *weights;
+float *potentials;
+bool  *received_potentials;
+uint received_potentials_counter = 0;
 
 bool received_potential = false;
 float potential;
-
-/*! buffer used to store spikes */
-//static circular_buffer input_buffer;
-static uint32_t current_payload;
 
 //! recorded data items
 uint32_t size_written = 0;
@@ -47,97 +47,124 @@ data_specification_metadata_t *data = NULL;
 uint cpsr = 0;
 
 //! human readable definitions of each region in SDRAM
-typedef enum regions_e {
+typedef enum regions_e { // {{{
     SYSTEM_REGION,
     PARAMS,
     WEIGHTS,
-} regions_e;
+} regions_e; // }}}
+
+//! human readable definitions of the activation functions
+typedef enum activations_e { // {{{
+  IDENTITY,
+  RELU,
+  SIGMOID,
+  TANH,
+  SOFTMAX,
+} activations_e; // }}}
 
 //! values for the priority for each callback
-typedef enum callback_priorities {
+typedef enum callback_priorities { // {{{
     MC_PACKET = -1,
     SDP = 1,
     TIMER = 2,
     DMA = 3
-} callback_priorities;
+} callback_priorities; // }}}
 
 //! values for the states
-typedef enum states_values {
+typedef enum states_values { // {{{
     DEAD = 0,
     ALIVE = 1
-} states_values;
+} states_values; // }}}
 
 //! definitions of each element in the transmission region
-typedef struct params_region {
+typedef struct params_region { // {{{
     uint32_t has_key;
     uint32_t my_key;
     uint32_t min_pre_key;
     uint32_t timer_offset;
     uint32_t n_weights;
-} params_region_t;
+    uint32_t activation_function_id;
+} params_region_t; // }}}
 
 // pointer to sdram region containing the parameters of the conway
 // cell
 params_region_t *params_sdram;
 float *weights_sdram;
 
-void reset_potential() {
-  potential = weights[n_weights - 1];
-}
-
-// currently only sigmoid
-float activate() {
-  potential = exp(potential) / (exp(potential) + 1.);
-}
-
-void receive_data(uint key, float payload) { // {{{
-    use(key);
-
-    // TODO: receive all before received_potential
-    //       is set to true (with a counter)
-    log_info("received payload: %f", payload);
-
-    received_potential = true;
-
-    potential += weights[key - min_pre_key] * payload;
-
+float sum_potential() { // {{{
+  float sum_potential = 0;
+  for (uint i = 0; i < n_weights; i++) {
+    sum_potential += potentials[i];
+  }
+  return sum_potential;
 } // }}}
 
-void send_potential(void) { // {{{
-    // presses potential through the activation function
-    activate();
+float relu() { // {{{
+  float mx = .0;
+  for (uint i = 0; i < n_weights; i++) {
+    if (potentials[i] > mx) mx = potentials[i];
+  }
+  return mx;
+} // }}}
 
+float activate() { // {{{
+  float potential_ = sum_potential();
+
+  switch (activation_function_id) {
+    case IDENTITY:
+      return potential_;
+
+    case RELU:
+      return relu();
+
+    case SIGMOID:
+      return 1. / (1. + exp(-potential_));
+
+    case TANH:
+      return tanh(potential_);
+
+    case SOFTMAX: // softmax is handled by neurons in the next layer
+      return potential_;
+
+    default:
+      log_error("Unknown activation function - exiting!");
+      rt_error(RTE_SWERR);
+  }
+} // }}}
+
+void reset_potentials() { // {{{
+  for (uint i=0; i < n_weights - 1; i++) {
+    received_potentials[i] = false;
+  }
+  // reset to 1 because bias is already "received"
+  received_potentials_counter = 1;
+} // }}}
+
+// cause compiler warning because of type missmatch of payload but
+// works just fine
+void receive_data(uint key, float payload) { // {{{
+  log_info("received payload: %f from: %d", payload, key);
+
+  uint idx = key - min_pre_key;
+
+  if (received_potentials[idx]) {
+    log_error("received potential too fast. Last input wasn't
+               properly processed yet - exiting!");
+    rt_error(RTE_SWERR);
+  } else {
+    potentials[idx] = payload * weights[idx];
+    received_potentials[idx] = true;
+    received_potentials_counter++;
+  }
+} // }}}
+
+void send_potential(float *potential) { // {{{
     uint send_bytes;
-    sark_mem_cpy((void *)&send_bytes, &potential, sizeof(float));
+    sark_mem_cpy((void *)&send_bytes, potential, sizeof(uint));
 
     while (!spin1_send_mc_packet(my_key, send_bytes, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
-
-    log_info("sent potential %f", potential);
-
-    reset_potential();
-
-} // }}}
-
-void next_state(void) { // {{{
-    // calculate new state from the total received so far
-    /*
-    if (my_state == ALIVE) {
-        if (alive_states_recieved_this_tick <= 1) {
-            my_state = DEAD;
-        }
-        if ((alive_states_recieved_this_tick == 2) |
-                (alive_states_recieved_this_tick == 3)) {
-            my_state = ALIVE;
-        }
-        if (alive_states_recieved_this_tick >= 4) {
-            my_state = DEAD;
-        }
-    } else if (alive_states_recieved_this_tick == 3) {
-        my_state = ALIVE;
-    }
-    */
 } // }}}
 
 void update(uint ticks, uint b) { // {{{
@@ -146,38 +173,40 @@ void update(uint ticks, uint b) { // {{{
 
   time++;
 
-  if (received_potential) {
+  if (received_potentials_counter == n_weights) {
     log_info("on tick %d I'm sending a potential", time);
-    send_potential();
-    received_potential = false;
+
+    // presses potential through the activation function
+    float potential = activate();
+
+    send_potential(&potential);
+
+    log_info("sent potential %f", potential);
+
+    reset_potentials();
   }
-
-  /*
-    if (time == 0) {
-      log_info("Send my first state!");
-
-      //next_state();
-      send_state();
-
-    } else {
-      read_input_buffer();
-
-      // find my next state
-      next_state();
-
-      // do a safety check on number of states. Not like we can fix it
-      // if we've missed events
-      do_safety_check();
-
-      send_state();
-    }
-  */
 } // }}}
 
 void receive_data_void(uint key, uint unknown) { // {{{
     use(key);
     use(unknown);
     log_error("this should never ever be done");
+} // }}}
+
+void initialize_dtcm() { // {{{
+  weights = (float *)malloc(sizeof(float) * n_weights);
+
+  sark_mem_cpy(
+    (void *)weights, (void *)weights_sdram, sizeof(float) * n_weights
+  );
+
+  potentials = (float *)malloc(sizeof(float) * n_weights);
+  // last potential is the bias
+  potentials[n_weights - 1] = weights[n_weights - 1];
+
+
+  // do not need to check whether bias is received
+  received_potentials = (bool *)malloc(sizeof(bool) * n_weights - 1);
 } // }}}
 
 static bool initialize(uint32_t *timer_period) { // {{{
@@ -214,11 +243,13 @@ static bool initialize(uint32_t *timer_period) { // {{{
     my_key = params_sdram->my_key;
     min_pre_key = params_sdram->min_pre_key;
     n_weights = params_sdram->n_weights;
+    activation_function_id = params_sdram->activation_function_id;
 
     //log_info("my key is %d", my_key);
     //log_info("my offset is %d", params_sdram->timer_offset);
     //log_info("my min_pre_key is %d", min_pre_key);
     //log_info("my n_weights is %d", n_weights);
+    log_info("my activation_function_id is %d", activation_function_id);
 
     weights_sdram = data_specification_get_region(WEIGHTS, data);
 
@@ -233,15 +264,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
     */
 
     return true;
-} // }}}
-
-void copy_sdram_weights_to_dtcm() { // {{{
-  weights = (float *)malloc(n_weights);
-
-  for(uint i=0; i<n_weights; i++) {
-    weights[i] = weights_sdram[i];
-    //log_info("weight at %d: %f", i, weights[i]);
-  }
 } // }}}
 
 void c_main(void) { // {{{
@@ -265,9 +287,9 @@ void c_main(void) { // {{{
     spin1_callback_on(MCPL_PACKET_RECEIVED, receive_data, MC_PACKET);
     spin1_callback_on(TIMER_TICK, update, TIMER);
 
-    copy_sdram_weights_to_dtcm();
+    initialize_dtcm();
 
-    reset_potential();
+    reset_potentials();
 
     // Start the time at "-1" so that the first tick will be 0
     time = UINT32_MAX;
