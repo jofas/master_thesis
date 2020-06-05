@@ -64,10 +64,10 @@ def main():
 
     p_ = kmodel.predict(X, batch_size=4)
     print(p_)
-    #print(np.sum(p_, axis=1))
+    # print(np.sum(p_, axis=1))
 
-    #print(hidden_weights)
-    #print(hidden_bias)
+    # print(hidden_weights)
+    # print(hidden_bias)
 
 
 if __name__ == "__main__":
