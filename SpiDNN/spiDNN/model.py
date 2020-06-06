@@ -62,107 +62,30 @@ class Model:
     def predict(self, X):
         X = np.array(X, dtype=np.float32)
 
-        # TODO: inject different end units depending whether
-        #       simulation will train the model or do inference
-
-        end_unit_args = LivePacketGatherParameters(
-            port=globals.ack_port,
-            hostname=globals.host,
-            strip_sdp=True,
-            message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
-            use_payload_prefix=False,
-            payload_as_time_stamps=False
+        result = np.empty(
+            (X.shape[0], self._layers[-1].atoms), dtype=np.float32
         )
 
-        end_unit = LivePacketGatherMachineVertex(
-            end_unit_args,
-            "end_unit_lpg",
-            constraints=[ChipAndCoreConstraint(x=0, y=0)]
-        )
-
-        # prediction only need lpg as out? softmax? handle softmax
-        # in host or spawn an extra instance on board?
-        #
-        # do it only lpg. Better handled in python than putting board
-        # under more pressure no?
+        extractor = self._generate_extractor()
 
         self._setup_front_end()
 
         self._add_db_sock()
 
-        self._generate_machine_graph()
+        self._generate_machine_graph(extractor)
 
-        # TODO: wrapper around end_unit so it can easily be integrated
-        #      into _generate_machine_graph()
-        front_end.add_machine_vertex_instance(end_unit)
-        for source_neuron in self._layers[-1].neurons:
-            front_end.add_machine_edge_instance(MachineEdge(
-                source_neuron, end_unit, label="{}_to_{}".format(
-                    source_neuron.label, end_unit.label
-                )
-            ), globals.partition_name)
-
-        send_labels = self._layers[0].labels
-        receive_labels = self._layers[-1].labels
-
-        conn = LiveEventConnection(
-            end_unit.label,
-            receive_labels=receive_labels,
-            send_labels=send_labels,
-            machine_vertices=True
-        )
-
-        send_label_to_pos = \
-            {label: i for i, label in enumerate(send_labels)}
-
-        def injector_callback(label, conn):
-            for i, x in enumerate(X):
-                print("sending {} at step {} to neuron: {}".format(
-                    x[send_label_to_pos[label]], i, label
-                ))
-
-                conn.send_event_with_payload(
-                    label, 0, float_to_uint32t(x[send_label_to_pos[label]])
-                )
-
-                time.sleep(0.01)
-
-            """
-            conn.send_events_with_payloads(label, [
-                (0, float_to_uint32t(x[send_label_to_pos[label]])) for x in X
-            ])
-            """
-
-        rlop = ReceivingLiveOutputProgress(X.shape[0], receive_labels)
-
-        result = np.empty(
-            (X.shape[0], len(receive_labels)), dtype=np.float32
-        )
-
-        # TODO
-        def extractor_callback(label, _, val):
-            val = uint32t_to_float(val)
-            print("received val: {}, neuron: {}".format(val, label))
-            x = rlop.received(label)
-            y = rlop.label_to_pos(label)
-
-            result[x, y] = val
-
-            if rlop.simulation_finished:
-                front_end.stop_run()
-
-        for label in receive_labels:
-            conn.add_receive_callback(label, extractor_callback)
-
-        for label in send_labels:
-            conn.add_start_resume_callback(label, injector_callback)
+        conn = self._setup_live_event_connection(extractor, X, result)
 
         front_end.run()
 
         front_end.stop()
+
         conn.close()
 
-        return result
+        if self._layers[-1].activation == "softmax":
+            return self._softmax(result)
+        else:
+            return result
 
     def _setup_front_end(self):
         # + 1, because end_unit must be accounted for
@@ -184,9 +107,19 @@ class Model:
                 "SpiNNaker doesn't have enough cores to run Model"
             )
 
-    def _generate_machine_graph(self):
+    def _generate_machine_graph(self, end_unit):
         self._init_neurons()
         self._connect_layers()
+
+        # TODO: wrapper around end_unit so it can easily be integrated
+        #      into _generate_machine_graph()
+        front_end.add_machine_vertex_instance(end_unit)
+        for source_neuron in self._layers[-1].neurons:
+            front_end.add_machine_edge_instance(MachineEdge(
+                source_neuron, end_unit, label="{}_to_{}".format(
+                    source_neuron.label, end_unit.label
+                )
+            ), globals.partition_name)
 
     def _init_neurons(self):
         # Input unit needs to know how many neurons it is connected
@@ -196,21 +129,89 @@ class Model:
         #
         self._layers[0].init_neurons(self._layers[1].atoms)
 
-        # for layer, weights in zip(self._layers[1:], self.__weights):
-        #    layer.init_neurons(weights)
-        iter_weights = range(0, len(self._layers), 2)
-
-        for i, layer in zip(iter_weights, self._layers[1:]):
-            print(i, " ", layer.name)
+        i = 0
+        for layer in self._layers[1:]:
             layer.init_neurons(self.__weights[i], self.__weights[i+1])
+            i += 2
 
     def _connect_layers(self):
         for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
             layer.connect(source_layer)
 
-    def _all_atoms(self):
-        return sum([layer.atoms for layer in self._layers])
+    def _generate_extractor(self):
+        end_unit_args = LivePacketGatherParameters(
+            port=globals.ack_port,
+            hostname=globals.host,
+            strip_sdp=True,
+            message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
+            use_payload_prefix=False,
+            payload_as_time_stamps=False
+        )
+
+        return LivePacketGatherMachineVertex(
+            end_unit_args,
+            "end_unit_lpg",
+            constraints=[ChipAndCoreConstraint(x=0, y=0)]
+        )
+
+    def _setup_live_event_connection(self, end_unit, X, result):
+        send_labels = self._layers[0].labels
+        receive_labels = self._layers[-1].labels
+
+        conn = LiveEventConnection(
+            end_unit.label,
+            receive_labels=receive_labels,
+            send_labels=send_labels,
+            machine_vertices=True
+        )
+
+        injector_callback = self._generate_injector_callback(send_labels, X)
+        extractor_callback = self._generate_extractor_callback(
+            receive_labels, result)
+
+        for label in receive_labels:
+            conn.add_receive_callback(label, extractor_callback)
+
+        for label in send_labels:
+            conn.add_start_resume_callback(label, injector_callback)
+
+        return conn
+
+    def _generate_injector_callback(self, send_labels, X):
+        send_label_to_pos = \
+            {label: i for i, label in enumerate(send_labels)}
+
+        def injector_callback(label, conn):
+            for i, x in enumerate(X):
+
+                print("sending {} at step {} to neuron: {}".format(
+                    x[send_label_to_pos[label]], i, label
+                ))
+
+                conn.send_event_with_payload(
+                    label, 0, float_to_uint32t(x[send_label_to_pos[label]])
+                )
+
+                time.sleep(0.10)
+
+        return injector_callback
+
+    def _generate_extractor_callback(self, receive_labels, result):
+        rlop = ReceivingLiveOutputProgress(result.shape[0], receive_labels)
+
+        def extractor_callback(label, _, val):
+            val = uint32t_to_float(val)
+            # print("received val: {}, neuron: {}".format(val, label))
+            x = rlop.received(label)
+            y = rlop.label_to_pos(label)
+
+            result[x, y] = val
+
+            if rlop.simulation_finished:
+                front_end.stop_run()
+
+        return extractor_callback
 
     def _add_db_sock(self):
         database_socket = SocketAddress(
@@ -220,6 +221,16 @@ class Model:
         )
 
         get_simulator().add_socket_address(database_socket)
+
+    def _softmax(self, M):
+        for i in range(0, len(M)):
+            M[i, :] = np.exp(M[i, :])
+            sm = sum(M[i, :])
+            M[i, :] = M[i, :] / sm
+        return M
+
+    def _all_atoms(self):
+        return sum([layer.atoms for layer in self._layers])
 
     def get_weights(self):
         return self.__weights

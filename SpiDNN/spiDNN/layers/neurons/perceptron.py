@@ -30,7 +30,7 @@ from spinnaker_graph_front_end.utilities.data_utils import (
 from data_specification.enums import DataType
 
 
-from spiDNN.util import absolute_path_from_home
+from spiDNN.util import generate_offset
 
 import spiDNN.globals as globals
 
@@ -67,8 +67,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
         self._activation_function_id = globals.activations[layer.activation]
         self._pre_layer_activation_function_id = None
-
-        # TODO: here generate offset for timer
 
     @inject_items({"data_n_time_steps": "DataNTimeSteps"})
     @overrides(
@@ -132,28 +130,22 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         # has_key
         spec.write_value(0 if key is None else 1)
 
-        # key
         spec.write_value(0 if key is None else key)
 
-        # min_pre_key
         spec.write_value(min_pre_key)
 
-        # offset
-        spec.write_value(0)
+        offset = generate_offset(placement.p)
+        spec.write_value(offset)
 
-        # n_weights
         spec.write_value(len(self.weights))
 
-        # activation_function_id
         spec.write_value(self._activation_function_id)
 
-        # pre_layer_activation_function_id
         spec.write_value(self._pre_layer_activation_function_id)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)
 
-        # weights
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
         spec.end_specification()

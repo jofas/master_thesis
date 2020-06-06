@@ -125,7 +125,14 @@ float activate() { // {{{
   }
 } // }}}
 
+void apply_exp_to_potentials() {
+  for (uint i = 0; i < n_potentials; i++) {
+    potentials[i] = exp(potentials[i]);
+  }
+}
+
 void softmax_from_pre_layer() { // {{{
+  apply_exp_to_potentials();
   float potential = sum_potential();
 
   for (uint i = 0; i < n_potentials; i++) {
@@ -151,7 +158,7 @@ void reset_potentials() { // {{{
 // cause compiler warning because of type missmatch of payload but
 // works just fine
 void receive_data(uint key, float payload) { // {{{
-  log_info("received payload: %f from: %d", payload, key);
+  //log_info("received payload: %f from: %d", payload, key);
 
   uint idx = key - min_pre_key;
 
@@ -201,7 +208,7 @@ void update(uint ticks, uint b) { // {{{
 
     send_potential(&potential);
 
-    log_info("sent potential %f\n", potential);
+    //log_info("sent potential %f\n", potential);
 
     reset_potentials();
   }

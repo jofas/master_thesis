@@ -1,8 +1,13 @@
+import spiDNN.globals as globals
+
+
 import os
 
 from threading import Lock
 
 import struct
+
+import math
 
 
 def absolute_path_from_home(relative_path=None):
@@ -15,6 +20,12 @@ def absolute_path_from_home(relative_path=None):
         relative_path = relative_path[1:]
 
     return "/".join(home_path + relative_path.split("/"))
+
+
+def generate_offset(processor):
+    return int(
+        math.ceil(globals.max_offset / globals.cores_per_chip) * processor
+    )
 
 
 def uint32t_to_float(uint):
