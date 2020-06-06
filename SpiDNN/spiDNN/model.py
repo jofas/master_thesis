@@ -36,7 +36,7 @@ import numpy as np
 
 class Model:
     def __init__(self):
-        self.weights = []
+        self.__weights = []
         self._layers = []
 
     def add(self, layer, layer_name=None):
@@ -48,16 +48,19 @@ class Model:
         else:
             layer.name = layer_name
 
-        # generate random weights
         if len(self._layers) > 0:
             source_layer = self._layers[-1]
-            self.weights.append(layer.generate_weights(source_layer))
+            # append both the weights and bias to the weights
+            #
+            # weights are injected into neurons right before the
+            # simulation starts
+            self.__weights += layer.generate_weights(source_layer)
 
         self._layers.append(layer)
         return self
 
     def predict(self, X):
-        # TODO: make sure X is np.float32
+        X = np.array(X, dtype=np.float32)
 
         # TODO: inject different end units depending whether
         #       simulation will train the model or do inference
@@ -113,7 +116,6 @@ class Model:
             {label: i for i, label in enumerate(send_labels)}
 
         def injector_callback(label, conn):
-
             for i, x in enumerate(X):
                 print("sending {} at step {} to neuron: {}".format(
                     x[send_label_to_pos[label]], i, label
@@ -123,10 +125,13 @@ class Model:
                     label, 0, float_to_uint32t(x[send_label_to_pos[label]])
                 )
 
-                time.sleep(1)
+                time.sleep(0.005)
 
-            # conn.send_events_with_payloads(label,
-            #    [(0, float(x[send_label_to_pos[label]])) for x in X])
+            """
+            conn.send_events_with_payloads(label, [
+                (0, float_to_uint32t(x[send_label_to_pos[label]])) for x in X
+            ])
+            """
 
         rlop = ReceivingLiveOutputProgress(X.shape[0], receive_labels)
 
@@ -191,8 +196,13 @@ class Model:
         #
         self._layers[0].init_neurons(self._layers[1].atoms)
 
-        for layer, weights in zip(self._layers[1:], self.weights):
-            layer.init_neurons(weights)
+        #for layer, weights in zip(self._layers[1:], self.__weights):
+        #    layer.init_neurons(weights)
+        iter_weights = range(0, len(self._layers), 2)
+
+        for i, layer in zip(iter_weights, self._layers[1:]):
+            print(i, " ", layer.name)
+            layer.init_neurons(self.__weights[i], self.__weights[i+1])
 
     def _connect_layers(self):
         for i, layer in enumerate(self._layers[1:]):
@@ -210,3 +220,13 @@ class Model:
         )
 
         get_simulator().add_socket_address(database_socket)
+
+    def get_weights(self):
+        return self.__weights
+
+    def set_weights(self, weights):
+        # TODO: make sure no bullshit is going on
+        self.__weights = weights
+
+    def set_weights_from_keras(self, weights):
+        self.set_weights([w.read_value().numpy() for w in weights])

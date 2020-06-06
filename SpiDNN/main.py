@@ -24,25 +24,13 @@ def main():
         metrics=["accuracy"]
     )
 
-    kmodel.fit(X, y, epochs=1000, batch_size=4)
+    #kmodel.fit(X, y, epochs=1000, batch_size=4)
 
     model = Model().add(Input(2)) \
                    .add(Dense(2, activation="relu")) \
                    .add(Dense(1, activation="sigmoid"))
 
-    hidden_weights = kmodel.weights[0].read_value().numpy().T
-    hidden_bias = kmodel.weights[1].read_value().numpy().reshape(-1, 1)
-
-    output_weights = kmodel.weights[2].read_value().numpy().T
-    output_bias = kmodel.weights[3].read_value().numpy().reshape(-1, 1)
-
-    model.weights[0] = np.concatenate(
-        (hidden_weights, hidden_bias), axis=1
-    )
-
-    model.weights[1] = np.concatenate(
-        (output_weights, output_bias), axis=1
-    )
+    model.set_weights_from_keras(kmodel.weights)
 
     # LOLZ keras neurons are columns
     """
@@ -58,12 +46,11 @@ def main():
     ], dtype=np.float32)
     """
 
-    prediction = model.predict(X)
-
-    print(prediction)
-
+    p = model.predict(X)
     p_ = kmodel.predict(X, batch_size=4)
-    print(p_)
+
+    assert np.all(p == p_)
+    print("SUCCESS")
     # print(np.sum(p_, axis=1))
 
     # print(hidden_weights)

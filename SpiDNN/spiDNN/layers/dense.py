@@ -26,10 +26,13 @@ class Dense:
 
         self.bias = bias
 
-    def init_neurons(self, weights):
-        assert weights.shape[0] == self.atoms
+    def init_neurons(self, weights, biases):
+        assert weights.shape[1] == self.atoms
+        assert biases.shape[0] == self.atoms
 
-        for i, weight_vector in enumerate(weights):
+        for i, weight_vector in enumerate(
+                np.concatenate((weights, biases.reshape(1,-1))).T):
+
             neuron = Perceptron(self, i, weight_vector)
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
@@ -56,12 +59,17 @@ class Dense:
         #
         source_atoms = source_layer.atoms
 
-        weights = np.random.rand(self.atoms, source_atoms + 1)
+        weights = np.array(
+            np.random.rand(source_atoms, self.atoms), dtype=np.float32
+        )
+        biases = np.array(
+            np.random.rand(self.atoms), dtype=np.float32
+        )
 
         if not self.bias:
-            weights[:, -1] = 0.
+            biases[:] = .0
 
-        return weights
+        return [weights, biases]
 
     @property
     def labels(self):

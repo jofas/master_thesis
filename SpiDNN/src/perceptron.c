@@ -24,10 +24,13 @@
 #include <circular_buffer.h>
 #include <math.h>
 
+#define BIAS weights[n_weights - 1]
+
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
 uint min_pre_key;
 uint n_weights;
+uint n_potentials;
 uint activation_function_id;
 uint pre_layer_activation_function_id;
 
@@ -89,41 +92,23 @@ typedef struct params_region { // {{{
 params_region_t *params_sdram;
 float *weights_sdram;
 
-float sum_pre_layer_potential() {
+float sum_potential() { // {{{
   float sum_potential = 0;
-  for (uint i = 0; i < n_weights - 1; i++) {
+  for (uint i = 0; i < n_potentials; i++) {
     sum_potential += potentials[i];
   }
   return sum_potential;
-}
-
-float sum_potential() { // {{{
-  return sum_pre_layer_potential() + weights[n_weights - 1];
-} // }}}
-
-float max_positive_pre_layer_potential() {
-  float mx = .0;
-  for (uint i = 0; i < n_weights - 1; i++) {
-    if (potentials[i] > mx) mx = potentials[i];
-  }
-  return mx;
-}
-
-float max_positive_potential() { // {{{
-  float pre_layer_mx = max_positive_pre_layer_potential();
-  return pre_layer_mx > potentials[n_weights - 1] ?
-    pre_layer_mx : potentials[n_weights - 1];
 } // }}}
 
 float activate() { // {{{
-  float potential = sum_potential();
+  float potential = sum_potential() + BIAS;
 
   switch (activation_function_id) {
     case IDENTITY:
       return potential;
 
     case RELU:
-      return potential > .0 ? potential : .0;//max_positive_potential();
+      return potential > .0 ? potential : .0;
 
     case SIGMOID:
       return 1. / (1. + exp(-potential));
@@ -140,36 +125,27 @@ float activate() { // {{{
   }
 } // }}}
 
-void relu_from_pre_layer() { // {{{
-  float mx = max_positive_pre_layer_potential();
-  log_info("pre ReLU: setting received potential to %f", mx);
-  for (uint i = 0; i < n_weights - 1; i++) {
-    potentials[i] = mx;
-  }
-} // }}}
-
 void softmax_from_pre_layer() { // {{{
-  float potential = sum_pre_layer_potential();
+  float potential = sum_potential();
 
-  for (uint i = 0; i < n_weights - 1; i++) {
+  for (uint i = 0; i < n_potentials; i++) {
     potentials[i] = potentials[i] / potential;
   }
 } // }}}
 
-void apply_pre_layer_activation() {
+void apply_pre_layer_activation() { // {{{
   switch (pre_layer_activation_function_id) {
     case SOFTMAX:
       softmax_from_pre_layer();
       break;
   }
-}
+} // }}}
 
 void reset_potentials() { // {{{
   for (uint i=0; i < n_weights - 1; i++) {
     received_potentials[i] = false;
   }
-  // reset to 1 because bias is already "received"
-  received_potentials_counter = 1;
+  received_potentials_counter = 0;
 } // }}}
 
 // cause compiler warning because of type missmatch of payload but
@@ -190,11 +166,11 @@ void receive_data(uint key, float payload) { // {{{
   }
 } // }}}
 
-void apply_weights() {
-  for (uint i = 0; i < n_weights - 1; i++) {
+void apply_weights() { // {{{
+  for (uint i = 0; i < n_potentials; i++) {
     potentials[i] *= weights[i];
   }
-}
+} // }}}
 
 void send_potential(float *potential) { // {{{
     uint send_bytes;
@@ -211,11 +187,11 @@ void update(uint ticks, uint b) { // {{{
 
   time++;
 
-  if (received_potentials_counter == n_weights) {
+  if (received_potentials_counter == n_potentials) {
     //log_info("on tick %d I'm sending a potential", time);
 
     // transform received potentials for some activation functions the
-    // previous layer can have (ReLU and softmax)
+    // previous layer can have (softmax)
     apply_pre_layer_activation();
 
     apply_weights();
@@ -244,13 +220,9 @@ void initialize_dtcm() { // {{{
     (void *)weights, (void *)weights_sdram, sizeof(float) * n_weights
   );
 
-  potentials = (float *)malloc(sizeof(float) * n_weights);
-  // last potential is the bias
-  potentials[n_weights - 1] = weights[n_weights - 1];
+  potentials = (float *)malloc(sizeof(float) * n_potentials);
 
-
-  // do not need to check whether bias is received
-  received_potentials = (bool *)malloc(sizeof(bool) * n_weights - 1);
+  received_potentials = (bool *)malloc(sizeof(bool) * n_potentials);
 } // }}}
 
 static bool initialize(uint32_t *timer_period) { // {{{
@@ -287,6 +259,7 @@ static bool initialize(uint32_t *timer_period) { // {{{
   my_key = params_sdram->my_key;
   min_pre_key = params_sdram->min_pre_key;
   n_weights = params_sdram->n_weights;
+  n_potentials = n_weights - 1;
   activation_function_id = params_sdram->activation_function_id;
   pre_layer_activation_function_id =
     params_sdram->pre_layer_activation_function_id;
@@ -295,9 +268,9 @@ static bool initialize(uint32_t *timer_period) { // {{{
   //log_info("my offset is %d", params_sdram->timer_offset);
   //log_info("my min_pre_key is %d", min_pre_key);
   //log_info("my n_weights is %d", n_weights);
-  log_info("my activation_function_id is %d", activation_function_id);
-  log_info("my pre_layer_activation_function_id is %d",
-    pre_layer_activation_function_id);
+  //log_info("my activation_function_id is %d", activation_function_id);
+  //log_info("my pre_layer_activation_function_id is %d",
+  //  pre_layer_activation_function_id);
 
   weights_sdram = data_specification_get_region(WEIGHTS, data);
 

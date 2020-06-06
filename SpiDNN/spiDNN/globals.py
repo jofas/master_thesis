@@ -1,7 +1,7 @@
 from spinn_front_end_common.utilities.constants import NOTIFY_PORT
 
-machine_time_step = 500
-time_scale_factor = 100
+machine_time_step = 10
+time_scale_factor = 1
 cores_per_chip = 15
 partition_name = "PARTITION0"
 ack_port = 22222
