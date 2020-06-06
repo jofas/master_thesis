@@ -1,6 +1,6 @@
 from spinn_front_end_common.utilities.constants import NOTIFY_PORT
 
-machine_time_step = 10
+machine_time_step = 25
 time_scale_factor = 1
 cores_per_chip = 15
 partition_name = "PARTITION0"

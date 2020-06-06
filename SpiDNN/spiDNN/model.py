@@ -125,7 +125,7 @@ class Model:
                     label, 0, float_to_uint32t(x[send_label_to_pos[label]])
                 )
 
-                time.sleep(0.005)
+                time.sleep(0.01)
 
             """
             conn.send_events_with_payloads(label, [
