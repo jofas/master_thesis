@@ -196,7 +196,7 @@ class Model:
         #
         self._layers[0].init_neurons(self._layers[1].atoms)
 
-        #for layer, weights in zip(self._layers[1:], self.__weights):
+        # for layer, weights in zip(self._layers[1:], self.__weights):
         #    layer.init_neurons(weights)
         iter_weights = range(0, len(self._layers), 2)
 

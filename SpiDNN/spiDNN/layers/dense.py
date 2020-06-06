@@ -31,7 +31,7 @@ class Dense:
         assert biases.shape[0] == self.atoms
 
         for i, weight_vector in enumerate(
-                np.concatenate((weights, biases.reshape(1,-1))).T):
+                np.concatenate((weights, biases.reshape(1, -1))).T):
 
             neuron = Perceptron(self, i, weight_vector)
             self.neurons.append(neuron)
