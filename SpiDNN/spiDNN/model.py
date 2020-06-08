@@ -184,16 +184,16 @@ class Model:
 
         def injector_callback(label, conn):
             for i, x in enumerate(X):
-
+                """
                 print("sending {} at step {} to neuron: {}".format(
                     x[send_label_to_pos[label]], i, label
                 ))
-
+                """
                 conn.send_event_with_payload(
                     label, 0, float_to_uint32t(x[send_label_to_pos[label]])
                 )
 
-                time.sleep(0.10)
+                time.sleep(0.075)
 
         return injector_callback
 
