@@ -34,4 +34,3 @@ def test_inference():
 
     error = np.absolute(p - p_)
     assert np.amax(error) < 0.0001
-    print("SUCCESS")
