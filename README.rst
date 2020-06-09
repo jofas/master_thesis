@@ -47,6 +47,24 @@ Work Plan
 +---------------+----+----+----+----+----+----+----+----+----+----+----+
 
 
+Optimizations
+-------------
+
+* trainable perceptrons
+
+* custom injectors which supports partitions
+
+* split neurons (bigger layers)
+
+* quantization (speed and memory size)
+
+* softmax partition (and neuron?) (instead of handling in next layer)
+
+* populations or some other mechanism to combine neurons (saving cores)
+
+* loss into perceptron (saving cores)
+
+
 Links
 -----
 
