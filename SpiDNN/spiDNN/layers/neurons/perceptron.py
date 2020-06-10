@@ -165,24 +165,3 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
     def __repr__(self):
         return self.label
-
-        """ OFFSET
-
-        #PARTITION_ID = "NEIGHBOR_CONNECT"
-        #_MAX_OFFSET_DENOMINATOR = 10
-        #_INSTANCE_COUNTER = 0
-        #_ALL_VERTICES = 0
-
-        # compute offset for setting phase of conways cell
-        max_offset =  machine_time_step * time_scale_factor \
-                   // ConwayBasicCell._MAX_OFFSET_DENOMINATOR
-
-        offset = int(
-              math.ceil(max_offset / ConwayBasicCell._ALL_VERTICES)
-            * ConwayBasicCell._INSTANCE_COUNTER
-        )
-
-        spec.write_value(offset)
-
-        ConwayBasicCell._INSTANCE_COUNTER += 1
-        """
