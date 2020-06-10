@@ -223,8 +223,10 @@ class Model:
         get_simulator().add_socket_address(database_socket)
 
     def _softmax(self, M):
+        """
+        Handles normalization needed for softmax
+        """
         for i in range(0, len(M)):
-            M[i, :] = np.exp(M[i, :])
             sm = sum(M[i, :])
             M[i, :] = M[i, :] / sm
         return M
