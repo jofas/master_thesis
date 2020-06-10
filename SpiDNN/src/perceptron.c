@@ -117,7 +117,7 @@ float activate() { // {{{
       return tanh(potential);
 
     case SOFTMAX: // softmax is handled by neurons in the next layer
-      return potential;
+      return exp(potential);
 
     default:
       log_error("Unknown activation function - exiting!");
@@ -125,14 +125,7 @@ float activate() { // {{{
   }
 } // }}}
 
-void apply_exp_to_potentials() {
-  for (uint i = 0; i < n_potentials; i++) {
-    potentials[i] = exp(potentials[i]);
-  }
-}
-
 void softmax_from_pre_layer() { // {{{
-  apply_exp_to_potentials();
   float potential = sum_potential();
 
   for (uint i = 0; i < n_potentials; i++) {
