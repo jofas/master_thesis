@@ -8,7 +8,7 @@ from pacman.model.graphs.machine import MachineEdge
 
 import spiDNN.globals as globals
 
-from .neurons import Perceptron
+from .neurons import Perceptron, SoftmaxPerceptron
 
 
 class Dense:
@@ -30,12 +30,41 @@ class Dense:
         assert weights.shape[1] == self.atoms
         assert biases.shape[0] == self.atoms
 
+        if self.activation == "softmax":
+            self._init_softmax_perceptron(weights, biases)
+        else:
+            self._init_perceptron(weights, biases)
+
+    def _init_softmax_perceptron(self, weights, biases):
+        for i, weight_vector in enumerate(
+                np.concatenate((weights, biases.reshape(1, -1))).T):
+
+            neuron = SoftmaxPerceptron(self, i, weight_vector)
+            self.neurons.append(neuron)
+            front_end.add_machine_vertex_instance(neuron)
+
+        self._connect_softmax_perceptrons()
+
+    def _init_perceptron(self, weights, biases):
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
             neuron = Perceptron(self, i, weight_vector)
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
+
+    def _connect_softmax_perceptrons(self):
+        for source_neuron in self.neurons:
+            for neuron in self.neurons:
+                if source_neuron == neuron:
+                    continue
+
+                front_end.add_machine_edge_instance(MachineEdge(
+                    source_neuron, neuron,
+                    label="{}_softmax_{}_to_{}".format(
+                        self.name, source_neuron.label, neuron.label
+                    )
+                ), "PARTITION_{}_softmax".format(self.name))
 
     def connect(self, source_layer):
         for source_neuron in source_layer.neurons:

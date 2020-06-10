@@ -47,7 +47,7 @@ import struct
 import numpy as np
 
 
-class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
+class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
 
     PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
 
@@ -58,9 +58,9 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
     def __init__(self, layer, id, weights):
 
-        super(Perceptron, self).__init__(
+        super(SoftmaxPerceptron, self).__init__(
             "{}_{}".format(layer.name, id),
-            "perceptron.aplx"
+            "softmax_perceptron.aplx"
         )
 
         self.weights = np.array(weights, dtype=np.float32)
@@ -68,9 +68,14 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         self._activation_function_id = globals.activations[layer.activation]
         self._pre_layer_activation_function_id = None
 
+    @inject_items({"data_n_time_steps": "DataNTimeSteps"})
+    @overrides(
+        MachineDataSpecableVertex.generate_machine_data_specification,
+        additional_arguments={"data_n_time_steps"})
     def generate_machine_data_specification(
             self, spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor):
+            reverse_iptags, machine_time_step, time_scale_factor,
+            data_n_time_steps):
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
@@ -95,11 +100,21 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         partitions = \
             machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
 
-        if not is_single(partitions):
+        if not len(partitions) == 2:
             raise ConfigurationException(
-                "Can only handle one type of partition.")
+                "Can only handle global and softmax partition.")
 
-        edges = list(machine_graph.get_edges_ending_at_vertex(self))
+        softmax_partition = \
+            list(filter(lambda x: x != globals.partition_name, partitions))[0]
+
+        # routing info should give me a base key for my partition ->
+        # on board
+        #
+        # also own key from softmax partition
+
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, globals.partition_name))
 
         # smallest key from previous layer
         min_pre_key = min([
@@ -108,8 +123,38 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
             ) for edge in edges
         ])
 
+        min_softmax_key = \
+            routing_info.get_first_key_from_partition(softmax_partition)
+
+        print(dir(routing_info))
+        for partition in partitions:
+            print(partition.identifier)
+            print(routing_info.get_first_key_from_partition(partition))
+        #print(help(routing_info.get_first_key_for_edge))
+
+        #raise Exception("meh. Me debugging")
+
+        # TODO: continue here making softmax partition work just
+        #       striding that shit
+
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, softmax_partition.identifier))
+
+        print(dir(routing_info))
+        for i, edge in enumerate(edges):
+            print(i, " ", routing_info.get_routing_info_for_edge(edge).get_keys())
+
         key = routing_info.get_first_key_from_pre_vertex(
             self, globals.partition_name)
+
+        softmax_key = routing_info.get_first_key_from_pre_vertex(
+            self, softmax_partition.identifier)
+
+        print(min_pre_key, " ", min_softmax_key)
+        print(key, " ", softmax_key)
+
+        raise Exception("meh. Me debugging")
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.PARAMS.value)
@@ -152,3 +197,4 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
     def __repr__(self):
         return self.label
+

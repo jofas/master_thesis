@@ -34,3 +34,7 @@ def test_inference():
 
     error = np.absolute(p - p_)
     assert np.amax(error) < 0.0001
+
+
+if __name__ == "__main__":
+    test_inference()
