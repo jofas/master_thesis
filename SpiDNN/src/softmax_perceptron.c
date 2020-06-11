@@ -28,9 +28,14 @@
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
+uint softmax_key:
+
 uint min_pre_key;
+uint min_softmax_key;
+
 uint n_weights;
 uint n_potentials;
+
 uint activation_function_id;
 uint pre_layer_activation_function_id;
 
@@ -39,6 +44,11 @@ float *weights;
 float *potentials;
 bool  *received_potentials;
 uint received_potentials_counter = 0;
+
+float potential;
+
+float softmax_denominator;
+uint received_softmax_counter;
 
 static uint32_t time;
 data_specification_metadata_t *data = NULL;
@@ -80,7 +90,9 @@ typedef enum states_values { // {{{
 typedef struct params_region { // {{{
     uint32_t has_key;
     uint32_t my_key;
+    uint32_t softmax_key;
     uint32_t min_pre_key;
+    uint32_t min_softmax_key;
     uint32_t timer_offset;
     uint32_t n_weights;
     uint32_t activation_function_id;
@@ -92,32 +104,37 @@ typedef struct params_region { // {{{
 params_region_t *params_sdram;
 float *weights_sdram;
 
-float sum_potential() { // {{{
-  float sum_potential = 0;
+void generate_potential() { // {{{
   for (uint i = 0; i < n_potentials; i++) {
-    sum_potential += potentials[i];
+    potential += potentials[i] * weights[i];
   }
-  return sum_potential;
+
+  potential += BIAS;
 } // }}}
 
-float activate() { // {{{
-  float potential = sum_potential() + BIAS;
+// TODO: remove this shit. Its the softmax neuron, lol
+void activate() { // {{{
+  generate_potential();
 
   switch (activation_function_id) {
     case IDENTITY:
-      return potential;
+      break;
 
     case RELU:
-      return potential > .0 ? potential : .0;
+      potential = potential > .0 ? potential : .0;
+      break;
 
     case SIGMOID:
-      return 1. / (1. + exp(-potential));
+      potential = 1. / (1. + exp(-potential));
+      break;
 
     case TANH:
-      return tanh(potential);
+      potential = tanh(potential);
+      break;
 
-    case SOFTMAX: // softmax is handled by neurons in the next layer
-      return exp(potential);
+    case SOFTMAX:
+      potential = exp(potential);
+      break;
 
     default:
       log_error("Unknown activation function - exiting!");
@@ -125,34 +142,21 @@ float activate() { // {{{
   }
 } // }}}
 
-void softmax_from_pre_layer() { // {{{
-  float potential = sum_potential();
+void reset() { // {{{
+  potential = .0;
 
-  for (uint i = 0; i < n_potentials; i++) {
-    potentials[i] = potentials[i] / potential;
-  }
-} // }}}
+  softmax_denominator = .0;
 
-void apply_pre_layer_activation() { // {{{
-  switch (pre_layer_activation_function_id) {
-    case SOFTMAX:
-      softmax_from_pre_layer();
-      break;
-  }
-} // }}}
-
-void reset_potentials() { // {{{
   for (uint i=0; i < n_weights - 1; i++) {
     received_potentials[i] = false;
   }
-  received_potentials_counter = 0;
+
+  // 1 because we have already 'received' the potential of this per-
+  // ceptron instance.
+  received_softmax_counter = 1;
 } // }}}
 
-// cause compiler warning because of type missmatch of payload but
-// works just fine
-void receive_data(uint key, float payload) { // {{{
-  //log_info("received payload: %f from: %d", payload, key);
-
+void receive_potential(uint key, float payload) { // {{{
   uint idx = key - min_pre_key;
 
   if (received_potentials[idx]) {
@@ -166,17 +170,27 @@ void receive_data(uint key, float payload) { // {{{
   }
 } // }}}
 
-void apply_weights() { // {{{
-  for (uint i = 0; i < n_potentials; i++) {
-    potentials[i] *= weights[i];
+// cause compiler warning because of type missmatch of payload but
+// works just fine. C is awesome.
+void receive_data(uint key, float payload) { // {{{
+  //log_info("received payload: %f from: %d", payload, key);
+
+  // min_pre_key will always be bigger than min_softmax_key, because
+  // softmax partitions are explicitly allocated in the key space
+  // beginning from 0.
+  if (key >= min_softmax_key && key < min_pre_key) {
+    softmax_denominator += payload;
+    received_softmax_counter++;
+  } else {
+    receive_potential(key, payload);
   }
 } // }}}
 
-void send_potential(float *potential) { // {{{
+void send(uint key) { // {{{
     uint send_bytes;
-    sark_mem_cpy((void *)&send_bytes, potential, sizeof(uint));
+    sark_mem_cpy((void *)&send_bytes, &potential, sizeof(uint));
 
-    while (!spin1_send_mc_packet(my_key, send_bytes, WITH_PAYLOAD)) {
+    while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
 } // }}}
@@ -187,24 +201,26 @@ void update(uint ticks, uint b) { // {{{
 
   time++;
 
-  if (received_potentials_counter == n_potentials) {
+  // TODO: softmax_layer_size not on board yet. Once it is on the
+  //       board softmax layer should work... hopefully
+  if (received_softmax_counter == softmax_layer_size) {
+
+    potential = potential / (softmax_denominator + potential);
+    send(my_key);
+    reset();
+
+  } else if (received_potentials_counter == n_potentials) {
     //log_info("on tick %d I'm sending a potential", time);
 
-    // transform received potentials for some activation functions the
-    // previous layer can have (softmax)
-    apply_pre_layer_activation();
-
-    apply_weights();
-
     // presses potential through the activation function
-    float potential = activate();
+    activate();
 
-    send_potential(&potential);
+    send(softmax_key);
 
-    //log_info("sent potential %f\n", potential);
-
-    reset_potentials();
+    // reset so data is not send twice for softmax
+    received_potentials_counter = 0;
   }
+  //log_info("sent potential %f\n", potential);
 } // }}}
 
 void receive_data_void(uint key, uint unknown) { // {{{
@@ -257,9 +273,14 @@ static bool initialize(uint32_t *timer_period) { // {{{
   }
 
   my_key = params_sdram->my_key;
+  softmax_key = params_sdram->softmax_key;
+
   min_pre_key = params_sdram->min_pre_key;
+  min_softmax_key = params_sdram->min_softmax_key;
+
   n_weights = params_sdram->n_weights;
   n_potentials = n_weights - 1;
+
   activation_function_id = params_sdram->activation_function_id;
   pre_layer_activation_function_id =
     params_sdram->pre_layer_activation_function_id;
@@ -300,7 +321,7 @@ void c_main(void) { // {{{
 
     initialize_dtcm();
 
-    reset_potentials();
+    reset();
 
     // Start the time at "-1" so that the first tick will be 0
     time = UINT32_MAX;

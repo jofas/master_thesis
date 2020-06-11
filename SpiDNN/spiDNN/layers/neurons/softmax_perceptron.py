@@ -57,7 +57,7 @@ class SoftmaxPerceptron(
         SimulatorVertex, MachineDataSpecableVertex,
         AbstractProvidesOutgoingPartitionConstraints):
 
-    PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 9 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
@@ -146,17 +146,21 @@ class SoftmaxPerceptron(
         spec.switch_write_focus(
             region=self.DATA_REGIONS.PARAMS.value)
 
-        # TODO: get [min_]softmax_key on the board
-
         # has_key
         spec.write_value(0 if key is None else 1)
 
         spec.write_value(0 if key is None else key)
 
+        spec.write_value(softmax_key)
+
         spec.write_value(min_pre_key)
+
+        spec.write_value(min_softmax_key)
 
         offset = generate_offset(placement.p)
         spec.write_value(offset)
+
+        # TODO: get layer size on the board
 
         spec.write_value(len(self.weights))
 
