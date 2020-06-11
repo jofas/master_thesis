@@ -36,14 +36,21 @@ class Dense:
             self._init_perceptron(weights, biases)
 
     def _init_softmax_perceptron(self, weights, biases):
+
+        # here build key constraint
+        softmax_partition_identifier = \
+            "PARTITION_{}_softmax".format(self.name)
+
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
-            neuron = SoftmaxPerceptron(self, i, weight_vector)
+            neuron = SoftmaxPerceptron(
+                self, i, weight_vector, softmax_partition_identifier)
+
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
 
-        self._connect_softmax_perceptrons()
+        self._connect_softmax_perceptrons(softmax_partition_identifier)
 
     def _init_perceptron(self, weights, biases):
         for i, weight_vector in enumerate(
@@ -53,7 +60,11 @@ class Dense:
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
 
-    def _connect_softmax_perceptrons(self):
+    def _connect_softmax_perceptrons(self, identifier):
+        """
+        Connect each neuron in this layer to all other neurons except
+        itself in a partition unique to this layer.
+        """
         for source_neuron in self.neurons:
             for neuron in self.neurons:
                 if source_neuron == neuron:
@@ -62,9 +73,8 @@ class Dense:
                 front_end.add_machine_edge_instance(MachineEdge(
                     source_neuron, neuron,
                     label="{}_softmax_{}_to_{}".format(
-                        self.name, source_neuron.label, neuron.label
-                    )
-                ), "PARTITION_{}_softmax".format(self.name))
+                        self.name, source_neuron.label, neuron.label)
+                ), identifier)
 
     def connect(self, source_layer):
         for source_neuron in source_layer.neurons:

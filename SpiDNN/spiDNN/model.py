@@ -42,6 +42,8 @@ class Model:
     def add(self, layer, layer_name=None):
         # TODO: here control correct usage
 
+        # TODO: make sure layer_names are unique
+
         if layer_name is None:
             name = type(layer).__name__
             layer.name = "{}{}".format(len(self._layers), name)

@@ -1,3 +1,6 @@
+from pacman.model.routing_info import BaseKeyAndMask
+
+
 import spiDNN.globals as globals
 
 
@@ -26,6 +29,16 @@ def generate_offset(processor):
     return int(
         math.ceil(globals.max_offset / globals.cores_per_chip) * processor
     )
+
+
+def __generate_keys_and_masks():
+    mask = 0xffffffff
+    for base_key in range(0x00000000, 0xffffffff):
+        yield BaseKeyAndMask(base_key, mask)
+
+
+__generator = __generate_keys_and_masks()
+generate_keys_and_masks = lambda: next(__generator)
 
 
 def uint32t_to_float(uint):

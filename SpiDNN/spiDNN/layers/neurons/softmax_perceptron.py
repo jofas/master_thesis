@@ -6,6 +6,9 @@ from pacman.model.graphs.machine import MachineVertex
 
 from pacman.model.resources import ResourceContainer, VariableSDRAM
 
+from pacman.model.constraints.key_allocator_constraints import \
+    FixedKeyAndMaskConstraint
+
 from pacman.utilities.utility_calls import is_single
 
 from spinn_front_end_common.utilities.constants import (
@@ -15,6 +18,9 @@ from spinn_front_end_common.utilities.exceptions import ConfigurationException
 
 from spinn_front_end_common.utilities.helpful_functions import (
     locate_memory_region_for_placement)
+
+from spinn_front_end_common.abstract_models import \
+    AbstractProvidesOutgoingPartitionConstraints
 
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
@@ -30,7 +36,7 @@ from spinnaker_graph_front_end.utilities.data_utils import (
 from data_specification.enums import DataType
 
 
-from spiDNN.util import generate_offset
+from spiDNN.util import generate_offset, generate_keys_and_masks
 
 import spiDNN.globals as globals
 
@@ -47,7 +53,9 @@ import struct
 import numpy as np
 
 
-class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
+class SoftmaxPerceptron(
+        SimulatorVertex, MachineDataSpecableVertex,
+        AbstractProvidesOutgoingPartitionConstraints):
 
     PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
 
@@ -56,7 +64,7 @@ class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
         names=[("SYSTEM", 0), ("PARAMS", 1), ("WEIGHTS", 2)]
     )
 
-    def __init__(self, layer, id, weights):
+    def __init__(self, layer, id, weights, softmax_partition_identifier):
 
         super(SoftmaxPerceptron, self).__init__(
             "{}_{}".format(layer.name, id),
@@ -67,6 +75,7 @@ class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
         self._activation_function_id = globals.activations[layer.activation]
         self._pre_layer_activation_function_id = None
+        self._softmax_partition_identifier = softmax_partition_identifier
 
     @inject_items({"data_n_time_steps": "DataNTimeSteps"})
     @overrides(
@@ -107,43 +116,26 @@ class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
         softmax_partition = \
             list(filter(lambda x: x != globals.partition_name, partitions))[0]
 
-        # routing info should give me a base key for my partition ->
-        # on board
-        #
-        # also own key from softmax partition
-
+        # TODO: make this encapsulated
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.partition_name))
 
-        # smallest key from previous layer
         min_pre_key = min([
             routing_info.get_first_key_from_pre_vertex(
                 edge.pre_vertex, globals.partition_name
             ) for edge in edges
         ])
 
-        min_softmax_key = \
-            routing_info.get_first_key_from_partition(softmax_partition)
-
-        print(dir(routing_info))
-        for partition in partitions:
-            print(partition.identifier)
-            print(routing_info.get_first_key_from_partition(partition))
-        #print(help(routing_info.get_first_key_for_edge))
-
-        #raise Exception("meh. Me debugging")
-
-        # TODO: continue here making softmax partition work just
-        #       striding that shit
-
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, softmax_partition.identifier))
 
-        print(dir(routing_info))
-        for i, edge in enumerate(edges):
-            print(i, " ", routing_info.get_routing_info_for_edge(edge).get_keys())
+        min_softmax_key = min([
+            routing_info.get_first_key_from_pre_vertex(
+                edge.pre_vertex, softmax_partition.identifier
+            ) for edge in edges
+        ])
 
         key = routing_info.get_first_key_from_pre_vertex(
             self, globals.partition_name)
@@ -151,13 +143,10 @@ class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
         softmax_key = routing_info.get_first_key_from_pre_vertex(
             self, softmax_partition.identifier)
 
-        print(min_pre_key, " ", min_softmax_key)
-        print(key, " ", softmax_key)
-
-        raise Exception("meh. Me debugging")
-
         spec.switch_write_focus(
             region=self.DATA_REGIONS.PARAMS.value)
+
+        # TODO: get [min_]softmax_key on the board
 
         # has_key
         spec.write_value(0 if key is None else 1)
@@ -195,6 +184,12 @@ class SoftmaxPerceptron(SimulatorVertex, MachineDataSpecableVertex):
         self._pre_layer_activation_function_id = \
             globals.activations[pre_layer.activation]
 
+    @overrides(AbstractProvidesOutgoingPartitionConstraints
+        .get_outgoing_partition_constraints)
+    def get_outgoing_partition_constraints(self, partition):
+        if partition.identifier == self._softmax_partition_identifier:
+            return [FixedKeyAndMaskConstraint([generate_keys_and_masks()])]
+        return []
+
     def __repr__(self):
         return self.label
-
