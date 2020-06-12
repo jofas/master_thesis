@@ -255,27 +255,72 @@ on mathematical topics like statistcs and probability theory,
 optimization or linear algebra, researchers are again looking over to
 neuroscience in order to further improve the capabilities of deep
 learning models \citep{marblestone_et_al_2016}.
+
 But not only the algorithms used by neuroscientists are drawing
 interest from the deep learning community.
 Computational neuroscience has long been trying to develop hardware
 for the efficient modeling of the human brain.
 Neuromorphic computer architectures are being developed to meet the
 demands for efficient computing for running large-scale spiking neural
-networks used for modeling brain functions \citep{furber}.
-% here some stuff linking dl to neuromorphic computers
+networks used for modeling brain functions \citep{furber_2016}.
+While being developed mainly for the task of modeling the human brain,
+deep learning has been linked to neuromorphic computing for some time,
+especially in the context of commercial usability.
+Both the low energy demands of neuromorphic computer chips and their
+general design concerning scalability and massive-parallelism are
+intriguing for two very important use cases of deep learning:
+(\romannumeral 1) edge computing, for example robotics
+and mobile devices and (\romannumeral 2) supercomputers and the
+cloud-era \citep{gomes_2017}.
 
-% small section about spinnaker
+One of this neuromorphic computer architectures is the Spiking Neural
+Network Architecture (SpiNNaker).
+This thesis investigates the performance of SpiNNaker machines for
+deep learning by training the state-of-the-art computer vision model
+ResNet-50 under the closed division rules of the MLPerf benchmark
+\citep{he_et_al_2015, mattson_et_al_2019}.
+In order to benchmark ResNet-50 on SpiNNaker a prototypical
+implementation was developed as part of this thesis.
 
-% dl on spinnaker
+\begin{itemize}
+  \item here a paragraph about the results
+\end{itemize}
 
-% results
+Section~\ref{sec:background} presents the background of this thesis.
+An introduction to deep learning is given, as well as an overview
+over the benchmark presented in Section~\ref{sec:benchmark}.
+The SpiNNaker architecture is also described and compared to
+current deep learning hardware.
+Related work can be found in Section~\ref{subsec:related_work}.
+Section~\ref{sec:SpiDNN} presents the architecture of the
+prototype developed for benchmarking.
+In Section~\ref{sec:discussion} the results of the benchmark are
+discussed as well as the development process.
+Section~\ref{sec:conclusion} contains the conclusion while
+Section~\ref{sec:next_steps} outlines the next steps for further
+increasing the performance of SpiNNaker by enhancing the
+prototype.
 
-% layout
 
-\section{Background}
+\section{Background} % {{{
+\label{sec:background}
 
-\subsection{An Introduction to Deep Learning}
+\subsection{An Introduction to Deep Learning} % {{{
 
+\begin{enumerate}
+  \item history of DL
+  \item clearify that DNNs are statistical methods (glorified non-linear
+        classifiers) not biological like SNNs
+  \item concepts of the MLP:
+    \begin{itemize}
+      \item layers
+      \item activations
+      \item forward- and backward-pass
+      \item SGD
+      \item \dots
+    \end{itemize}
+  \item CNNs
+\end{enumerate}
 % history
 % neural network as a statistical method, not biologically correct
 
@@ -288,15 +333,28 @@ networks used for modeling brain functions \citep{furber}.
 
 % (Residual stuff)
 
-\subsection{Computer Vision: ImageNet and the ILSVRC}
+% }}}
 
+\subsection{Computer Vision: ImageNet and the ILSVRC} % {{{
+
+\begin{enumerate}
+  \item short section about imagenet and ilsvrc and their importance
+        for computer vision
+  \item ResNet50 and residual stuff
+\end{enumerate}
 % short section describing imagenet and ilsvrc and their importance
 % for image recognition (computer vision) tasks
 
 % ResNet50
 
-\subsection{Benchmarking Deep Learning Systems: The MLPerf Benchmark}
+% }}}
 
+\subsection{Benchmarking Deep Learning Systems: The MLPerf Benchmark} % {{{
+
+\begin{enumerate}
+  \item short section about MLPerf (so short that I maybe add it to
+        previous section. Could maybe be only a single paragraph.
+\end{enumerate}
 % also rather short
 
 % what is the point
@@ -305,8 +363,14 @@ networks used for modeling brain functions \citep{furber}.
 
 % if references are too small: add all the papers from the report
 
-\subsection{SpiNNaker as a Neuromorphic Computer Architecture}
+% }}}
 
+\subsection{SpiNNaker as a Neuromorphic Computer Architecture} % {{{
+
+\begin{enumerate}
+  \item describe spinnaker and the spinnaker architecture
+  \item compare to other DL accelerators (GPGPUs and TPUs)
+\end{enumerate}
 % spinnaker architecture
 
 % compare to other state of the art machine learning hardware
@@ -315,22 +379,35 @@ networks used for modeling brain functions \citep{furber}.
 % because architecture is so different (MACs vs. massive parallelism
 % with small messages)
 
-\subsection{Related Work}
+% }}}
 
+\subsection{Related Work} % {{{
+\label{subsec:related_work}
+
+\begin{enumerate}
+  \item SNNToolbox for translating DNNs to SNNs (only inference)
+  \item TrueNorth has a paper about its DL implementation
+\end{enumerate}
 % that neural thing that translates trained models to spiking nns
 
 % find more about DL on SpiNNaker
 
+% }}}
 
 \section{Deep Learning on SpiNNaker}
+\label{sec:SpiDNN}
 
 \section{Benchmark}
+\label{sec:benchmark}
 
 \section{Discussion}
+\label{sec:discussion}
 
 \section{Conclusion}
+\label{sec:conclusion}
 
 \section{Next Steps}
+\label{sec:next_steps}
 
 \bibliography{library.bib}
 \addcontentsline{toc}{section}{References}
