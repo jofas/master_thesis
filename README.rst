@@ -52,7 +52,7 @@ Optimizations
 
 * trainable perceptrons
 
-* custom injectors which supports partitions
+* custom injectors which support partitions
 
 * split neurons (bigger layers)
 
