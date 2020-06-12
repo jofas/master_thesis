@@ -57,7 +57,7 @@ class SoftmaxPerceptron(
         SimulatorVertex, MachineDataSpecableVertex,
         AbstractProvidesOutgoingPartitionConstraints):
 
-    PARAMS_DATA_SIZE = 9 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 8 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
@@ -73,9 +73,9 @@ class SoftmaxPerceptron(
 
         self.weights = np.array(weights, dtype=np.float32)
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
-        self._activation_function_id = globals.activations[layer.activation]
-        self._pre_layer_activation_function_id = None
+
         self._softmax_partition_identifier = softmax_partition_identifier
+        self._layer = layer
 
     @inject_items({"data_n_time_steps": "DataNTimeSteps"})
     @overrides(
@@ -160,13 +160,9 @@ class SoftmaxPerceptron(
         offset = generate_offset(placement.p)
         spec.write_value(offset)
 
-        # TODO: get layer size on the board
+        spec.write_value(self._layer.atoms)
 
         spec.write_value(len(self.weights))
-
-        spec.write_value(self._activation_function_id)
-
-        spec.write_value(self._pre_layer_activation_function_id)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)

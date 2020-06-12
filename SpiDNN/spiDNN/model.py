@@ -84,10 +84,7 @@ class Model:
 
         conn.close()
 
-        if self._layers[-1].activation == "softmax":
-            return self._softmax(result)
-        else:
-            return result
+        return result
 
     def _setup_front_end(self):
         # + 1, because end_unit must be accounted for
@@ -223,15 +220,6 @@ class Model:
         )
 
         get_simulator().add_socket_address(database_socket)
-
-    def _softmax(self, M):
-        """
-        Handles normalization needed for softmax
-        """
-        for i in range(0, len(M)):
-            sm = sum(M[i, :])
-            M[i, :] = M[i, :] / sm
-        return M
 
     def _all_atoms(self):
         return sum([layer.atoms for layer in self._layers])

@@ -28,16 +28,14 @@
 
 /*! multicast routing keys to communicate with neighbours */
 uint my_key;
-uint softmax_key:
+uint softmax_key;
 
 uint min_pre_key;
 uint min_softmax_key;
 
+uint softmax_layer_size;
 uint n_weights;
 uint n_potentials;
-
-uint activation_function_id;
-uint pre_layer_activation_function_id;
 
 float *weights;
 
@@ -63,15 +61,6 @@ typedef enum regions_e { // {{{
     WEIGHTS,
 } regions_e; // }}}
 
-//! human readable definitions of the activation functions
-typedef enum activations_e { // {{{
-  IDENTITY,
-  RELU,
-  SIGMOID,
-  TANH,
-  SOFTMAX,
-} activations_e; // }}}
-
 //! values for the priority for each callback
 typedef enum callback_priorities { // {{{
     MC_PACKET = -1,
@@ -79,12 +68,6 @@ typedef enum callback_priorities { // {{{
     TIMER = 2,
     DMA = 3
 } callback_priorities; // }}}
-
-//! values for the states
-typedef enum states_values { // {{{
-    DEAD = 0,
-    ALIVE = 1
-} states_values; // }}}
 
 //! definitions of each element in the transmission region
 typedef struct params_region { // {{{
@@ -94,9 +77,8 @@ typedef struct params_region { // {{{
     uint32_t min_pre_key;
     uint32_t min_softmax_key;
     uint32_t timer_offset;
+    uint32_t softmax_layer_size;
     uint32_t n_weights;
-    uint32_t activation_function_id;
-    uint32_t pre_layer_activation_function_id;
 } params_region_t; // }}}
 
 // pointer to sdram region containing the parameters of the conway
@@ -112,34 +94,9 @@ void generate_potential() { // {{{
   potential += BIAS;
 } // }}}
 
-// TODO: remove this shit. Its the softmax neuron, lol
 void activate() { // {{{
   generate_potential();
-
-  switch (activation_function_id) {
-    case IDENTITY:
-      break;
-
-    case RELU:
-      potential = potential > .0 ? potential : .0;
-      break;
-
-    case SIGMOID:
-      potential = 1. / (1. + exp(-potential));
-      break;
-
-    case TANH:
-      potential = tanh(potential);
-      break;
-
-    case SOFTMAX:
-      potential = exp(potential);
-      break;
-
-    default:
-      log_error("Unknown activation function - exiting!");
-      rt_error(RTE_SWERR);
-  }
+  potential = exp(potential);
 } // }}}
 
 void reset() { // {{{
@@ -201,8 +158,6 @@ void update(uint ticks, uint b) { // {{{
 
   time++;
 
-  // TODO: softmax_layer_size not on board yet. Once it is on the
-  //       board softmax layer should work... hopefully
   if (received_softmax_counter == softmax_layer_size) {
 
     potential = potential / (softmax_denominator + potential);
@@ -214,7 +169,6 @@ void update(uint ticks, uint b) { // {{{
 
     // presses potential through the activation function
     activate();
-
     send(softmax_key);
 
     // reset so data is not send twice for softmax
@@ -278,12 +232,9 @@ static bool initialize(uint32_t *timer_period) { // {{{
   min_pre_key = params_sdram->min_pre_key;
   min_softmax_key = params_sdram->min_softmax_key;
 
+  softmax_layer_size = params_sdram->softmax_layer_size;
   n_weights = params_sdram->n_weights;
   n_potentials = n_weights - 1;
-
-  activation_function_id = params_sdram->activation_function_id;
-  pre_layer_activation_function_id =
-    params_sdram->pre_layer_activation_function_id;
 
   //log_info("my key is %d", my_key);
   //log_info("my offset is %d", params_sdram->timer_offset);

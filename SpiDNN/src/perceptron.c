@@ -116,28 +116,9 @@ float activate() { // {{{
     case TANH:
       return tanh(potential);
 
-    case SOFTMAX: // softmax is handled by neurons in the next layer
-      return exp(potential);
-
     default:
       log_error("Unknown activation function - exiting!");
       rt_error(RTE_SWERR);
-  }
-} // }}}
-
-void softmax_from_pre_layer() { // {{{
-  float potential = sum_potential();
-
-  for (uint i = 0; i < n_potentials; i++) {
-    potentials[i] = potentials[i] / potential;
-  }
-} // }}}
-
-void apply_pre_layer_activation() { // {{{
-  switch (pre_layer_activation_function_id) {
-    case SOFTMAX:
-      softmax_from_pre_layer();
-      break;
   }
 } // }}}
 
@@ -189,10 +170,6 @@ void update(uint ticks, uint b) { // {{{
 
   if (received_potentials_counter == n_potentials) {
     //log_info("on tick %d I'm sending a potential", time);
-
-    // transform received potentials for some activation functions the
-    // previous layer can have (softmax)
-    apply_pre_layer_activation();
 
     apply_weights();
 
