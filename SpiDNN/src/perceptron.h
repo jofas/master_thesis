@@ -21,10 +21,10 @@ typedef enum regions_e { // {{{
 //! human readable definitions of the activation functions (except
 //! softmax, which is handled by another type of perceptron)
 typedef enum activations_e { // {{{
-  IDENTITY,
-  RELU,
-  SIGMOID,
-  TANH,
+  IDENTITY = 0,
+  RELU = 1,
+  SIGMOID = 2,
+  TANH = 3,
   //SOFTMAX,
 } activations_e; // }}}
 

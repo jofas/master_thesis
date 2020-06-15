@@ -45,7 +45,8 @@ void activate() { // {{{
       break;
 
     default:
-      log_error("Unknown activation function - exiting!");
+      log_error("Unknown activation function %d - exiting!",
+        activation_function_id);
       rt_error(RTE_SWERR);
   }
 } // }}}
