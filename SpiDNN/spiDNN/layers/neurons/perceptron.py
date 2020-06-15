@@ -80,6 +80,10 @@ class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
 
         self._write_base_params(spec, machine_graph, routing_info, placement)
 
+        spec.switch_write_focus(
+            region=self.DATA_REGIONS.WEIGHTS.value)
+        spec.write_array(self.weights, data_type=DataType.FLOAT_32)
+
     def _generate_data_regions(self, spec, machine_time_step,
                                time_scale_factor):
 
@@ -125,10 +129,6 @@ class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
         spec.write_value(len(self.weights))
-
-        spec.switch_write_focus(
-            region=self.DATA_REGIONS.WEIGHTS.value)
-        spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
     @property
     @overrides(MachineVertex.resources_required)
