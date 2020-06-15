@@ -49,7 +49,7 @@ import numpy as np
 
 class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 6 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
@@ -66,7 +66,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         self.weights = np.array(weights, dtype=np.float32)
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
         self._activation_function_id = globals.activations[layer.activation]
-        self._pre_layer_activation_function_id = None
 
     def generate_machine_data_specification(
             self, spec, placement, machine_graph, routing_info, iptags,
@@ -128,8 +127,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         spec.write_value(self._activation_function_id)
 
-        spec.write_value(self._pre_layer_activation_function_id)
-
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)
 
@@ -145,10 +142,6 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
         per_timestep_sdram = 0
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
-
-    def set_pre_layer_activation(self, pre_layer):
-        self._pre_layer_activation_function_id = \
-            globals.activations[pre_layer.activation]
 
     def __repr__(self):
         return self.label

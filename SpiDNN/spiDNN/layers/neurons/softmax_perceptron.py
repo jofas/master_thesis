@@ -180,10 +180,6 @@ class SoftmaxPerceptron(
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
 
-    def set_pre_layer_activation(self, pre_layer):
-        self._pre_layer_activation_function_id = \
-            globals.activations[pre_layer.activation]
-
     @overrides(AbstractProvidesOutgoingPartitionConstraints
         .get_outgoing_partition_constraints)
     def get_outgoing_partition_constraints(self, partition):

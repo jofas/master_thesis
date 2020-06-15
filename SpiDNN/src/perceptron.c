@@ -40,6 +40,8 @@ float *potentials;
 bool  *received_potentials;
 uint received_potentials_counter = 0;
 
+float potential;
+
 static uint32_t time;
 data_specification_metadata_t *data = NULL;
 
@@ -53,13 +55,14 @@ typedef enum regions_e { // {{{
     WEIGHTS,
 } regions_e; // }}}
 
-//! human readable definitions of the activation functions
+//! human readable definitions of the activation functions (except
+//! softmax, which is handled by another type of perceptron)
 typedef enum activations_e { // {{{
   IDENTITY,
   RELU,
   SIGMOID,
   TANH,
-  SOFTMAX,
+  //SOFTMAX,
 } activations_e; // }}}
 
 //! values for the priority for each callback
@@ -84,7 +87,6 @@ typedef struct params_region { // {{{
     uint32_t timer_offset;
     uint32_t n_weights;
     uint32_t activation_function_id;
-    uint32_t pre_layer_activation_function_id;
 } params_region_t; // }}}
 
 // pointer to sdram region containing the parameters of the conway
@@ -92,29 +94,32 @@ typedef struct params_region { // {{{
 params_region_t *params_sdram;
 float *weights_sdram;
 
-float sum_potential() { // {{{
-  float sum_potential = 0;
+void generate_potential() { // {{{
   for (uint i = 0; i < n_potentials; i++) {
-    sum_potential += potentials[i];
+    potential += potentials[i] * weights[i];
   }
-  return sum_potential;
+
+  potential += BIAS;
 } // }}}
 
-float activate() { // {{{
-  float potential = sum_potential() + BIAS;
+void activate() { // {{{
+  generate_potential();
 
   switch (activation_function_id) {
     case IDENTITY:
-      return potential;
+      break;
 
     case RELU:
-      return potential > .0 ? potential : .0;
+      potential = potential > .0 ? potential : .0;
+      break;
 
     case SIGMOID:
-      return 1. / (1. + exp(-potential));
+      potential = 1. / (1. + exp(-potential));
+      break;
 
     case TANH:
-      return tanh(potential);
+      potential = tanh(potential);
+      break;
 
     default:
       log_error("Unknown activation function - exiting!");
@@ -126,6 +131,9 @@ void reset_potentials() { // {{{
   for (uint i=0; i < n_weights - 1; i++) {
     received_potentials[i] = false;
   }
+
+  potential = .0;
+
   received_potentials_counter = 0;
 } // }}}
 
@@ -147,17 +155,11 @@ void receive_data(uint key, float payload) { // {{{
   }
 } // }}}
 
-void apply_weights() { // {{{
-  for (uint i = 0; i < n_potentials; i++) {
-    potentials[i] *= weights[i];
-  }
-} // }}}
-
-void send_potential(float *potential) { // {{{
+void send(uint key) { // {{{
     uint send_bytes;
-    sark_mem_cpy((void *)&send_bytes, potential, sizeof(uint));
+    sark_mem_cpy((void *)&send_bytes, &potential, sizeof(uint));
 
-    while (!spin1_send_mc_packet(my_key, send_bytes, WITH_PAYLOAD)) {
+    while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
         spin1_delay_us(1);
     }
 } // }}}
@@ -171,14 +173,9 @@ void update(uint ticks, uint b) { // {{{
   if (received_potentials_counter == n_potentials) {
     //log_info("on tick %d I'm sending a potential", time);
 
-    apply_weights();
+    activate();
 
-    // presses potential through the activation function
-    float potential = activate();
-
-    send_potential(&potential);
-
-    //log_info("sent potential %f\n", potential);
+    send(my_key);
 
     reset_potentials();
   }
@@ -238,8 +235,6 @@ static bool initialize(uint32_t *timer_period) { // {{{
   n_weights = params_sdram->n_weights;
   n_potentials = n_weights - 1;
   activation_function_id = params_sdram->activation_function_id;
-  pre_layer_activation_function_id =
-    params_sdram->pre_layer_activation_function_id;
 
   //log_info("my key is %d", my_key);
   //log_info("my offset is %d", params_sdram->timer_offset);
