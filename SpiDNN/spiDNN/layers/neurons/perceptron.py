@@ -49,11 +49,13 @@ import numpy as np
 
 class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 6 * BYTES_PER_WORD
+    BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
+    INSTANCE_PARAMS_DATA_SIZE = 1 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
-        names=[("SYSTEM", 0), ("PARAMS", 1), ("WEIGHTS", 2)]
+        names=[("SYSTEM", 0), ("BASE_PARAMS", 1), ("WEIGHTS", 2),
+            ("INSTANCE_PARAMS", 3)]
     )
 
     def __init__(self, layer, id, weights):
@@ -79,15 +81,21 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
 
         # reserve memory regions
         spec.reserve_memory_region(
-            region=self.DATA_REGIONS.PARAMS.value,
-            size=self.PARAMS_DATA_SIZE,
-            label="params"
+            region=self.DATA_REGIONS.BASE_PARAMS.value,
+            size=self.BASE_PARAMS_DATA_SIZE,
+            label="base_params"
         )
 
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.WEIGHTS.value,
             size=self._weight_container_size,
             label="weights"
+        )
+
+        spec.reserve_memory_region(
+            region=self.DATA_REGIONS.INSTANCE_PARAMS.value,
+            size=self.INSTANCE_PARAMS_DATA_SIZE,
+            label="instance_params"
         )
 
         # check got right number of keys and edges going into me
@@ -111,35 +119,33 @@ class Perceptron(SimulatorVertex, MachineDataSpecableVertex):
             self, globals.partition_name)
 
         spec.switch_write_focus(
-            region=self.DATA_REGIONS.PARAMS.value)
-
-        # has_key
+            region=self.DATA_REGIONS.BASE_PARAMS.value)
         spec.write_value(0 if key is None else 1)
-
         spec.write_value(0 if key is None else key)
-
         spec.write_value(min_pre_key)
-
-        offset = generate_offset(placement.p)
-        spec.write_value(offset)
-
+        spec.write_value(generate_offset(placement.p))
         spec.write_value(len(self.weights))
-
-        spec.write_value(self._activation_function_id)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)
-
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
+
+        spec.switch_write_focus(
+            region=self.DATA_REGIONS.INSTANCE_PARAMS.value)
+        spec.write_value(self._activation_function_id)
 
         spec.end_specification()
 
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
-        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE
-                                                + self._weight_container_size)
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
+            + self.BASE_PARAMS_DATA_SIZE
+            + self.INSTANCE_PARAMS_DATA_SIZE
+            + self._weight_container_size)
+
         per_timestep_sdram = 0
+
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
 

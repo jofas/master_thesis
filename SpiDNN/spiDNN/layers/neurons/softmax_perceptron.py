@@ -57,11 +57,13 @@ class SoftmaxPerceptron(
         SimulatorVertex, MachineDataSpecableVertex,
         AbstractProvidesOutgoingPartitionConstraints):
 
-    PARAMS_DATA_SIZE = 8 * BYTES_PER_WORD
+    BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
+    INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
-        names=[("SYSTEM", 0), ("PARAMS", 1), ("WEIGHTS", 2)]
+        names=[("SYSTEM", 0), ("BASE_PARAMS", 1), ("WEIGHTS", 2),
+            ("INSTANCE_PARAMS", 3)]
     )
 
     def __init__(self, layer, id, weights, softmax_partition_identifier):
@@ -77,14 +79,11 @@ class SoftmaxPerceptron(
         self._softmax_partition_identifier = softmax_partition_identifier
         self._layer = layer
 
-    @inject_items({"data_n_time_steps": "DataNTimeSteps"})
     @overrides(
-        MachineDataSpecableVertex.generate_machine_data_specification,
-        additional_arguments={"data_n_time_steps"})
+        MachineDataSpecableVertex.generate_machine_data_specification)
     def generate_machine_data_specification(
             self, spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor,
-            data_n_time_steps):
+            reverse_iptags, machine_time_step, time_scale_factor):
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
@@ -94,15 +93,21 @@ class SoftmaxPerceptron(
 
         # reserve memory regions
         spec.reserve_memory_region(
-            region=self.DATA_REGIONS.PARAMS.value,
-            size=self.PARAMS_DATA_SIZE,
-            label="params"
+            region=self.DATA_REGIONS.BASE_PARAMS.value,
+            size=self.BASE_PARAMS_DATA_SIZE,
+            label="base_params"
         )
 
         spec.reserve_memory_region(
             region=self.DATA_REGIONS.WEIGHTS.value,
             size=self._weight_container_size,
             label="weights"
+        )
+
+        spec.reserve_memory_region(
+            region=self.DATA_REGIONS.INSTANCE_PARAMS.value,
+            size=self.INSTANCE_PARAMS_DATA_SIZE,
+            label="instance_params"
         )
 
         # check got right number of keys and edges going into me
@@ -144,39 +149,35 @@ class SoftmaxPerceptron(
             self, softmax_partition.identifier)
 
         spec.switch_write_focus(
-            region=self.DATA_REGIONS.PARAMS.value)
-
-        # has_key
+            region=self.DATA_REGIONS.BASE_PARAMS.value)
         spec.write_value(0 if key is None else 1)
-
         spec.write_value(0 if key is None else key)
-
-        spec.write_value(softmax_key)
-
         spec.write_value(min_pre_key)
-
-        spec.write_value(min_softmax_key)
-
-        offset = generate_offset(placement.p)
-        spec.write_value(offset)
-
-        spec.write_value(self._layer.atoms)
-
+        spec.write_value(generate_offset(placement.p))
         spec.write_value(len(self.weights))
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.WEIGHTS.value)
-
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
+
+        spec.switch_write_focus(
+            region=self.DATA_REGIONS.INSTANCE_PARAMS.value)
+        spec.write_value(softmax_key)
+        spec.write_value(min_softmax_key)
+        spec.write_value(self._layer.atoms)
 
         spec.end_specification()
 
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
-        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE
-                                                + self._weight_container_size)
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
+            + self.BASE_PARAMS_DATA_SIZE
+            + self.INSTANCE_PARAMS_DATA_SIZE
+            + self._weight_container_size)
+
         per_timestep_sdram = 0
+
         return ResourceContainer(
             sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
 
