@@ -52,10 +52,6 @@ class Model:
 
         if len(self._layers) > 0:
             source_layer = self._layers[-1]
-            # append both the weights and bias to the weights
-            #
-            # weights are injected into neurons right before the
-            # simulation starts
             self.__weights += layer.generate_weights(source_layer)
 
         self._layers.append(layer)
@@ -65,14 +61,11 @@ class Model:
         X = np.array(X, dtype=np.float32)
 
         result = np.empty(
-            (X.shape[0], self._layers[-1].atoms), dtype=np.float32
-        )
+            (X.shape[0], self._layers[-1].atoms), dtype=np.float32)
 
         extractor = self._generate_extractor()
 
-        self._setup_front_end()
-
-        self._add_db_sock()
+        self._setup_front_end(1)
 
         self._generate_machine_graph(extractor)
 
@@ -86,10 +79,60 @@ class Model:
 
         return result
 
-    def _setup_front_end(self):
-        # + 1, because end_unit must be accounted for
-        # TODO: incorporate maybe bigger end_units
-        n_cores = self._all_atoms() + 1
+    def fit(self, X, y, loss_fn, epochs, batch_size):
+        X = np.array(X, dtype=np.float32)
+        y = np.array(y, dtype=np.float32)
+
+        assert y.shape[1] == self._layers[-1].atoms
+
+        # start with loss_fn = "mean_squared_error"
+        # mean -> over K
+
+        # restruct:  layers.neurons -> spiDNN.machine_vertices
+        #
+        # extract:   extract weights from board with BufferManager ??
+        #
+        # loss_unit: receives from two partitions, like softmax
+        #            PARTITIONY for receiving labels
+        #            counter for both -> both full -> compute loss
+        #            send loss backwards
+        #
+        # trainable: do forward receive than wait for backward pass
+        #            compute gradient descent
+        #            if counter == batch_size: update weight
+        #            pass E_i backwards to prev layer
+        #            E_i -> know size of next layer (1 for out_layer)
+        #
+        # optimizer interface (in optimizations or after thesis)
+
+        #... K y_injectors... Input layer???
+        #y_injectors = self._generate_y_injectors()
+
+        # currently no optimizer interface... just put stuff into
+        # trainable neurons
+
+        # loss_unit (in constructor (SGD and loss function))
+
+        pong = self._generate_extractor()
+
+        self._setup_front_end(y_injectors.atoms + 1)
+
+        # init_neurons (trainable)
+        # forward pass graph
+        # backward pass graph
+
+        # live event conn doing ping pong with the board
+
+        front_end.run()
+
+        front_end.stop()
+
+        conn.close()
+
+        # extract weights
+
+    def _setup_front_end(self, additional_units_count):
+        n_cores = self._all_atoms() + additional_units_count
 
         front_end.setup(
             n_chips_required=n_cores // globals.cores_per_chip,
@@ -97,6 +140,8 @@ class Model:
             machine_time_step=globals.machine_time_step,
             time_scale_factor=globals.time_scale_factor,
         )
+
+        self._add_db_sock()
 
         available_cores = \
             front_end.get_number_of_available_cores_on_machine()
@@ -111,7 +156,7 @@ class Model:
         self._connect_layers()
 
         # TODO: wrapper around end_unit so it can easily be integrated
-        #      into _generate_machine_graph()
+        #      into _connect_layers()
         front_end.add_machine_vertex_instance(end_unit)
         for source_neuron in self._layers[-1].neurons:
             front_end.add_machine_edge_instance(MachineEdge(

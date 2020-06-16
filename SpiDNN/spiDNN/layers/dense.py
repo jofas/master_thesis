@@ -8,7 +8,7 @@ from pacman.model.graphs.machine import MachineEdge
 
 import spiDNN.globals as globals
 
-from .neurons import Perceptron, SoftmaxPerceptron
+from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron
 
 
 class Dense:
