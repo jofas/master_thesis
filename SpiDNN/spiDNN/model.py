@@ -27,6 +27,8 @@ from spiDNN.util import absolute_path_from_home, ReceivingLiveOutputProgress, \
 
 import spiDNN.globals as globals
 
+from spiDNN.layers import Input
+
 
 import time
 
@@ -83,12 +85,14 @@ class Model:
         X = np.array(X, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
 
-        assert y.shape[1] == self._layers[-1].atoms
+        K = self._layers[-1].atoms
+
+        assert y.shape[1] == K
 
         # start with loss_fn = "mean_squared_error"
         # mean -> 1 / K
 
-        # extract:   extract weights from board with BufferManager ??
+        # extract:   extract weights from board with transceiver
         #
         # loss_unit: receives from two partitions, like softmax
         #            PARTITIONY for receiving labels
@@ -103,17 +107,18 @@ class Model:
         #
         # optimizer interface (in optimizations or after thesis)
 
-        #... K y_injectors... Input layer???
-        #y_injectors = self._generate_y_injectors()
+        y_injectors = Input(K)
 
         # currently no optimizer interface... just put stuff into
         # trainable neurons
 
-        # loss_unit (in constructor (SGD and loss function))
+        # loss_unit
 
         pong = self._generate_extractor()
 
         self._setup_front_end(y_injectors.atoms + 1)
+
+        self._generate_machine_graph(pong)
 
         # init_neurons (trainable)
         # forward pass graph
@@ -121,11 +126,13 @@ class Model:
 
         # live event conn doing ping pong with the board
 
-        front_end.run()
+        front_end.run(1)
+
+        self._extract_weights()
 
         front_end.stop()
 
-        conn.close()
+        #conn.close()
 
         # extract weights
 
@@ -146,8 +153,7 @@ class Model:
 
         if available_cores <= n_cores:
             raise KeyError(
-                "SpiNNaker doesn't have enough cores to run Model"
-            )
+                "SpiNNaker doesn't have enough cores to run Model")
 
     def _generate_machine_graph(self, end_unit):
         self._init_neurons()
@@ -196,6 +202,12 @@ class Model:
             "end_unit_lpg",
             constraints=[ChipAndCoreConstraint(x=0, y=0)]
         )
+
+    def _extract_weights(self):
+        i = 0
+        for layer in self._layers[1:]:
+            self.__weights[i:i+2] = layer.extract_weights()
+            i += 2
 
     def _setup_live_event_connection(self, end_unit, X, result):
         send_labels = self._layers[0].labels

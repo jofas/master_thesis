@@ -104,6 +104,11 @@ class Dense:
 
         return [weights, biases]
 
+    def extract_weights(self):
+        # TODO: continue here by getting weights from neurons and
+        #       formatting them correctly
+        pass
+
     @property
     def labels(self):
         return [neuron.label for neuron in self.neurons]
