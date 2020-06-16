@@ -86,10 +86,8 @@ class Model:
         assert y.shape[1] == self._layers[-1].atoms
 
         # start with loss_fn = "mean_squared_error"
-        # mean -> over K
+        # mean -> 1 / K
 
-        # restruct:  layers.neurons -> spiDNN.machine_vertices
-        #
         # extract:   extract weights from board with BufferManager ??
         #
         # loss_unit: receives from two partitions, like softmax
