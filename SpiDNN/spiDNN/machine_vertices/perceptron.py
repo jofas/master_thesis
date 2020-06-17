@@ -25,9 +25,6 @@ from spinn_front_end_common.abstract_models import \
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
 
-from spinn_front_end_common.interface.buffer_management.buffer_models import (
-    AbstractReceiveBuffersToHost)
-
 from spinnaker_graph_front_end.utilities import SimulatorVertex
 
 from spinnaker_graph_front_end.utilities.data_utils import (

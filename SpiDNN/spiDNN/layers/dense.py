@@ -114,7 +114,7 @@ class Dense:
                 front_end.placements().get_placement_of_vertex(neuron),
             )
 
-            weights[:,i] = neuron_weights[:-1]
+            weights[:, i] = neuron_weights[:-1]
             biases[i] = neuron_weights[-1]
 
         return weights, biases

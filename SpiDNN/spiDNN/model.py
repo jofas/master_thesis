@@ -135,7 +135,7 @@ class Model:
 
         front_end.stop()
 
-        #conn.close()
+        # conn.close()
 
         # extract weights
 
