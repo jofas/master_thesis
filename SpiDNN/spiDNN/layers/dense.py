@@ -93,21 +93,31 @@ class Dense:
         source_atoms = source_layer.atoms
 
         weights = np.array(
-            np.random.rand(source_atoms, self.atoms), dtype=np.float32
-        )
+            np.random.rand(source_atoms, self.atoms), dtype=np.float32)
         biases = np.array(
-            np.random.rand(self.atoms), dtype=np.float32
-        )
+            np.random.rand(self.atoms), dtype=np.float32)
 
         if not self.bias:
             biases[:] = .0
 
-        return [weights, biases]
+        return weights, biases
 
     def extract_weights(self):
-        # TODO: continue here by getting weights from neurons and
-        #       formatting them correctly
-        pass
+        weights = np.empty(
+            (self.neurons[0].weights.shape[0] - 1, self.atoms),
+            dtype=np.float32)
+        biases = np.empty((self.atoms,), dtype=np.float32)
+
+        for i, neuron in enumerate(self.neurons):
+            neuron_weights = neuron.extract_weights(
+                front_end.transceiver(),
+                front_end.placements().get_placement_of_vertex(neuron),
+            )
+
+            weights[:,i] = neuron_weights[:-1]
+            biases[i] = neuron_weights[-1]
+
+        return weights, biases
 
     @property
     def labels(self):

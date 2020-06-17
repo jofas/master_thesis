@@ -71,6 +71,22 @@ class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
         self._instance_param_data_size = instance_param_data_size
 
+    def extract_weights(self, transceiver, placement):
+        weights_region_base_address = locate_memory_region_for_placement(
+            placement, self.DATA_REGIONS.WEIGHTS.value, transceiver)
+
+        raw_data = transceiver.read_memory(
+            placement.x, placement.y,
+            weights_region_base_address,
+            self._weight_container_size)
+
+        unpacked_data = struct.unpack("<{}f".format(
+            self.weights.shape[0]), raw_data)
+
+        self.weights = np.array(unpacked_data, dtype=np.float32)
+
+        return self.weights
+
     def abstract_generate_machine_data_specification(
             self, spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor):

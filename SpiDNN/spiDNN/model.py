@@ -75,6 +75,9 @@ class Model:
 
         front_end.run()
 
+        # just a fast test
+        self._extract_weights()
+
         front_end.stop()
 
         conn.close()
