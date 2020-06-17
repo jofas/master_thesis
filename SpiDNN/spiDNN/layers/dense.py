@@ -8,7 +8,7 @@ from pacman.model.graphs.machine import MachineEdge
 
 import spiDNN.globals as globals
 
-from .neurons import Perceptron, SoftmaxPerceptron
+from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron
 
 
 class Dense:
@@ -79,12 +79,6 @@ class Dense:
     def connect(self, source_layer):
         for source_neuron in source_layer.neurons:
             for neuron in self.neurons:
-                # neuron needs to know what previous layer activation
-                # is, because it needs to do some work if previous
-                # layer has either ReLU or softmax as activation.
-                # Both are layer-based rather than on a neuron level.
-                neuron.set_pre_layer_activation(source_layer)
-
                 front_end.add_machine_edge_instance(MachineEdge(
                     source_neuron, neuron, label="{}_to_{}".format(
                         source_neuron.label, neuron.label
@@ -99,16 +93,31 @@ class Dense:
         source_atoms = source_layer.atoms
 
         weights = np.array(
-            np.random.rand(source_atoms, self.atoms), dtype=np.float32
-        )
+            np.random.rand(source_atoms, self.atoms), dtype=np.float32)
         biases = np.array(
-            np.random.rand(self.atoms), dtype=np.float32
-        )
+            np.random.rand(self.atoms), dtype=np.float32)
 
         if not self.bias:
             biases[:] = .0
 
-        return [weights, biases]
+        return weights, biases
+
+    def extract_weights(self):
+        weights = np.empty(
+            (self.neurons[0].weights.shape[0] - 1, self.atoms),
+            dtype=np.float32)
+        biases = np.empty((self.atoms,), dtype=np.float32)
+
+        for i, neuron in enumerate(self.neurons):
+            neuron_weights = neuron.extract_weights(
+                front_end.transceiver(),
+                front_end.placements().get_placement_of_vertex(neuron),
+            )
+
+            weights[:, i] = neuron_weights[:-1]
+            biases[i] = neuron_weights[-1]
+
+        return weights, biases
 
     @property
     def labels(self):

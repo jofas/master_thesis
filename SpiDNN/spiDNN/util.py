@@ -38,7 +38,10 @@ def __generate_keys_and_masks():
 
 
 __generator = __generate_keys_and_masks()
-generate_keys_and_masks = lambda: next(__generator)
+
+
+def generate_keys_and_masks():
+    return next(__generator)
 
 
 def uint32t_to_float(uint):
