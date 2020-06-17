@@ -81,8 +81,7 @@ class Dense:
             for neuron in self.neurons:
                 front_end.add_machine_edge_instance(MachineEdge(
                     source_neuron, neuron, label="{}_to_{}".format(
-                        source_neuron.label, neuron.label
-                    )
+                        source_neuron.label, neuron.label)
                 ), globals.partition_name)
 
     def generate_weights(self, source_layer):

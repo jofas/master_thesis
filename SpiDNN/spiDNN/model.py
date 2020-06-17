@@ -6,19 +6,6 @@ from spinn_front_end_common.utilities.globals_variables import \
 from spinn_front_end_common.utilities.connections import \
     LiveEventConnection
 
-from spinn_front_end_common.utility_models import \
-    LivePacketGatherMachineVertex
-
-from spinn_front_end_common.utilities.utility_objs import \
-    LivePacketGatherParameters
-
-from spinnman.messages.eieio import EIEIOType
-
-from pacman.model.constraints.placer_constraints import \
-    ChipAndCoreConstraint
-
-from pacman.model.graphs.machine import MachineEdge
-
 from spinn_utilities.socket_address import SocketAddress
 
 
@@ -27,7 +14,7 @@ from spiDNN.util import absolute_path_from_home, ReceivingLiveOutputProgress, \
 
 import spiDNN.globals as globals
 
-from spiDNN.layers import Input
+from spiDNN.layers import Input, Extractor
 
 
 import time
@@ -65,21 +52,16 @@ class Model:
         result = np.empty(
             (X.shape[0], self._layers[-1].atoms), dtype=np.float32)
 
-        extractor = self._generate_extractor()
-
         self._setup_front_end(1)
 
-        self._generate_machine_graph(extractor)
+        extractor = Extractor("predict_extract_output")
+        self._init_neurons()
+        self._connect_layers_forward(extractor)
 
         conn = self._setup_live_event_connection(extractor, X, result)
 
         front_end.run()
-
-        # just a fast test
-        self._extract_weights()
-
         front_end.stop()
-
         conn.close()
 
         return result
@@ -95,7 +77,7 @@ class Model:
         # start with loss_fn = "mean_squared_error"
         # mean -> 1 / K
 
-        # extract:   extract weights from board with transceiver
+        # backward_pass graph
         #
         # loss_unit: receives from two partitions, like softmax
         #            PARTITIONY for receiving labels
@@ -110,18 +92,21 @@ class Model:
         #
         # optimizer interface (in optimizations or after thesis)
 
-        y_injectors = Input(K)
-
         # currently no optimizer interface... just put stuff into
         # trainable neurons
 
-        # loss_unit
+        self._setup_front_end(y_injectors.atoms + 2)
 
-        pong = self._generate_extractor()
+        # y_injectors.connect with different partition (PARTITIONY)
+        y_injectors = Input(K)
+        pong = Extractor()
+        # TODO: loss unit
+        loss_layer = Loss(loss_fn)
 
-        self._setup_front_end(y_injectors.atoms + 1)
-
-        self._generate_machine_graph(pong)
+        self._init_neurons()
+        self._connect_layers_forward(loss_layer)
+        # TODO: backward conn
+        # TODO: connect y_injectors with loss_layer
 
         # init_neurons (trainable)
         # forward pass graph
@@ -158,20 +143,6 @@ class Model:
             raise KeyError(
                 "SpiNNaker doesn't have enough cores to run Model")
 
-    def _generate_machine_graph(self, end_unit):
-        self._init_neurons()
-        self._connect_layers()
-
-        # TODO: wrapper around end_unit so it can easily be integrated
-        #      into _connect_layers()
-        front_end.add_machine_vertex_instance(end_unit)
-        for source_neuron in self._layers[-1].neurons:
-            front_end.add_machine_edge_instance(MachineEdge(
-                source_neuron, end_unit, label="{}_to_{}".format(
-                    source_neuron.label, end_unit.label
-                )
-            ), globals.partition_name)
-
     def _init_neurons(self):
         # Input unit needs to know how many neurons it is connected
         # to
@@ -185,26 +156,17 @@ class Model:
             layer.init_neurons(self.__weights[i], self.__weights[i+1])
             i += 2
 
-    def _connect_layers(self):
-        for i, layer in enumerate(self._layers[1:]):
+    def _connect_layers_forward(self, extractor):
+        for i, layer in enumerate(self._layers[1:] + [extractor]):
             source_layer = self._layers[i]
             layer.connect(source_layer)
 
-    def _generate_extractor(self):
-        end_unit_args = LivePacketGatherParameters(
-            port=globals.ack_port,
-            hostname=globals.host,
-            strip_sdp=True,
-            message_type=EIEIOType.KEY_PAYLOAD_32_BIT,
-            use_payload_prefix=False,
-            payload_as_time_stamps=False
-        )
-
-        return LivePacketGatherMachineVertex(
-            end_unit_args,
-            "end_unit_lpg",
-            constraints=[ChipAndCoreConstraint(x=0, y=0)]
-        )
+    def _connect_layers_backward(self):
+        # meh
+        # need to connect self._layers[1] with lpg (pong)
+        # every following layer must be connected to the previous
+        # (source_layer = self, prev_layer =
+        pass
 
     def _extract_weights(self):
         i = 0
@@ -212,12 +174,12 @@ class Model:
             self.__weights[i:i+2] = layer.extract_weights()
             i += 2
 
-    def _setup_live_event_connection(self, end_unit, X, result):
+    def _setup_live_event_connection(self, extractor, X, result):
         send_labels = self._layers[0].labels
         receive_labels = self._layers[-1].labels
 
         conn = LiveEventConnection(
-            end_unit.label,
+            extractor.label,
             receive_labels=receive_labels,
             send_labels=send_labels,
             machine_vertices=True
