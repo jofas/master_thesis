@@ -42,7 +42,7 @@ class LayerInterface(object):
         """
 
     @abstractmethod
-    def connect_incoming(self, source_layer, partition):
+    def connect_incoming(self, source_layer, partition, partition_manager):
         """
         Connects the neurons of this layer with the neurons in
         source_layer, such that the generated connection is a directed

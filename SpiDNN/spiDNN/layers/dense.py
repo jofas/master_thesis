@@ -34,32 +34,27 @@ class Dense(AbstractLayerBase):
     def init_neurons(self, **kwargs):
         weights = kwargs["weights"]
         biases = kwargs["biases"]
+        partition_manager = kwargs["partition_manager"]
 
         assert weights.shape[1] == self.n_neurons
         assert biases.shape[0] == self.n_neurons
 
+        for i, weight_vector in enumerate(
+                np.concatenate((weights, biases.reshape(1, -1))).T):
+
+            if self.activation == "softmax":
+                neuron = SoftmaxPerceptron(
+                    self, i, weight_vector, partition_manager)
+            else:
+                neuron = Perceptron(
+                    self, i, weight_vector, partition_manager)
+
+            self.neurons.append(neuron)
+            front_end.add_machine_vertex_instance(neuron)
+
         if self.activation == "softmax":
-            self._init_softmax_perceptron(weights, biases)
-        else:
-            self._init_perceptron(weights, biases)
-
-    def _init_softmax_perceptron(self, weights, biases):
-        for i, weight_vector in enumerate(
-                np.concatenate((weights, biases.reshape(1, -1))).T):
-
-            neuron = SoftmaxPerceptron(self, i, weight_vector)
-            self._neurons.append(neuron)
-            front_end.add_machine_vertex_instance(neuron)
-
-        self.connect_incoming(self, globals.softmax_partition)
-
-    def _init_perceptron(self, weights, biases):
-        for i, weight_vector in enumerate(
-                np.concatenate((weights, biases.reshape(1, -1))).T):
-
-            neuron = Perceptron(self, i, weight_vector)
-            self._neurons.append(neuron)
-            front_end.add_machine_vertex_instance(neuron)
+            self.connect_incoming(
+                self, globals.softmax_partition, partition_manager)
 
     def generate_weights(self, source_layer):
         # This is just weights representation. The weights are re-

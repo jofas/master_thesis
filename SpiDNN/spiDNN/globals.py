@@ -9,6 +9,16 @@ backward_partition = "PARTITION_BACKWARD"
 softmax_partition = "PARTITION_SOFTMAX"
 y_partition = "PARTITION_Y"
 
+partitions_priority = {
+    forward_partition: 2,
+    backward_partition: 1,
+    softmax_partition: 3,
+    y_partition: 0,
+}
+
+# mask for key space
+mask = 0xffffffff
+
 ack_port = 22222
 host = "127.0.0.1"
 notify_port = NOTIFY_PORT

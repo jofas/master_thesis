@@ -16,8 +16,10 @@ class AbstractLayerBase(LayerInterface):
         self._neurons = neurons
 
     @overrides(LayerInterface.connect_incoming)
-    def connect_incoming(self, source_layer, partition):
+    def connect_incoming(self, source_layer, partition, partition_manager):
         for source_neuron in source_layer.neurons:
+            partition_manager.add_outgoing_partition(partition)
+
             for neuron in self.neurons:
                 # in case of connecting self with self
                 if source_neuron == neuron:

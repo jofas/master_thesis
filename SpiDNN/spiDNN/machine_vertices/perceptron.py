@@ -4,9 +4,6 @@ from pacman.model.graphs.machine import MachineVertex
 
 from pacman.model.resources import ResourceContainer, VariableSDRAM
 
-from pacman.model.constraints.key_allocator_constraints import \
-    FixedKeyAndMaskConstraint
-
 from pacman.utilities.utility_calls import is_single
 
 from spinn_front_end_common.utilities.constants import (
@@ -31,9 +28,12 @@ from spinnaker_graph_front_end.utilities.data_utils import (
 from data_specification.enums import DataType
 
 
-from spiDNN.util import generate_offset, generate_keys_and_masks
+from spiDNN.util import generate_offset
 
 import spiDNN.globals as globals
+
+
+from .abstract_partition_managed_vertex import AbstractPartitionManagedVertex
 
 
 import sys
@@ -48,7 +48,10 @@ import struct
 import numpy as np
 
 
-class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
+class AbstractPerceptronBase(
+        AbstractPartitionManagedVertex,
+        SimulatorVertex,
+        MachineDataSpecableVertex):
 
     BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
@@ -57,10 +60,14 @@ class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
         names=[("SYSTEM", 0), ("BASE_PARAMS", 1), ("WEIGHTS", 2),
                ("INSTANCE_PARAMS", 3)])
 
-    def __init__(self, layer, id, weights, executable,
-                 instance_param_data_size):
-        super(AbstractPerceptronBase, self).__init__(
-            "{}_{}".format(layer.label, id), executable)
+    def __init__(self, layer, id, weights, partition_manager,
+                 executable, instance_param_data_size):
+
+        AbstractPartitionManagedVertex.__init__(
+            self, partition_manager)
+
+        SimulatorVertex.__init__(
+            self, "{}_{}".format(layer.label, id), executable)
 
         self.weights = weights
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
@@ -163,9 +170,9 @@ class Perceptron(AbstractPerceptronBase):
     INSTANCE_PARAMS_DATA_SIZE = 1 * BYTES_PER_WORD
     EXECUTABLE = "perceptron.aplx"
 
-    def __init__(self, layer, id, weights):
+    def __init__(self, layer, id, weights, partition_manager):
         super(Perceptron, self).__init__(
-            layer, id, weights, self.EXECUTABLE,
+            layer, id, weights, partition_manager, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
         self._activation_function_id = globals.activations[layer.activation]
@@ -194,15 +201,16 @@ class Perceptron(AbstractPerceptronBase):
         spec.end_specification()
 
 
-class SoftmaxPerceptron(AbstractPerceptronBase,
-                        AbstractProvidesOutgoingPartitionConstraints):
+class SoftmaxPerceptron(AbstractPerceptronBase):
+    #,
+    #                    AbstractProvidesOutgoingPartitionConstraints):
 
     INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
     EXECUTABLE = "softmax_perceptron.aplx"
 
-    def __init__(self, layer, id, weights):
+    def __init__(self, layer, id, weights, partition_manager):
         super(SoftmaxPerceptron, self).__init__(
-            layer, id, weights, self.EXECUTABLE,
+            layer, id, weights, partition_manager, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
         self._layer = layer
@@ -243,9 +251,11 @@ class SoftmaxPerceptron(AbstractPerceptronBase,
 
         spec.end_specification()
 
+    """
     @overrides(AbstractProvidesOutgoingPartitionConstraints
                .get_outgoing_partition_constraints)
     def get_outgoing_partition_constraints(self, partition):
         if partition.identifier == globals.softmax_partition:
             return [FixedKeyAndMaskConstraint([generate_keys_and_masks()])]
         return []
+    """

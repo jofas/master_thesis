@@ -9,8 +9,7 @@ from spinn_front_end_common.utilities.connections import \
 from spinn_utilities.socket_address import SocketAddress
 
 
-from spiDNN.util import absolute_path_from_home, ReceivingLiveOutputProgress, \
-    uint32t_to_float, float_to_uint32t
+import spiDNN.util as util
 
 import spiDNN.globals as globals
 
@@ -54,16 +53,17 @@ class Model:
 
         extractor = Extractor("extract_predictions")
 
+        partition_manager = util.PartitionManager()
+
         self._setup_front_end(1)
 
         extractor.init_neurons()
-        self._init_neurons()
-        self._connect_layers_forward()
-
-        # TODO: global PartitionManager
+        self._init_neurons(partition_manager)
+        self._connect_layers_forward(partition_manager)
 
         # connect extractor to the output layer
-        extractor.connect_incoming(self._layers[-1], globals.forward_partition)
+        extractor.connect_incoming(
+            self._layers[-1], globals.forward_partition, partition_manager)
 
         conn = self._setup_live_event_connection(extractor, X, result)
 
@@ -165,7 +165,7 @@ class Model:
 
         front_end.setup(
             n_chips_required=n_cores // globals.cores_per_chip,
-            model_binary_folder=absolute_path_from_home(),
+            model_binary_folder=util.absolute_path_from_home(),
             machine_time_step=globals.machine_time_step,
             time_scale_factor=globals.time_scale_factor,
         )
@@ -179,7 +179,7 @@ class Model:
             raise KeyError(
                 "SpiNNaker doesn't have enough cores to run Model")
 
-    def _init_neurons(self):
+    def _init_neurons(self, partition_manager):
         """
         Initializes all Neurons (MachineVertices) in self._layers.
         """
@@ -189,23 +189,27 @@ class Model:
         # TODO: how will this look with Conv2D????
         #
         self._layers[0].init_neurons(
-            neurons_next_layer=self._layers[1].n_neurons)
+            neurons_next_layer=self._layers[1].n_neurons,
+            partition_manager=partition_manager)
 
         i = 0
         for layer in self._layers[1:]:
             # TODO: how will this look wit more than just Dense
             #       layers?
             layer.init_neurons(
-                weights=self.__weights[i], biases=self.__weights[i+1])
+                weights=self.__weights[i],
+                biases=self.__weights[i+1],
+                partition_manager=partition_manager)
             i += 2
 
-    def _connect_layers_forward(self):
+    def _connect_layers_forward(self, partition_manager):
         """
         Builds the forward connection between each layer.
         """
         for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
-            layer.connect_incoming(source_layer, globals.forward_partition)
+            layer.connect_incoming(
+                source_layer, globals.forward_partition, partition_manager)
 
     def _connect_layers_backward(self):
         # meh
@@ -255,7 +259,9 @@ class Model:
                 ))
                 """
                 conn.send_event_with_payload(
-                    label, 0, float_to_uint32t(x[send_label_to_pos[label]])
+                    label,
+                    0,
+                    util.float_to_uint32t(x[send_label_to_pos[label]])
                 )
 
                 time.sleep(0.075)
@@ -263,10 +269,11 @@ class Model:
         return injector_callback
 
     def _generate_extractor_callback(self, receive_labels, result):
-        rlop = ReceivingLiveOutputProgress(result.shape[0], receive_labels)
+        rlop = util.ReceivingLiveOutputProgress(
+            result.shape[0], receive_labels)
 
         def extractor_callback(label, _, val):
-            val = uint32t_to_float(val)
+            val = util.uint32t_to_float(val)
             # print("received val: {}, neuron: {}".format(val, label))
             x = rlop.received(label)
             y = rlop.label_to_pos(label)

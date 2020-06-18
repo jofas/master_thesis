@@ -29,7 +29,7 @@ from spinnaker_graph_front_end.utilities.data_utils import (
 from data_specification.enums import DataType
 
 
-from spiDNN.util import generate_offset, generate_keys_and_masks
+from spiDNN.util import generate_offset
 
 import spiDNN.globals as globals
 

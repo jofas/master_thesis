@@ -1,5 +1,8 @@
 from pacman.model.routing_info import BaseKeyAndMask
 
+from pacman.model.constraints.key_allocator_constraints import \
+    FixedKeyAndMaskConstraint
+
 from pacman.model.graphs.machine import MachineEdge
 
 import spinnaker_graph_front_end as front_end
@@ -35,19 +38,6 @@ def generate_offset(processor):
     )
 
 
-def __generate_keys_and_masks():
-    mask = 0xffffffff
-    for base_key in range(0x00000000, 0xffffffff):
-        yield BaseKeyAndMask(base_key, mask)
-
-
-__generator = __generate_keys_and_masks()
-
-
-def generate_keys_and_masks():
-    return next(__generator)
-
-
 def generate_machine_edge(source, dest, partition):
     return MachineEdge(source, dest, label="{}_{}_to_{}".format(
         partition, source.label, dest.label))
@@ -66,6 +56,36 @@ def uint32t_to_float(uint):
 def float_to_uint32t(flt):
     bts = struct.pack("f", flt)
     return struct.unpack("I", bts)[0]
+
+
+class Partition:
+    def __init__(self):
+        self.n_elements = 0
+        self.first_key = 0
+        self.next_key_offset = 0
+
+
+class PartitionManager:
+    def __init__(self):
+        self.partitions = {partition: Partition()
+            for partition in globals.partitions_priority}
+
+    def add_outgoing_partition(self, partition):
+        self.partitions[partition].n_elements += 1
+
+        # bubble the first key of each partition with a lower priority
+        # upwards in the key space
+        for partition_, priority in globals.partitions_priority.items():
+            if priority < globals.partitions_priority[partition]:
+                self.partitions[partition_].first_key += 1
+
+    def generate_constraint(self, partition_identifier):
+        partition = self.partitions[partition_identifier]
+        key = partition.first_key + partition.next_key_offset
+        partition.next_key_offset += 1
+
+        return FixedKeyAndMaskConstraint([BaseKeyAndMask(
+            key, globals.mask)])
 
 
 class ReceivingLiveOutputProgress:
