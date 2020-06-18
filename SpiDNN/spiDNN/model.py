@@ -79,10 +79,9 @@ class Model:
 
         # backward_pass graph
         #
-        # loss_unit: receives from two partitions, like softmax
-        #            PARTITIONY for receiving labels
-        #            counter for both -> both full -> compute loss
-        #            send loss backwards
+        # loss_unit C:
+        #              counter for both -> both full -> compute loss
+        #              send loss backwards
         #
         # trainable: do forward receive than wait for backward pass
         #            compute gradient descent
@@ -92,21 +91,50 @@ class Model:
         #
         # optimizer interface (in optimizations or after thesis)
 
-        # currently no optimizer interface... just put stuff into
-        # trainable neurons
+        # currently no optimizer interface... just put stuff
+        # (learning rate) into trainable neurons
 
         self._setup_front_end(y_injectors.atoms + 2)
 
-        # y_injectors.connect with different partition (PARTITIONY)
+        loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K)
+        y_injectors.init_neurons(1)
+
+        # TODO: make sure partitiony is consecutive (should be though,
+        #       because y_injectors are only in this one partition)
+        #       implement a test in loss_machine_vertex
+        loss_layer.connect(y_injectors, partition="PARTITIONY")
+
         pong = Extractor()
-        # TODO: loss unit
-        loss_layer = Loss(loss_fn)
 
         self._init_neurons()
         self._connect_layers_forward(loss_layer)
+        # motherfucker I need a backward partition
+        # in trainable_perceptrons a constraint... not gonna work
+        #                                          with softmax
+        # fuck fuck fuck
+        #
+        # I know how many partitions: global, softmax, backward, y
+        #
+        #
+        # once in fit or predict, graph becomes immutable
+        # that means I know how many neurons and what type of neurons
+        # that means I can cluster the key space
+        # that means I need to build a class with generators that
+        # handles all the tricky business with dem keys and then
+        # all vertices I spawn have a key constraint
+        # which means I need to build wrapper around injectors and
+        # extractors
+        #
+        # only question do I hand the key thingy down to vertices?
+        # hell of a way to travel from model down to vertex (well,
+        # through the layers... I think it is clearer if I hand them
+        # down)
+
         # TODO: backward conn
-        # TODO: connect y_injectors with loss_layer
+        #       connect each layer beginning at loss_layer
+        #       and then connect first hidden layer with pong
+        #       (each neuron one connection to pong)
 
         # init_neurons (trainable)
         # forward pass graph
@@ -121,8 +149,6 @@ class Model:
         front_end.stop()
 
         # conn.close()
-
-        # extract weights
 
     def _setup_front_end(self, additional_units_count):
         n_cores = self._all_atoms() + additional_units_count

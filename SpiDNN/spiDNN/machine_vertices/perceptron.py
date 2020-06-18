@@ -128,10 +128,10 @@ class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
 
         # smallest key from previous layer
         min_pre_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, globals.partition_name) for edge in edges])
+            edge.pre_vertex, globals.forward_partition) for edge in edges])
 
         key = routing_info.get_first_key_from_pre_vertex(
-            self, globals.partition_name)
+            self, globals.forward_partition)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.BASE_PARAMS.value)
@@ -200,12 +200,11 @@ class SoftmaxPerceptron(AbstractPerceptronBase,
     INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
     EXECUTABLE = "softmax_perceptron.aplx"
 
-    def __init__(self, layer, id, weights, softmax_partition_identifier):
+    def __init__(self, layer, id, weights):
         super(SoftmaxPerceptron, self).__init__(
             layer, id, weights, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
-        self._softmax_partition_identifier = softmax_partition_identifier
         self._layer = layer
 
     @overrides(MachineDataSpecableVertex.generate_machine_data_specification)
@@ -226,18 +225,15 @@ class SoftmaxPerceptron(AbstractPerceptronBase,
                 spec, placement, machine_graph, routing_info, iptags,
                 reverse_iptags, machine_time_step, time_scale_factor)
 
-        softmax_partition = \
-            list(filter(lambda x: x != globals.partition_name, partitions))[0]
-
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
-                self, softmax_partition.identifier))
+                self, globals.softmax_partition))
 
         min_softmax_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, softmax_partition.identifier) for edge in edges])
+            edge.pre_vertex, globals.softmax_partition) for edge in edges])
 
         softmax_key = routing_info.get_first_key_from_pre_vertex(
-            self, softmax_partition.identifier)
+            self, globals.softmax_partition)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.INSTANCE_PARAMS.value)
@@ -250,6 +246,6 @@ class SoftmaxPerceptron(AbstractPerceptronBase,
     @overrides(AbstractProvidesOutgoingPartitionConstraints
                .get_outgoing_partition_constraints)
     def get_outgoing_partition_constraints(self, partition):
-        if partition.identifier == self._softmax_partition_identifier:
+        if partition.identifier == globals.softmax_partition:
             return [FixedKeyAndMaskConstraint([generate_keys_and_masks()])]
         return []

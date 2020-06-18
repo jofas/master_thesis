@@ -40,4 +40,4 @@ class Extractor:
                 source_neuron, self.machine_vertex,
                 label="{}_to_{}".format(
                     source_neuron.label, self.machine_vertex.label)
-                ), globals.partition_name)
+                ), globals.forward_partition)

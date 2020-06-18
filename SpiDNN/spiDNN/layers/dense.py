@@ -36,21 +36,14 @@ class Dense:
             self._init_perceptron(weights, biases)
 
     def _init_softmax_perceptron(self, weights, biases):
-
-        # here build key constraint
-        softmax_partition_identifier = \
-            "PARTITION_{}_softmax".format(self.name)
-
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
-            neuron = SoftmaxPerceptron(
-                self, i, weight_vector, softmax_partition_identifier)
-
+            neuron = SoftmaxPerceptron(self, i, weight_vector)
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
 
-        self._connect_softmax_perceptrons(softmax_partition_identifier)
+        self._connect_softmax_perceptrons()
 
     def _init_perceptron(self, weights, biases):
         for i, weight_vector in enumerate(
@@ -60,7 +53,7 @@ class Dense:
             self.neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
 
-    def _connect_softmax_perceptrons(self, identifier):
+    def _connect_softmax_perceptrons(self):
         """
         Connect each neuron in this layer to all other neurons except
         itself in a partition unique to this layer.
@@ -74,7 +67,7 @@ class Dense:
                     source_neuron, neuron,
                     label="{}_softmax_{}_to_{}".format(
                         self.name, source_neuron.label, neuron.label)
-                ), identifier)
+                ), globals.softmax_partition)
 
     def connect(self, source_layer):
         for source_neuron in source_layer.neurons:
@@ -82,7 +75,7 @@ class Dense:
                 front_end.add_machine_edge_instance(MachineEdge(
                     source_neuron, neuron, label="{}_to_{}".format(
                         source_neuron.label, neuron.label)
-                ), globals.partition_name)
+                ), globals.forward_partition)
 
     def generate_weights(self, source_layer):
         # This is just weights representation. The weights are re-
