@@ -1,5 +1,9 @@
 from pacman.model.routing_info import BaseKeyAndMask
 
+from pacman.model.graphs.machine import MachineEdge
+
+import spinnaker_graph_front_end as front_end
+
 
 import spiDNN.globals as globals
 
@@ -42,6 +46,16 @@ __generator = __generate_keys_and_masks()
 
 def generate_keys_and_masks():
     return next(__generator)
+
+
+def generate_machine_edge(source, dest, partition):
+    return MachineEdge(source, dest, label="{}_{}_to_{}".format(
+        partition, source.label, dest.label))
+
+
+def add_machine_edge_instance(source, dest, partition):
+    front_end.add_machine_edge_instance(generate_machine_edge(
+        source, dest, partition), partition)
 
 
 def uint32t_to_float(uint):

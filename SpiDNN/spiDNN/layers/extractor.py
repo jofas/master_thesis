@@ -16,11 +16,11 @@ from spinnman.messages.eieio import EIEIOType
 
 import spiDNN.globals as globals
 
+import spiDNN.util as util
+
 
 class Extractor:
     def __init__(self, label):
-        self.label = label
-
         args = LivePacketGatherParameters(
             port=globals.ack_port,
             hostname=globals.host,
@@ -30,14 +30,17 @@ class Extractor:
             payload_as_time_stamps=False)
 
         self.machine_vertex = LivePacketGatherMachineVertex(
-            args, self.label, constraints=[ChipAndCoreConstraint(x=0, y=0)])
+            args, label, constraints=[ChipAndCoreConstraint(x=0, y=0)])
 
+    def init_neurons(self):
         front_end.add_machine_vertex_instance(self.machine_vertex)
 
-    def connect(self, source_layer):
+    def connect_incoming(
+            self, source_layer, partition=globals.forward_partition):
         for source_neuron in source_layer.neurons:
-            front_end.add_machine_edge_instance(MachineEdge(
-                source_neuron, self.machine_vertex,
-                label="{}_to_{}".format(
-                    source_neuron.label, self.machine_vertex.label)
-                ), globals.forward_partition)
+            util.add_machine_edge_instance(
+                source_neuron, self.machine_vertex, partition)
+
+    @property
+    def labels(self):
+        return [self.machine_vertex.label]

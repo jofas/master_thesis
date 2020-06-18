@@ -3,12 +3,12 @@ import numpy as np
 
 import spinnaker_graph_front_end as front_end
 
-from pacman.model.graphs.machine import MachineEdge
-
 
 import spiDNN.globals as globals
 
 from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron
+
+import spiDNN.util as util
 
 
 class Dense:
@@ -56,26 +56,22 @@ class Dense:
     def _connect_softmax_perceptrons(self):
         """
         Connect each neuron in this layer to all other neurons except
-        itself in a partition unique to this layer.
+        itself in the softmax partition.
         """
         for source_neuron in self.neurons:
             for neuron in self.neurons:
                 if source_neuron == neuron:
                     continue
 
-                front_end.add_machine_edge_instance(MachineEdge(
-                    source_neuron, neuron,
-                    label="{}_softmax_{}_to_{}".format(
-                        self.name, source_neuron.label, neuron.label)
-                ), globals.softmax_partition)
+                util.add_machine_edge_instance(
+                    source_neuron, neuron, globals.softmax_partition)
 
-    def connect(self, source_layer):
+    def connect_incoming(
+            self, source_layer, partition=globals.forward_partition):
         for source_neuron in source_layer.neurons:
             for neuron in self.neurons:
-                front_end.add_machine_edge_instance(MachineEdge(
-                    source_neuron, neuron, label="{}_to_{}".format(
-                        source_neuron.label, neuron.label)
-                ), globals.forward_partition)
+                util.add_machine_edge_instance(
+                    source_neuron, neuron, partition)
 
     def generate_weights(self, source_layer):
         # This is just weights representation. The weights are re-

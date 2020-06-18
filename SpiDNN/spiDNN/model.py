@@ -52,11 +52,16 @@ class Model:
         result = np.empty(
             (X.shape[0], self._layers[-1].atoms), dtype=np.float32)
 
+        extractor = Extractor("extract_predictions")
+
         self._setup_front_end(1)
 
-        extractor = Extractor("predict_extract_output")
+        extractor.init_neurons()
         self._init_neurons()
-        self._connect_layers_forward(extractor)
+        self._connect_layers_forward()
+
+        # connect extractor to the output layer
+        extractor.connect_incoming(self._layers[-1])
 
         conn = self._setup_live_event_connection(extractor, X, result)
 
@@ -94,18 +99,21 @@ class Model:
         # currently no optimizer interface... just put stuff
         # (learning rate) into trainable neurons
 
-        self._setup_front_end(y_injectors.atoms + 2)
-
         loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K)
+        pong = Extractor()
+
+        self._setup_front_end(y_injectors.atoms + 2)
+
+        loss_layer.init_neurons()
         y_injectors.init_neurons(1)
+        pong.init_neurons()
 
         # TODO: make sure partitiony is consecutive (should be though,
         #       because y_injectors are only in this one partition)
         #       implement a test in loss_machine_vertex
-        loss_layer.connect(y_injectors, partition="PARTITIONY")
+        loss_layer.connect_incoming(y_injectors, partition="PARTITIONY")
 
-        pong = Extractor()
 
         self._init_neurons()
         self._connect_layers_forward(loss_layer)
@@ -170,6 +178,9 @@ class Model:
                 "SpiNNaker doesn't have enough cores to run Model")
 
     def _init_neurons(self):
+        """
+        Initializes all Neurons (MachineVertices) in self._layers.
+        """
         # Input unit needs to know how many neurons it is connected
         # to
         #
@@ -182,10 +193,13 @@ class Model:
             layer.init_neurons(self.__weights[i], self.__weights[i+1])
             i += 2
 
-    def _connect_layers_forward(self, extractor):
-        for i, layer in enumerate(self._layers[1:] + [extractor]):
+    def _connect_layers_forward(self):
+        """
+        Builds the forward connection between each layer.
+        """
+        for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
-            layer.connect(source_layer)
+            layer.connect_incoming(source_layer)
 
     def _connect_layers_backward(self):
         # meh
@@ -205,7 +219,7 @@ class Model:
         receive_labels = self._layers[-1].labels
 
         conn = LiveEventConnection(
-            extractor.label,
+            extractor.labels[0],
             receive_labels=receive_labels,
             send_labels=send_labels,
             machine_vertices=True
