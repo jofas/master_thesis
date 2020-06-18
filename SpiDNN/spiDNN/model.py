@@ -60,6 +60,8 @@ class Model:
         self._init_neurons()
         self._connect_layers_forward()
 
+        # TODO: global PartitionManager
+
         # connect extractor to the output layer
         extractor.connect_incoming(self._layers[-1], globals.forward_partition)
 

@@ -51,7 +51,7 @@ class Dense(AbstractLayerBase):
             self._neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
 
-        self._connect_softmax_perceptrons()
+        self.connect_incoming(self, globals.softmax_partition)
 
     def _init_perceptron(self, weights, biases):
         for i, weight_vector in enumerate(
@@ -60,19 +60,6 @@ class Dense(AbstractLayerBase):
             neuron = Perceptron(self, i, weight_vector)
             self._neurons.append(neuron)
             front_end.add_machine_vertex_instance(neuron)
-
-    def _connect_softmax_perceptrons(self):
-        """
-        Connect each neuron in this layer to all other neurons except
-        itself in the softmax partition.
-        """
-        for source_neuron in self.neurons:
-            for neuron in self.neurons:
-                if source_neuron == neuron:
-                    continue
-
-                util.add_machine_edge_instance(
-                    source_neuron, neuron, globals.softmax_partition)
 
     def generate_weights(self, source_layer):
         # This is just weights representation. The weights are re-
