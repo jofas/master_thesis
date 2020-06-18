@@ -28,16 +28,16 @@ class Model:
         self.__weights = []
         self._layers = []
 
-    def add(self, layer, layer_name=None):
+    def add(self, layer, label=None):
         # TODO: here control correct usage
 
         # TODO: make sure layer_names are unique
 
-        if layer_name is None:
+        if label is None:
             name = type(layer).__name__
-            layer.name = "{}{}".format(len(self._layers), name)
+            layer.label = "{}{}".format(len(self._layers), name)
         else:
-            layer.name = layer_name
+            layer.label = label
 
         if len(self._layers) > 0:
             source_layer = self._layers[-1]
@@ -50,7 +50,7 @@ class Model:
         X = np.array(X, dtype=np.float32)
 
         result = np.empty(
-            (X.shape[0], self._layers[-1].atoms), dtype=np.float32)
+            (X.shape[0], self._layers[-1].n_neurons), dtype=np.float32)
 
         extractor = Extractor("extract_predictions")
 
@@ -61,7 +61,7 @@ class Model:
         self._connect_layers_forward()
 
         # connect extractor to the output layer
-        extractor.connect_incoming(self._layers[-1])
+        extractor.connect_incoming(self._layers[-1], globals.forward_partition)
 
         conn = self._setup_live_event_connection(extractor, X, result)
 
@@ -75,7 +75,7 @@ class Model:
         X = np.array(X, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
 
-        K = self._layers[-1].atoms
+        K = self._layers[-1].n_neurons
 
         assert y.shape[1] == K
 
@@ -103,7 +103,7 @@ class Model:
         y_injectors = Input(K)
         pong = Extractor()
 
-        self._setup_front_end(y_injectors.atoms + 2)
+        self._setup_front_end(y_injectors.n_neurons + 2)
 
         loss_layer.init_neurons()
         y_injectors.init_neurons(1)
@@ -112,7 +112,7 @@ class Model:
         # TODO: make sure partitiony is consecutive (should be though,
         #       because y_injectors are only in this one partition)
         #       implement a test in loss_machine_vertex
-        loss_layer.connect_incoming(y_injectors, partition="PARTITIONY")
+        loss_layer.connect_incoming(y_injectors, globals.y_partition)
 
 
         self._init_neurons()
@@ -159,7 +159,7 @@ class Model:
         # conn.close()
 
     def _setup_front_end(self, additional_units_count):
-        n_cores = self._all_atoms() + additional_units_count
+        n_cores = self._all_neurons() + additional_units_count
 
         front_end.setup(
             n_chips_required=n_cores // globals.cores_per_chip,
@@ -186,11 +186,15 @@ class Model:
         #
         # TODO: how will this look with Conv2D????
         #
-        self._layers[0].init_neurons(self._layers[1].atoms)
+        self._layers[0].init_neurons(
+            neurons_next_layer=self._layers[1].n_neurons)
 
         i = 0
         for layer in self._layers[1:]:
-            layer.init_neurons(self.__weights[i], self.__weights[i+1])
+            # TODO: how will this look wit more than just Dense
+            #       layers?
+            layer.init_neurons(
+                weights=self.__weights[i], biases=self.__weights[i+1])
             i += 2
 
     def _connect_layers_forward(self):
@@ -199,7 +203,7 @@ class Model:
         """
         for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
-            layer.connect_incoming(source_layer)
+            layer.connect_incoming(source_layer, globals.forward_partition)
 
     def _connect_layers_backward(self):
         # meh
@@ -281,8 +285,8 @@ class Model:
 
         get_simulator().add_socket_address(database_socket)
 
-    def _all_atoms(self):
-        return sum([layer.atoms for layer in self._layers])
+    def _all_neurons(self):
+        return sum([layer.n_neurons for layer in self._layers])
 
     def get_weights(self):
         return self.__weights

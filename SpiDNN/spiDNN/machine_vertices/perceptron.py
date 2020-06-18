@@ -60,7 +60,7 @@ class AbstractPerceptronBase(SimulatorVertex, MachineDataSpecableVertex):
     def __init__(self, layer, id, weights, executable,
                  instance_param_data_size):
         super(AbstractPerceptronBase, self).__init__(
-            "{}_{}".format(layer.name, id), executable)
+            "{}_{}".format(layer.label, id), executable)
 
         self.weights = weights
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
@@ -239,7 +239,7 @@ class SoftmaxPerceptron(AbstractPerceptronBase,
             region=self.DATA_REGIONS.INSTANCE_PARAMS.value)
         spec.write_value(softmax_key)
         spec.write_value(min_softmax_key)
-        spec.write_value(self._layer.atoms)
+        spec.write_value(self._layer.n_neurons)
 
         spec.end_specification()
 
