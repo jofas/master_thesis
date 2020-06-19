@@ -81,13 +81,6 @@ class Model:
 
         assert y.shape[1] == K
 
-        # start with loss_fn = "mean_squared_error"
-        # mean -> 1 / K
-
-        # loss_unit C:
-        #              counter for both -> both full -> compute loss
-        #              send loss backwards
-        #
         # trainable: do forward receive than wait for backward pass
         #            compute gradient descent
         #            if counter == batch_size: update weight

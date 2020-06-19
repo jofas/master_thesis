@@ -70,7 +70,7 @@ void update(uint ticks, uint b) { // {{{
   if (received_softmax_counter == softmax_layer_size) {
 
     potential = potential / (softmax_denominator + potential);
-    send(my_key);
+    send(forward_key);
     softmax_reset();
 
   } else if (received_potentials_counter == N_POTENTIALS) {

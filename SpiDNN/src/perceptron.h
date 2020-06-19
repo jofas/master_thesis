@@ -30,7 +30,7 @@ typedef enum activations_e { // {{{
 //! definitions of each element in the base_params region
 typedef struct base_params_region { // {{{
     uint32_t has_key;
-    uint32_t my_key;
+    uint32_t forward_key;
     uint32_t min_pre_key;
     uint32_t timer_offset;
     uint32_t n_weights;
@@ -47,7 +47,7 @@ typedef enum callback_priorities { // {{{
 
 /* global variables */
 
-uint my_key;
+uint forward_key;
 
 uint min_pre_key;
 
@@ -159,7 +159,7 @@ static bool __init_base_params(uint32_t *timer_offset) { // {{{
     return false;
   }
 
-  my_key = base_params_sdram->my_key;
+  forward_key = base_params_sdram->forward_key;
   min_pre_key = base_params_sdram->min_pre_key;
 
   n_weights = base_params_sdram->n_weights;
