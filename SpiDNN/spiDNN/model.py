@@ -13,7 +13,7 @@ import spiDNN.util as util
 
 import spiDNN.globals as globals
 
-from spiDNN.layers import Input, Extractor
+from spiDNN.layers import Input, Extractor, Loss
 
 
 import time

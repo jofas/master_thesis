@@ -54,11 +54,11 @@ class LossMachineVertex(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
     DATA_REGIONS = Enum(
         value="DATA_REGIONS",
-        names=[("SYSTEM", 0), ("PARAMS", 1)])
+        names=[("SYSTEM", 0), ("PARAMS", 1), ("KEYS", 2)])
 
     def __init__(self, layer, partition_manager):
         AbstractPartitionManagedVertex.__init__(
@@ -87,13 +87,20 @@ class LossMachineVertex(
             label="params"
         )
 
-        edges = list(machine_graph.get_edges_ending_at_vertex(self))
+        spec.reserve_memory_region(
+            region=self.DATA_REGIONS.KEYS.value,
+            size=self.K * BYTES_PER_WORD,
+            label="keys"
+        )
+
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, globals.forward_partition))
 
         # smallest key from previous layer
         min_pre_key = min([routing_info.get_first_key_from_pre_vertex(
             edge.pre_vertex, globals.forward_partition) for edge in edges])
 
-        # TODO: test with edges above (should be equal)
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.y_partition))
@@ -101,25 +108,35 @@ class LossMachineVertex(
         min_y_key = min([routing_info.get_first_key_from_pre_vertex(
             edge.pre_vertex, globals.y_partition) for edge in edges])
 
-        key = routing_info.get_first_key_from_pre_vertex(
-            self, globals.backward_partition)
+        # all the unique partitions to the output layer
+        partitions = \
+            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
+
+        keys = []
+        for partition in partitions:
+            keys.append(routing_info.get_first_key_from_pre_vertex(
+                self, partition.identifier))
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.PARAMS.value)
-        spec.write_value(0 if key is None else 1)
-        spec.write_value(0 if key is None else key)
         spec.write_value(self.loss_function_id)
         spec.write_value(self.K)
         spec.write_value(min_pre_key)
         spec.write_value(min_y_key)
         spec.write_value(generate_offset(placement.p))
 
+        spec.switch_write_focus(
+            region=self.DATA_REGIONS.KEYS.value)
+        spec.write_array(keys)
+
         spec.end_specification()
 
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
-        fixed_sdram = SYSTEM_BYTES_REQUIREMENT + self.PARAMS_DATA_SIZE
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
+                       + self.PARAMS_DATA_SIZE
+                       + self.K * BYTES_PER_WORD)
 
         per_timestep_sdram = 0
 
