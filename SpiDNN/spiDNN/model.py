@@ -112,7 +112,6 @@ class Model:
             neurons_next_layer=1, partition_manager=partition_manager)
         pong.init_neurons()
 
-        # init_neurons (trainable=True)
         self._init_neurons(partition_manager, trainable=True)
         self._connect_layers_forward(partition_manager)
 

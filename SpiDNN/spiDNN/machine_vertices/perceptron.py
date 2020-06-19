@@ -248,3 +248,11 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
         spec.write_value(self._layer.n_neurons)
 
         spec.end_specification()
+
+# TODO: implement
+class TrainablePerceptron:
+    pass
+
+
+class TrainableSoftmaxPerceptron:
+    pass

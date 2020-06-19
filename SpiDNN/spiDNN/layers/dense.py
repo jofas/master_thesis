@@ -13,7 +13,8 @@ from .layer_interface import LayerInterface
 
 import spiDNN.globals as globals
 
-from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron
+from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron, \
+    TrainablePerceptron, TrainableSoftmaxPerceptron
 
 import spiDNN.util as util
 
@@ -40,12 +41,16 @@ class Dense(AbstractLayerBase):
         assert weights.shape[1] == self.n_neurons
         assert biases.shape[0] == self.n_neurons
 
-        # TODO: case if trainable is True
-
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
-            if self.activation == "softmax":
+            if trainable and self.activation == "softmax":
+                neuron = TrainableSoftmaxPerceptron(
+                    self, i, weight_vector, partition_manager)
+            elif trainable and self.activation != "softmax":
+                neuron = TrainablePerceptron(
+                    self, i, weight_vector, partition_manager)
+            elif not trainable and self.activation == "softmax":
                 neuron = SoftmaxPerceptron(
                     self, i, weight_vector, partition_manager)
             else:
