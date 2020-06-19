@@ -4,7 +4,6 @@
 #include <simulation.h>
 #include <sark.h>
 #include <debug.h>
-#include <circular_buffer.h>
 #include <math.h>
 
 #define BIAS weights[n_weights - 1]

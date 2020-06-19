@@ -34,6 +34,9 @@ from spiDNN.util import generate_offset
 import spiDNN.globals as globals
 
 
+from .abstract_partition_managed_vertex import AbstractPartitionManagedVertex
+
+
 import sys
 
 import math
@@ -46,7 +49,10 @@ import struct
 import numpy as np
 
 
-class LossMachineVertex(SimulatorVertex, MachineDataSpecableVertex):
+class LossMachineVertex(
+        AbstractPartitionManagedVertex,
+        SimulatorVertex,
+        MachineDataSpecableVertex):
 
     PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
 
@@ -54,12 +60,15 @@ class LossMachineVertex(SimulatorVertex, MachineDataSpecableVertex):
         value="DATA_REGIONS",
         names=[("SYSTEM", 0), ("PARAMS", 1)])
 
-    def __init__(self, label, loss_fn, K):
-        super(LossMachineVertex, self).__init__(
-            loss_layer.label, "loss_machine_vertex.aplx")
+    def __init__(self, layer, partition_manager):
+        AbstractPartitionManagedVertex.__init__(
+            self, partition_manager)
 
-        self.loss_function_id = globals.losses[loss_fn]
-        self.K = K
+        SimulatorVertex.__init__(
+            self, layer.label, "loss_machine_vertex.aplx")
+
+        self.loss_function_id = globals.losses[layer.loss_fn]
+        self.K = layer.K
 
     @overrides(MachineDataSpecableVertex.generate_machine_data_specification)
     def generate_machine_data_specification(
@@ -82,28 +91,18 @@ class LossMachineVertex(SimulatorVertex, MachineDataSpecableVertex):
 
         # smallest key from previous layer
         min_pre_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, globals.partition_name) for edge in edges])
+            edge.pre_vertex, globals.forward_partition) for edge in edges])
 
-        key = routing_info.get_first_key_from_pre_vertex(
-            self, globals.partition_name)
-
-        # check got right number of keys and edges going into me
-        partitions = \
-            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
-
-        if not len(partitions) == 2:
-            raise ConfigurationException(
-                "Can only handle global and y partition.")
-
-        y_partition = \
-            list(filter(lambda x: x != globals.partition_name, partitions))[0]
-
+        # TODO: test with edges above (should be equal)
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
-                self, y_partition.identifier))
+                self, globals.y_partition))
 
         min_y_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, y_partition.identifier) for edge in edges])
+            edge.pre_vertex, globals.y_partition) for edge in edges])
+
+        key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.backward_partition)
 
         spec.switch_write_focus(
             region=self.DATA_REGIONS.PARAMS.value)

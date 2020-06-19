@@ -51,9 +51,9 @@ class Model:
         result = np.empty(
             (X.shape[0], self._layers[-1].n_neurons), dtype=np.float32)
 
-        extractor = Extractor("extract_predictions")
-
         partition_manager = util.PartitionManager()
+
+        extractor = Extractor("extract_predictions")
 
         self._setup_front_end(1)
 
@@ -84,8 +84,6 @@ class Model:
         # start with loss_fn = "mean_squared_error"
         # mean -> 1 / K
 
-        # backward_pass graph
-        #
         # loss_unit C:
         #              counter for both -> both full -> compute loss
         #              send loss backwards
@@ -96,59 +94,44 @@ class Model:
         #            pass E_i backwards to prev layer
         #            E_i -> know size of next layer (1 for out_layer)
         #
+        # ping-pong
+        #
         # optimizer interface (in optimizations or after thesis)
 
         # currently no optimizer interface... just put stuff
         # (learning rate) into trainable neurons
+        #
+
+        partition_manager = util.PartitionManager()
 
         loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K)
-        pong = Extractor()
+        pong = Extractor("pong")
 
         self._setup_front_end(y_injectors.n_neurons + 2)
 
-        loss_layer.init_neurons()
-        y_injectors.init_neurons(1)
+        loss_layer.init_neurons(partition_manager=partition_manager)
+        y_injectors.init_neurons(
+            neurons_next_layer=1, partition_manager=partition_manager)
         pong.init_neurons()
 
-        # TODO: make sure partitiony is consecutive (should be though,
-        #       because y_injectors are only in this one partition)
-        #       implement a test in loss_machine_vertex
-        loss_layer.connect_incoming(y_injectors, globals.y_partition)
-
-
-        self._init_neurons()
-        self._connect_layers_forward(loss_layer)
-        # motherfucker I need a backward partition
-        # in trainable_perceptrons a constraint... not gonna work
-        #                                          with softmax
-        # fuck fuck fuck
-        #
-        # I know how many partitions: global, softmax, backward, y
-        #
-        #
-        # once in fit or predict, graph becomes immutable
-        # that means I know how many neurons and what type of neurons
-        # that means I can cluster the key space
-        # that means I need to build a class with generators that
-        # handles all the tricky business with dem keys and then
-        # all vertices I spawn have a key constraint
-        # which means I need to build wrapper around injectors and
-        # extractors
-        #
-        # only question do I hand the key thingy down to vertices?
-        # hell of a way to travel from model down to vertex (well,
-        # through the layers... I think it is clearer if I hand them
-        # down)
-
-        # TODO: backward conn
-        #       connect each layer beginning at loss_layer
-        #       and then connect first hidden layer with pong
-        #       (each neuron one connection to pong)
-
         # init_neurons (trainable)
-        # forward pass graph
-        # backward pass graph
+        self._init_neurons(partition_manager)
+        self._connect_layers_forward(partition_manager)
+
+        loss_layer.connect_incoming(
+            self._layers[-1], globals.forward_partition, partition_manager)
+
+        loss_layer.connect_incoming(
+            y_injectors, globals.y_partition, partition_manager)
+
+        self._connect_layers_backward(partition_manager)
+
+        self._layers[-1].connect_incoming(
+            loss_layer, globals.backward_partition, partition_manager)
+
+        pong.connect_incoming(
+            self._layers[1], globals.backward_partition, partition_manager)
 
         # live event conn doing ping pong with the board
 
@@ -204,19 +187,24 @@ class Model:
 
     def _connect_layers_forward(self, partition_manager):
         """
-        Builds the forward connection between each layer.
+        Builds the forward connection between each layer in self._layer.
         """
         for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
             layer.connect_incoming(
                 source_layer, globals.forward_partition, partition_manager)
 
-    def _connect_layers_backward(self):
-        # meh
-        # need to connect self._layers[1] with lpg (pong)
-        # every following layer must be connected to the previous
-        # (source_layer = self, prev_layer =
-        pass
+    def _connect_layers_backward(self, partition_manager):
+        """
+        Builds the backward connection between each layer in self._layer
+        (except Input layer).
+        """
+        i = 2
+        for layer in self._layers[1:-1]:
+            source_layer = self._layers[i]
+            layer.connect_incoming(
+                source_layer, globals.backward_partition, partition_manager)
+            i += 1
 
     def _extract_weights(self):
         i = 0

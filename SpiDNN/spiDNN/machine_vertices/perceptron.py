@@ -188,7 +188,7 @@ class Perceptron(AbstractPerceptronBase):
 
         if not is_single(partitions):
             raise ConfigurationException(
-                "Can only handle one type of partition.")
+                "Can only handle forward partition.")
 
         super(Perceptron, self).abstract_generate_machine_data_specification(
             spec, placement, machine_graph, routing_info, iptags,
@@ -202,8 +202,6 @@ class Perceptron(AbstractPerceptronBase):
 
 
 class SoftmaxPerceptron(AbstractPerceptronBase):
-    #,
-    #                    AbstractProvidesOutgoingPartitionConstraints):
 
     INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
     EXECUTABLE = "softmax_perceptron.aplx"
@@ -226,7 +224,7 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
 
         if not len(partitions) == 2:
             raise ConfigurationException(
-                "Can only handle global and softmax partition.")
+                "Can only handle forward and softmax partition.")
 
         super(SoftmaxPerceptron, self)\
             .abstract_generate_machine_data_specification(
@@ -250,12 +248,3 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
         spec.write_value(self._layer.n_neurons)
 
         spec.end_specification()
-
-    """
-    @overrides(AbstractProvidesOutgoingPartitionConstraints
-               .get_outgoing_partition_constraints)
-    def get_outgoing_partition_constraints(self, partition):
-        if partition.identifier == globals.softmax_partition:
-            return [FixedKeyAndMaskConstraint([generate_keys_and_masks()])]
-        return []
-    """
