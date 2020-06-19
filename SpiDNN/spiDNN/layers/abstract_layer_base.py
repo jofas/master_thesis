@@ -28,6 +28,18 @@ class AbstractLayerBase(LayerInterface):
                 util.add_machine_edge_instance(
                     source_neuron, neuron, partition)
 
+    @overrides(LayerInterface.connect_incoming_unique)
+    def connect_incoming_unique(self, source_layer, partition_manager):
+        for source_neuron in source_layer.neurons:
+            for neuron in self.neurons:
+                partition = "PARTITION_{}_to_{}".format(
+                    source_neuron.label, neuron.label)
+
+                partition_manager.add_outgoing_partition(partition)
+
+                util.add_machine_edge_instance(
+                    source_neuron, neuron, partition)
+
     @overrides(LayerInterface.init_neurons)
     def init_neurons(self, **kwargs):
         for neuron in self.neurons:

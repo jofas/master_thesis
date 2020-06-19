@@ -127,8 +127,8 @@ class Model:
 
         self._connect_layers_backward(partition_manager)
 
-        self._layers[-1].connect_incoming(
-            loss_layer, globals.backward_partition, partition_manager)
+        self._layers[-1].connect_incoming_unique(
+            loss_layer, partition_manager)
 
         pong.connect_incoming(
             self._layers[1], globals.backward_partition, partition_manager)

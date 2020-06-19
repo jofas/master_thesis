@@ -48,3 +48,12 @@ class LayerInterface(object):
         source_layer, such that the generated connection is a directed
         edge towards the neurons of this layer.
         """
+
+    @abstractmethod
+    def connect_incoming_unique(self, source_layer, partition_manager):
+        """
+        Connects the neurons of this layer with the neurons in
+        source_layer, such that the generated connection is a directed
+        edge towards the neurons of this layer. Each connection has
+        its own partition.
+        """

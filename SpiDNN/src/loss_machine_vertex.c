@@ -25,8 +25,9 @@ void update(uint ticks, uint b) { // {{{
     // a partition for each output neuron
     // jeeeeezzzus
     // K keys.... goddamn, how do i do that with my partition manager
-    // TODO: continue here after I've thought about how this will
-    //       work with my partition manager
+    // TODO: continue here after I've changed python code to have a
+    //       memory region with the K keys and changed the backward
+    //       pass graph
     send(my_key);
     reset();
   }
