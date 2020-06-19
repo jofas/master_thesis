@@ -69,14 +69,23 @@ class PartitionManager:
     def __init__(self):
         self.partitions = {partition: Partition()
             for partition in globals.partitions_priority}
+        self.priorities = {key: value
+            for key, value in globals.partitions_priority.items()}
+        self.priorities_reverse = {value: key
+            for key, value in globals.partitions_priority.items()}
+        self.next_priority = -1
 
-    def add_outgoing_partition(self, partition):
-        self.partitions[partition].n_elements += 1
+    def add_outgoing_partition(self, partition_identifier):
+        if partition_identifier not in self.partitions:
+            self._add_partition(partition_identifier)
+
+        self.partitions[partition_identifier].n_elements += 1
 
         # bubble the first key of each partition with a lower priority
         # upwards in the key space
-        for partition_, priority in globals.partitions_priority.items():
-            if priority < globals.partitions_priority[partition]:
+        partition_priority = self.priorities[partition_identifier]
+        for partition_, priority in self.priorities.items():
+            if priority < partition_priority:
                 self.partitions[partition_].first_key += 1
 
     def generate_constraint(self, partition_identifier):
@@ -86,6 +95,23 @@ class PartitionManager:
 
         return FixedKeyAndMaskConstraint([BaseKeyAndMask(
             key, globals.mask)])
+
+    def _add_partition(self, partition_identifier):
+        lowest_priority_partition = self.partitions[
+            self.priorities_reverse[self.next_priority + 1]]
+
+        first_key = lowest_priority_partition.first_key \
+                  + lowest_priority_partition.n_elements
+
+        new_partition = Partition()
+        new_partition.first_key = first_key
+
+        self.partitions[partition_identifier] = new_partition
+
+        self.priorities[partition_identifier] = self.next_priority
+        self.priorities_reverse[self.next_priority] = partition_identifier
+
+        self.next_priority -= 1
 
 
 class ReceivingLiveOutputProgress:
