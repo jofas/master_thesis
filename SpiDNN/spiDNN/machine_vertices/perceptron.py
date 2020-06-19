@@ -250,6 +250,8 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
         spec.end_specification()
 
 # TODO: implement
+
+
 class TrainablePerceptron:
     pass
 

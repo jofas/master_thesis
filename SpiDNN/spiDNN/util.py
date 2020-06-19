@@ -67,11 +67,14 @@ class Partition:
 
 class PartitionManager:
     def __init__(self):
-        self.partitions = {partition: Partition()
+        self.partitions = {
+            partition: Partition()
             for partition in globals.partitions_priority}
-        self.priorities = {key: value
+        self.priorities = {
+            key: value
             for key, value in globals.partitions_priority.items()}
-        self.priorities_reverse = {value: key
+        self.priorities_reverse = {
+            value: key
             for key, value in globals.partitions_priority.items()}
         self.next_priority = -1
 
@@ -101,7 +104,7 @@ class PartitionManager:
             self.priorities_reverse[self.next_priority + 1]]
 
         first_key = lowest_priority_partition.first_key \
-                  + lowest_priority_partition.n_elements
+            + lowest_priority_partition.n_elements
 
         new_partition = Partition()
         new_partition.first_key = first_key

@@ -32,16 +32,17 @@ def test_training():
 
     model.fit(X, y, "mean_squared_error", epochs=5, batch_size=1024)
 
-    #model.set_weights_from_keras(kmodel.weights)
+    """
+    model.set_weights_from_keras(kmodel.weights)
 
-    #p = model.predict(X)
-    #p_ = kmodel.predict(X)
+    p = model.predict(X)
+    p_ = kmodel.predict(X)
 
-    #error = np.absolute(p - p_)
-    #assert np.amax(error) < 0.0001
+    error = np.absolute(p - p_)
+    assert np.amax(error) < 0.0001
+    """
 
 
 if __name__ == "__main__":
     test_training()
     print("SUCCESS.")
-
