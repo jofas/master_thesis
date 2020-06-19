@@ -9,22 +9,16 @@
 typedef enum regions_e { // {{{
     SYSTEM_REGION,
     PARAMS,
+    KEYS,
 } regions_e; // }}}
 
-//! human readable definitions of the activation functions (except
-//! softmax, which is handled by another type of perceptron)
-typedef enum activations_e { // {{{
-  IDENTITY = 0,
-  RELU = 1,
-  SIGMOID = 2,
-  TANH = 3,
-  //SOFTMAX,
-} activations_e; // }}}
+//! human readable definitions of the loss functions
+typedef enum loss_functions_e { // {{{
+  MEAN_SQUARED_ERROR = 0,
+} loss_functions_e; // }}}
 
 //! definitions of each element in the params region
 typedef struct params_region { // {{{
-    uint32_t has_key;
-    uint32_t my_key;
     uint32_t loss_function_id;
     uint32_t K;
     uint32_t min_pre_key;
@@ -43,8 +37,6 @@ typedef enum callback_priorities { // {{{
 
 /* global variables */
 
-uint my_key;
-
 uint min_pre_key;
 uint min_y_key;
 
@@ -52,7 +44,9 @@ uint loss_function_id;
 
 uint K;
 
-float *potentianls;
+uint *keys;
+
+float *potentials;
 bool *received_potentials;
 
 float *y;
@@ -62,6 +56,7 @@ uint received_potentials_counter;
 uint received_y_counter;
 
 params_region_t *params_sdram;
+uint *keys_sdram;
 
 static uint32_t time;
 data_specification_metadata_t *data = NULL;
@@ -90,7 +85,7 @@ void receive_y(uint key, float payload) { // {{{
   uint idx = key - min_y_key;
 
   if (received_y[idx]) {
-    log_error("received potential too fast. Last input wasn't
+    log_error("received y too fast. Last input wasn't
                properly processed yet - exiting!");
     rt_error(RTE_SWERR);
   } else {
@@ -110,9 +105,9 @@ void reset() { // {{{
   received_y_counter = 0;
 } // }}}
 
-void send(uint key) { // {{{
+void send(uint key, float payload) { // {{{
   uint send_bytes;
-  sark_mem_cpy((void *)&send_bytes, &potential, sizeof(uint));
+  sark_mem_cpy((void *)&send_bytes, &payload, sizeof(uint));
 
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);
@@ -120,6 +115,10 @@ void send(uint key) { // {{{
 } // }}}
 
 void __init_dtcm() { // {{{
+  keys_sdram = data_specification_get_region(KEYS, data);
+
+  keys = (uint *)malloc(sizeof(uint) * K);
+
   potentials = (float *)malloc(sizeof(float) * K);
   received_potentials = (bool *)malloc(sizeof(bool) * K);
 
@@ -152,20 +151,12 @@ static bool __init_simulation_and_data_spec(uint32_t *timer_period) { // {{{
 static bool __init_params(uint32_t *timer_offset) { // {{{
   params_sdram = data_specification_get_region(PARAMS, data);
 
-  if (!params_sdram->has_key) {
-    log_error(
-      "this conways cell can't affect anything, deduced as an error,"
-      "please fix the application fabric and try again");
-    return false;
-  }
-
-  my_key = params_sdram->my_key;
   loss_function_id = params_sdram->loss_function_id;
   K = params_sdram->K;
   min_pre_key = params_sdram->min_pre_key;
   min_y_key = params_sdram->min_y_key;
 
-  *timer_offset = base_params_sdram->timer_offset;
+  *timer_offset = params_sdram->timer_offset;
 
   return true;
 } // }}}

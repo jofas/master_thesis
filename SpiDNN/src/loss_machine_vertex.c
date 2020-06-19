@@ -11,6 +11,18 @@ void receive(uint key, float payload) {
   }
 }
 
+float compute_loss(uint i) {
+  switch (loss_function_id) {
+    case MEAN_SQUARED_ERROR:
+      return potentials[i] - y[i];
+
+    default:
+      log_error("Unknown loss function %d - exiting!",
+        loss_function_id);
+      rt_error(RTE_SWERR);
+  }
+}
+
 void update(uint ticks, uint b) { // {{{
   use(b);
   use(ticks);
@@ -20,19 +32,14 @@ void update(uint ticks, uint b) { // {{{
   if ((received_potentials_counter == K) &&
       (received_y_counter == K))
   {
-    compute_loss();
-    // motherfucker
-    // a partition for each output neuron
-    // jeeeeezzzus
-    // K keys.... goddamn, how do i do that with my partition manager
-    // TODO: continue here after I've changed python code to have a
-    //       memory region with the K keys and changed the backward
-    //       pass graph
-    send(my_key);
+    float loss_i;
+    for (uint i=0; i < K; i++) {
+      loss_i = compute_loss(i);
+      send(keys[i], loss_i);
+    }
     reset();
   }
 } // }}}
-
 
 void c_main(void) { // {{{
   base_init();
