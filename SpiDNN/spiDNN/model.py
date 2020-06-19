@@ -81,6 +81,10 @@ class Model:
 
         assert y.shape[1] == K
 
+        # trainable_params: backward_key ... that's all
+        #
+        # extend [Softmax]Perceptron -> Trainable[Softmax]Perceptron
+        #
         # trainable: do forward receive than wait for backward pass
         #            compute gradient descent
         #            if counter == batch_size: update weight
@@ -108,8 +112,8 @@ class Model:
             neurons_next_layer=1, partition_manager=partition_manager)
         pong.init_neurons()
 
-        # init_neurons (trainable)
-        self._init_neurons(partition_manager)
+        # init_neurons (trainable=True)
+        self._init_neurons(partition_manager, trainable=True)
         self._connect_layers_forward(partition_manager)
 
         loss_layer.connect_incoming(
@@ -155,7 +159,7 @@ class Model:
             raise KeyError(
                 "SpiNNaker doesn't have enough cores to run Model")
 
-    def _init_neurons(self, partition_manager):
+    def _init_neurons(self, partition_manager, trainable=False):
         """
         Initializes all Neurons (MachineVertices) in self._layers.
         """
@@ -175,7 +179,8 @@ class Model:
             layer.init_neurons(
                 weights=self.__weights[i],
                 biases=self.__weights[i+1],
-                partition_manager=partition_manager)
+                partition_manager=partition_manager,
+                trainable=trainable)
             i += 2
 
     def _connect_layers_forward(self, partition_manager):

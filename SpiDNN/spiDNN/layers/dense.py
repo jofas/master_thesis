@@ -35,9 +35,12 @@ class Dense(AbstractLayerBase):
         weights = kwargs["weights"]
         biases = kwargs["biases"]
         partition_manager = kwargs["partition_manager"]
+        trainable = kwargs["trainable"]
 
         assert weights.shape[1] == self.n_neurons
         assert biases.shape[0] == self.n_neurons
+
+        # TODO: case if trainable is True
 
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
