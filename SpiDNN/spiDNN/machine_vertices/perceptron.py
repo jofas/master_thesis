@@ -61,7 +61,7 @@ class AbstractPerceptronBase(
                ("INSTANCE_PARAMS", 3)])
 
     def __init__(self, layer, id, weights, executable,
-            instance_param_data_size):
+                 instance_param_data_size):
 
         super(AbstractPerceptronBase, self).__init__(
             "{}_{}".format(layer.label, id), executable)

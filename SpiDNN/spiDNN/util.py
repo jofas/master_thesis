@@ -71,14 +71,14 @@ class Partition:
         if machine_vertex.label not in self.machine_vertices:
             raise KeyError("""Partition {} has never seen MachineVertex
                 {} as the source of an edge.""".format(
-                    self.identifier, machine_vertex.label))
+                self.identifier, machine_vertex.label))
 
         index = self.machine_vertices[machine_vertex.label]
 
         if self.constraint_generated[index]:
             raise KeyError(""""Partition {} has already generated the
                 constraint for MachineVertex {}.""".format(
-                    self.identifier, machine_vertex.label))
+                self.identifier, machine_vertex.label))
 
         self.constraint_generated[index] = True
         return self.first_key + index
