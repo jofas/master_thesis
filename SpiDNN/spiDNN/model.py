@@ -1,26 +1,14 @@
-import spinnaker_graph_front_end as front_end
-
-from spinn_front_end_common.utilities.globals_variables import \
-    get_simulator
-
 from spinn_front_end_common.utilities.connections import \
     LiveEventConnection
 
-from spinn_utilities.socket_address import SocketAddress
-
-
+import spiDNN.gfe as gfe
 import spiDNN.util as util
-
 import spiDNN.globals as globals
-
 from spiDNN.layers import Input, Extractor, Loss
-
 
 import time
 
-
 import numpy as np
-
 
 class Model:
     def __init__(self):
@@ -31,6 +19,7 @@ class Model:
         # TODO: here control correct usage
 
         # TODO: make sure layer_names are unique
+        #       ... remove labeling process???
 
         if label is None:
             name = type(layer).__name__
@@ -51,24 +40,21 @@ class Model:
         result = np.empty(
             (X.shape[0], self._layers[-1].n_neurons), dtype=np.float32)
 
-        partition_manager = util.PartitionManager()
-
         extractor = Extractor("extract_predictions")
 
-        self._setup_front_end(1)
+        gfe.setup(self._all_neurons() + 1)
 
         extractor.init_neurons()
-        self._init_neurons(partition_manager)
-        self._connect_layers_forward(partition_manager)
+        self._init_neurons()
+        self._connect_layers_forward()
 
         # connect extractor to the output layer
-        extractor.connect_incoming(
-            self._layers[-1], globals.forward_partition, partition_manager)
+        extractor.connect_incoming(self._layers[-1], globals.forward_partition)
 
         conn = self._setup_live_event_connection(extractor, X, result)
 
-        front_end.run()
-        front_end.stop()
+        gfe.run()
+        gfe.stop()
         conn.close()
 
         return result
@@ -105,60 +91,39 @@ class Model:
         y_injectors = Input(K)
         pong = Extractor("pong")
 
-        self._setup_front_end(y_injectors.n_neurons + 2)
+        n_cores = self._all_neurons() + y_injectors.n_neurons + 2
+        gfe.setup(n_cores)
 
-        loss_layer.init_neurons(partition_manager=partition_manager)
+        loss_layer.init_neurons(partition_manager=gfe.partition_manager)
         y_injectors.init_neurons(
-            neurons_next_layer=1, partition_manager=partition_manager)
+            neurons_next_layer=1, partition_manager=gfe.partition_manager)
         pong.init_neurons()
 
-        self._init_neurons(partition_manager, trainable=True)
-        self._connect_layers_forward(partition_manager)
+        self._init_neurons(trainable=True)
+        self._connect_layers_forward()
 
         loss_layer.connect_incoming(
-            self._layers[-1], globals.forward_partition, partition_manager)
+            self._layers[-1], globals.forward_partition)
 
-        loss_layer.connect_incoming(
-            y_injectors, globals.y_partition, partition_manager)
+        loss_layer.connect_incoming(y_injectors, globals.y_partition)
 
-        self._connect_layers_backward(partition_manager)
+        self._connect_layers_backward()
 
-        self._layers[-1].connect_incoming_unique(
-            loss_layer, partition_manager)
+        self._layers[-1].connect_incoming_unique(loss_layer)
 
-        pong.connect_incoming(
-            self._layers[1], globals.backward_partition, partition_manager)
+        pong.connect_incoming(self._layers[1], globals.backward_partition)
 
         # live event conn doing ping pong with the board
 
-        front_end.run(1)
+        gfe.run(1)
 
         self._extract_weights()
 
-        front_end.stop()
+        gfe.stop()
 
         # conn.close()
 
-    def _setup_front_end(self, additional_units_count):
-        n_cores = self._all_neurons() + additional_units_count
-
-        front_end.setup(
-            n_chips_required=n_cores // globals.cores_per_chip,
-            model_binary_folder=util.absolute_path_from_home(),
-            machine_time_step=globals.machine_time_step,
-            time_scale_factor=globals.time_scale_factor,
-        )
-
-        self._add_db_sock()
-
-        available_cores = \
-            front_end.get_number_of_available_cores_on_machine()
-
-        if available_cores <= n_cores:
-            raise KeyError(
-                "SpiNNaker doesn't have enough cores to run Model")
-
-    def _init_neurons(self, partition_manager, trainable=False):
+    def _init_neurons(self, trainable=False):
         """
         Initializes all Neurons (MachineVertices) in self._layers.
         """
@@ -168,8 +133,7 @@ class Model:
         # TODO: how will this look with Conv2D????
         #
         self._layers[0].init_neurons(
-            neurons_next_layer=self._layers[1].n_neurons,
-            partition_manager=partition_manager)
+            neurons_next_layer=self._layers[1].n_neurons)
 
         i = 0
         for layer in self._layers[1:]:
@@ -178,20 +142,18 @@ class Model:
             layer.init_neurons(
                 weights=self.__weights[i],
                 biases=self.__weights[i+1],
-                partition_manager=partition_manager,
                 trainable=trainable)
             i += 2
 
-    def _connect_layers_forward(self, partition_manager):
+    def _connect_layers_forward(self):
         """
         Builds the forward connection between each layer in self._layer.
         """
         for i, layer in enumerate(self._layers[1:]):
             source_layer = self._layers[i]
-            layer.connect_incoming(
-                source_layer, globals.forward_partition, partition_manager)
+            layer.connect_incoming(source_layer, globals.forward_partition)
 
-    def _connect_layers_backward(self, partition_manager):
+    def _connect_layers_backward(self):
         """
         Builds the backward connection between each layer in self._layer
         (except Input layer).
@@ -199,8 +161,7 @@ class Model:
         i = 2
         for layer in self._layers[1:-1]:
             source_layer = self._layers[i]
-            layer.connect_incoming(
-                source_layer, globals.backward_partition, partition_manager)
+            layer.connect_incoming(source_layer, globals.backward_partition)
             i += 1
 
     def _extract_weights(self):
@@ -266,18 +227,9 @@ class Model:
             result[x, y] = val
 
             if rlop.simulation_finished:
-                front_end.stop_run()
+                gfe.stop_run()
 
         return extractor_callback
-
-    def _add_db_sock(self):
-        database_socket = SocketAddress(
-            listen_port=globals.ack_port,
-            notify_host_name=globals.host,
-            notify_port_no=globals.notify_port
-        )
-
-        get_simulator().add_socket_address(database_socket)
 
     def _all_neurons(self):
         return sum([layer.n_neurons for layer in self._layers])

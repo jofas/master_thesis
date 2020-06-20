@@ -27,10 +27,9 @@ from spinnaker_graph_front_end.utilities.data_utils import (
 
 from data_specification.enums import DataType
 
-
-from spiDNN.util import generate_offset
-
+import spiDNN.gfe as gfe
 import spiDNN.globals as globals
+from spiDNN.util import generate_offset
 
 
 from .abstract_partition_managed_vertex import AbstractPartitionManagedVertex
@@ -60,20 +59,20 @@ class AbstractPerceptronBase(
         names=[("SYSTEM", 0), ("BASE_PARAMS", 1), ("WEIGHTS", 2),
                ("INSTANCE_PARAMS", 3)])
 
-    def __init__(self, layer, id, weights, partition_manager,
-                 executable, instance_param_data_size):
+    def __init__(self, layer, id, weights, executable,
+            instance_param_data_size):
 
-        AbstractPartitionManagedVertex.__init__(
-            self, partition_manager)
-
-        SimulatorVertex.__init__(
-            self, "{}_{}".format(layer.label, id), executable)
+        super(AbstractPerceptronBase, self).__init__(
+            "{}_{}".format(layer.label, id), executable)
 
         self.weights = weights
         self._weight_container_size = len(self.weights) * BYTES_PER_WORD
         self._instance_param_data_size = instance_param_data_size
 
-    def extract_weights(self, transceiver, placement):
+    def extract_weights(self):
+        transceiver = gfe.transceiver()
+        placement = gfe.placements().get_placement_of_vertex(self)
+
         weights_region_base_address = locate_memory_region_for_placement(
             placement, self.DATA_REGIONS.WEIGHTS.value, transceiver)
 
@@ -170,9 +169,9 @@ class Perceptron(AbstractPerceptronBase):
     INSTANCE_PARAMS_DATA_SIZE = 1 * BYTES_PER_WORD
     EXECUTABLE = "perceptron.aplx"
 
-    def __init__(self, layer, id, weights, partition_manager):
+    def __init__(self, layer, id, weights):
         super(Perceptron, self).__init__(
-            layer, id, weights, partition_manager, self.EXECUTABLE,
+            layer, id, weights, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
         self._activation_function_id = globals.activations[layer.activation]
@@ -206,9 +205,9 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
     INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
     EXECUTABLE = "softmax_perceptron.aplx"
 
-    def __init__(self, layer, id, weights, partition_manager):
+    def __init__(self, layer, id, weights):
         super(SoftmaxPerceptron, self).__init__(
-            layer, id, weights, partition_manager, self.EXECUTABLE,
+            layer, id, weights, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
         self._layer = layer

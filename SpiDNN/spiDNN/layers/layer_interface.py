@@ -42,7 +42,7 @@ class LayerInterface(object):
         """
 
     @abstractmethod
-    def connect_incoming(self, source_layer, partition, partition_manager):
+    def connect_incoming(self, source_layer, partition):
         """
         Connects the neurons of this layer with the neurons in
         source_layer, such that the generated connection is a directed
@@ -50,7 +50,7 @@ class LayerInterface(object):
         """
 
     @abstractmethod
-    def connect_incoming_unique(self, source_layer, partition_manager):
+    def connect_incoming_unique(self, source_layer):
         """
         Connects the neurons of this layer with the neurons in
         source_layer, such that the generated connection is a directed

@@ -1,22 +1,17 @@
 import numpy as np
 
-
 import spinnaker_graph_front_end as front_end
 
 from spinn_utilities.overrides import overrides
 
 
 from .abstract_layer_base import AbstractLayerBase
-
 from .layer_interface import LayerInterface
 
-
 import spiDNN.globals as globals
-
+import spiDNN.util as util
 from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron, \
     TrainablePerceptron, TrainableSoftmaxPerceptron
-
-import spiDNN.util as util
 
 
 class Dense(AbstractLayerBase):
@@ -35,7 +30,6 @@ class Dense(AbstractLayerBase):
     def init_neurons(self, **kwargs):
         weights = kwargs["weights"]
         biases = kwargs["biases"]
-        partition_manager = kwargs["partition_manager"]
         trainable = kwargs["trainable"]
 
         assert weights.shape[1] == self.n_neurons
@@ -45,24 +39,20 @@ class Dense(AbstractLayerBase):
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
             if trainable and self.activation == "softmax":
-                neuron = TrainableSoftmaxPerceptron(
-                    self, i, weight_vector, partition_manager)
+                neuron = TrainableSoftmaxPerceptron(self, i, weight_vector)
             elif trainable and self.activation != "softmax":
-                neuron = TrainablePerceptron(
-                    self, i, weight_vector, partition_manager)
+                neuron = TrainablePerceptron(self, i, weight_vector)
             elif not trainable and self.activation == "softmax":
-                neuron = SoftmaxPerceptron(
-                    self, i, weight_vector, partition_manager)
+                neuron = SoftmaxPerceptron(self, i, weight_vector)
             else:
-                neuron = Perceptron(
-                    self, i, weight_vector, partition_manager)
+                neuron = Perceptron(self, i, weight_vector)
 
             self.neurons.append(neuron)
-            front_end.add_machine_vertex_instance(neuron)
+
+        super(Dense, self).init_neurons()
 
         if self.activation == "softmax":
-            self.connect_incoming(
-                self, globals.softmax_partition, partition_manager)
+            self.connect_incoming(self, globals.softmax_partition)
 
     def generate_weights(self, source_layer):
         # This is just weights representation. The weights are re-
@@ -88,10 +78,7 @@ class Dense(AbstractLayerBase):
         biases = np.empty((self.n_neurons,), dtype=np.float32)
 
         for i, neuron in enumerate(self.neurons):
-            neuron_weights = neuron.extract_weights(
-                front_end.transceiver(),
-                front_end.placements().get_placement_of_vertex(neuron),
-            )
+            neuron_weights = neuron.extract_weights()
 
             weights[:, i] = neuron_weights[:-1]
             biases[i] = neuron_weights[-1]

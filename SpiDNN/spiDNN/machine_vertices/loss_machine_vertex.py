@@ -60,12 +60,9 @@ class LossMachineVertex(
         value="DATA_REGIONS",
         names=[("SYSTEM", 0), ("PARAMS", 1), ("KEYS", 2)])
 
-    def __init__(self, layer, partition_manager):
-        AbstractPartitionManagedVertex.__init__(
-            self, partition_manager)
-
-        SimulatorVertex.__init__(
-            self, layer.label, "loss_machine_vertex.aplx")
+    def __init__(self, layer):
+        super(LossMachineVertex, self).__init__(
+            layer.label, "loss_machine_vertex.aplx")
 
         self.loss_function_id = globals.losses[layer.loss_fn]
         self.K = layer.K
