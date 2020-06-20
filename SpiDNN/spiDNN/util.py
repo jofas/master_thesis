@@ -52,10 +52,6 @@ class Partition:
         self.machine_vertices = {}
         self.constraint_generated = []
 
-    @property
-    def n_elements(self):
-        return len(self.machine_vertices)
-
     def add(self, machine_vertex):
         """
         Adds the machine_vertex to the list of alrady seen machine
@@ -86,6 +82,9 @@ class Partition:
 
         self.constraint_generated[index] = True
         return self.first_key + index
+
+    def __len__(self):
+        return len(self.machine_vertices)
 
 
 class PartitionManager:
@@ -133,7 +132,7 @@ class PartitionManager:
 
         if index > 0:
             new_partition.first_key = self.partitions[-1].first_key \
-                + self.partitions[-1].n_elements
+                + len(self.partitions[-1])
 
         self.partitions.append(new_partition)
         return new_partition
