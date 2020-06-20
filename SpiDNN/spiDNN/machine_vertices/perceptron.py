@@ -32,7 +32,8 @@ import spiDNN.globals as globals
 from spiDNN.util import generate_offset
 
 
-from .abstract_partition_managed_vertex import AbstractPartitionManagedVertex
+from .abstract_partition_managed_machine_vertex import \
+    AbstractPartitionManagedMachineVertex
 
 
 import sys
@@ -48,7 +49,7 @@ import numpy as np
 
 
 class AbstractPerceptronBase(
-        AbstractPartitionManagedVertex,
+        AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
 

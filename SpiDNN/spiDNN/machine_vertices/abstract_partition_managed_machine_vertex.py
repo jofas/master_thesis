@@ -5,7 +5,7 @@ from spinn_front_end_common.abstract_models import \
 import spiDNN.gfe as gfe
 
 # TODO: inheritance for each machine_vertex through this one
-class AbstractPartitionManagedVertex(
+class AbstractPartitionManagedMachineVertex(
         AbstractProvidesOutgoingPartitionConstraints):
 
     @overrides(AbstractProvidesOutgoingPartitionConstraints

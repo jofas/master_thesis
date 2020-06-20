@@ -34,7 +34,8 @@ from spiDNN.util import generate_offset
 import spiDNN.globals as globals
 
 
-from .abstract_partition_managed_vertex import AbstractPartitionManagedVertex
+from .abstract_partition_managed_machine_vertex import \
+    AbstractPartitionManagedMachineVertex
 
 
 import sys
@@ -50,7 +51,7 @@ import numpy as np
 
 
 class LossMachineVertex(
-        AbstractPartitionManagedVertex,
+        AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
 
