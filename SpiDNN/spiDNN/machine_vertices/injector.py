@@ -10,5 +10,5 @@ class Injector(
         ReverseIPTagMulticastSourceMachineVertex):
 
     def __init__(self, n_keys, label):
-        super(Injector, self).__init__(
-            n_keys=n_keys, label=label, enable_injection=True)
+        ReverseIPTagMulticastSourceMachineVertex.__init__(
+            self, n_keys=n_keys, label=label, enable_injection=True)
