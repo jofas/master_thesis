@@ -67,54 +67,51 @@ class Partition:
 
 class PartitionManager:
     def __init__(self):
-        self.partitions = {
-            partition: Partition()
-            for partition in globals.partitions_priority}
-        self.priorities = {
-            key: value
-            for key, value in globals.partitions_priority.items()}
-        self.priorities_reverse = {
-            value: key
-            for key, value in globals.partitions_priority.items()}
-        self.next_priority = -1
+        self.partitions = []
+        self.partitions_lookup = {}
 
     def add_outgoing_partition(self, partition_identifier):
-        if partition_identifier not in self.partitions:
-            self._add_partition(partition_identifier)
+        partition = self._get_partition(partition_identifier)
 
-        self.partitions[partition_identifier].n_elements += 1
+        if partition is None:
+            partition = self._add_partition(partition_identifier)
 
-        # bubble the first key of each partition with a lower priority
-        # upwards in the key space
-        partition_priority = self.priorities[partition_identifier]
-        for partition_, priority in self.priorities.items():
-            if priority < partition_priority:
-                self.partitions[partition_].first_key += 1
+        partition.n_elements += 1
+
+        # bubble the first key of each partition which was touched
+        # after this partition upwards in the key space
+        index = self.partitions_lookup[partition_identifier]
+        if index < len(self.partitions) - 1:
+            for partition in self.partitions[index + 1:]:
+                partition.first_key += 1
 
     def generate_constraint(self, partition_identifier):
-        partition = self.partitions[partition_identifier]
+        partition = self.partitions[
+            self.partitions_lookup[partition_identifier]]
         key = partition.first_key + partition.next_key_offset
         partition.next_key_offset += 1
 
         return FixedKeyAndMaskConstraint([BaseKeyAndMask(
             key, globals.mask)])
 
-    def _add_partition(self, partition_identifier):
-        lowest_priority_partition = self.partitions[
-            self.priorities_reverse[self.next_priority + 1]]
+    def _get_partition(self, partition_identifier):
+        if partition_identifier in self.partitions_lookup:
+            return self.partitions[
+                self.partitions_lookup[partition_identifier]]
+        return None
 
-        first_key = lowest_priority_partition.first_key \
-            + lowest_priority_partition.n_elements
+    def _add_partition(self, partition_identifier):
+        index = len(self.partitions)
+        self.partitions_lookup[partition_identifier] = index
 
         new_partition = Partition()
-        new_partition.first_key = first_key
 
-        self.partitions[partition_identifier] = new_partition
+        if index > 0:
+            new_partition.first_key = self.partitions[-1].first_key \
+                + self.partitions[-1].n_elements
 
-        self.priorities[partition_identifier] = self.next_priority
-        self.priorities_reverse[self.next_priority] = partition_identifier
-
-        self.next_priority -= 1
+        self.partitions.append(new_partition)
+        return new_partition
 
 
 class ReceivingLiveOutputProgress:
