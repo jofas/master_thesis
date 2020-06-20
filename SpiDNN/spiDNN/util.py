@@ -3,10 +3,6 @@ from pacman.model.routing_info import BaseKeyAndMask
 from pacman.model.constraints.key_allocator_constraints import \
     FixedKeyAndMaskConstraint
 
-from pacman.model.graphs.machine import MachineEdge
-
-import spinnaker_graph_front_end as front_end
-
 
 import spiDNN.globals as globals
 
@@ -38,16 +34,6 @@ def generate_offset(processor):
     )
 
 
-def generate_machine_edge(source, dest, partition):
-    return MachineEdge(source, dest, label="{}_{}_to_{}".format(
-        partition, source.label, dest.label))
-
-
-def add_machine_edge_instance(source, dest, partition):
-    front_end.add_machine_edge_instance(generate_machine_edge(
-        source, dest, partition), partition)
-
-
 def uint32t_to_float(uint):
     bts = struct.pack("!I", uint)
     return struct.unpack("!f", bts)[0]
@@ -59,10 +45,47 @@ def float_to_uint32t(flt):
 
 
 class Partition:
-    def __init__(self):
-        self.n_elements = 0
+    def __init__(self, identifier):
+        self.identifier = identifier
         self.first_key = 0
-        self.next_key_offset = 0
+
+        self.machine_vertices = {}
+        self.constraint_generated = []
+
+    @property
+    def n_elements(self):
+        return len(self.machine_vertices)
+
+    def add(self, machine_vertex):
+        """
+        Adds the machine_vertex to the list of alrady seen machine
+        vertices.
+
+        Returns True if machine_vertex has not been touched before,
+        otherwise False is returned.
+        """
+        if machine_vertex.label not in self.machine_vertices:
+            self.machine_vertices[machine_vertex.label] = \
+                len(self.machine_vertices)
+            self.constraint_generated.append(False)
+            return True
+        return False
+
+    def get_key(self, machine_vertex):
+        if machine_vertex.label not in self.machine_vertices:
+            raise KeyError("""Partition {} has never seen MachineVertex
+                {} as the source of an edge.""".format(
+                    self.identifier, machine_vertex.label))
+
+        index = self.machine_vertices[machine_vertex.label]
+
+        if self.constraint_generated[index]:
+            raise KeyError(""""Partition {} has already generated the
+                constraint for MachineVertex {}.""".format(
+                    self.identifier, machine_vertex.label))
+
+        self.constraint_generated[index] = True
+        return self.first_key + index
 
 
 class PartitionManager:
@@ -70,26 +93,28 @@ class PartitionManager:
         self.partitions = []
         self.partitions_lookup = {}
 
-    def add_outgoing_partition(self, partition_identifier):
+    def add_outgoing_partition(self, machine_vertex, partition_identifier):
         partition = self._get_partition(partition_identifier)
 
         if partition is None:
             partition = self._add_partition(partition_identifier)
 
-        partition.n_elements += 1
+        if partition.add(machine_vertex):
+            # bubble the first key of each partition which was touched
+            # after this partition upwards in the key space
+            index = self.partitions_lookup[partition_identifier]
+            if index < len(self.partitions) - 1:
+                for partition in self.partitions[index + 1:]:
+                    partition.first_key += 1
 
-        # bubble the first key of each partition which was touched
-        # after this partition upwards in the key space
-        index = self.partitions_lookup[partition_identifier]
-        if index < len(self.partitions) - 1:
-            for partition in self.partitions[index + 1:]:
-                partition.first_key += 1
+    def generate_constraint(self, machine_vertex, partition_identifier):
+        partition = self._get_partition(partition_identifier)
 
-    def generate_constraint(self, partition_identifier):
-        partition = self.partitions[
-            self.partitions_lookup[partition_identifier]]
-        key = partition.first_key + partition.next_key_offset
-        partition.next_key_offset += 1
+        if partition is None:
+            raise KeyError("I've never heard of parition: {}".format(
+                partition_identifier))
+
+        key = partition.get_key(machine_vertex)
 
         return FixedKeyAndMaskConstraint([BaseKeyAndMask(
             key, globals.mask)])
@@ -104,7 +129,7 @@ class PartitionManager:
         index = len(self.partitions)
         self.partitions_lookup[partition_identifier] = index
 
-        new_partition = Partition()
+        new_partition = Partition(partition_identifier)
 
         if index > 0:
             new_partition.first_key = self.partitions[-1].first_key \

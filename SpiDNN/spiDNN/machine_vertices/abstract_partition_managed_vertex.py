@@ -4,7 +4,7 @@ from spinn_front_end_common.abstract_models import \
 
 import spiDNN.gfe as gfe
 
-
+# TODO: inheritance for each machine_vertex through this one
 class AbstractPartitionManagedVertex(
         AbstractProvidesOutgoingPartitionConstraints):
 
@@ -12,4 +12,4 @@ class AbstractPartitionManagedVertex(
                .get_outgoing_partition_constraints)
     def get_outgoing_partition_constraints(self, partition):
         return [gfe.partition_manager.generate_constraint(
-            partition.identifier)]
+            self, partition.identifier)]

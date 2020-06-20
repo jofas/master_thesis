@@ -2,6 +2,7 @@ import spinnaker_graph_front_end as front_end
 from spinn_utilities.socket_address import SocketAddress
 from spinn_front_end_common.utilities.globals_variables import \
     get_simulator
+from pacman.model.graphs.machine import MachineEdge
 
 import spiDNN.globals as globals
 import spiDNN.util as util
@@ -50,12 +51,25 @@ def add_machine_vertex_instance(machine_vertex):
     front_end.add_machine_vertex_instance(machine_vertex)
 
 
+def add_machine_edge_instance(source, dest, partition):
+    global partition_manager
+    partition_manager.add_outgoing_partition(source, partition)
+
+    front_end.add_machine_edge_instance(__generate_machine_edge(
+        source, dest, partition), partition)
+
+
 def transceiver():
     return front_end.transceiver()
 
 
 def placements():
     return front_end.placements()
+
+
+def __generate_machine_edge(source, dest, partition):
+    return MachineEdge(source, dest, label="{}_{}_to_{}".format(
+        partition, source.label, dest.label))
 
 
 def __add_db_sock():
