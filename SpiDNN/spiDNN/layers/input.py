@@ -1,26 +1,25 @@
-import spinnaker_graph_front_end as front_end
-
-from spinn_front_end_common.utility_models import \
-    ReverseIPTagMulticastSourceMachineVertex
+from spinn_utilities.overrides import overrides
 
 
-class Input:
-    def __init__(self, atoms):
-        self.atoms = atoms
-        self.name = "uninitialized"
-        self.neurons = []
-        self.activation = "identity"
+from .abstract_layer_base import AbstractLayerBase
 
-    def init_neurons(self, atoms_next_layer):
-        for i in range(0, self.atoms):
-            neuron = ReverseIPTagMulticastSourceMachineVertex(
-                n_keys=atoms_next_layer,
-                label="{}_{}".format(self.name, i),
-                enable_injection=True,
-            )
+from .layer_interface import LayerInterface
+
+import spiDNN.gfe as gfe
+from spiDNN.machine_vertices import Injector
+
+
+class Input(AbstractLayerBase):
+    def __init__(self, n_neurons):
+        super(Input, self).__init__("unnamed", n_neurons, [])
+
+    @overrides(LayerInterface.init_neurons)
+    def init_neurons(self, **kwargs):
+        neurons_next_layer = kwargs["neurons_next_layer"]
+
+        for i in range(0, self.n_neurons):
+            neuron = Injector(
+                n_keys=neurons_next_layer,
+                label="{}_{}".format(self.label, i))
             self.neurons.append(neuron)
-            front_end.add_machine_vertex_instance(neuron)
-
-    @property
-    def labels(self):
-        return [neuron.label for neuron in self.neurons]
+            gfe.add_machine_vertex_instance(neuron)

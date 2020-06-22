@@ -1,6 +1,7 @@
-all:
-	$(MAKE) -f make/perceptron.mk
-	$(MAKE) -f make/softmax_perceptron.mk
+MACHINE_VERTICES=$(wildcard make/*.mk)
+
+all: $(MACHINE_VERTICES)
+	$(foreach file,$^,$(MAKE) -f $(file);)
 
 clean:
 	rm build/*

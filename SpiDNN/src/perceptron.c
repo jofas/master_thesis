@@ -59,7 +59,7 @@ void update(uint ticks, uint b) { // {{{
 
   if (received_potentials_counter == N_POTENTIALS) {
     activate();
-    send(my_key);
+    send(forward_key);
     reset();
   }
 } // }}}
