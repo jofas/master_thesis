@@ -215,33 +215,33 @@ degree or professional qualification except as specified.
 
 Deep learning is revolutionizing the world.
 It has become part of our daily lives as consumers, powering major
-software products---from recommendation systems over translation tools
+software products---from recommendation systems and translation tools
 to web search \citep{lecun_et_al_2015}.
 Major breakthroughs in fields like computer vision or natural language
 processing were achieved through the use of deep learning
 \citep{krizhevsky_et_al_2012, hinton_et_al_2012}.
 It has emerged as a driving force behind discoveries in numerous
-domains like particle physics, drug discovery, genomics or gaming
+domains like particle physics, drug discovery, genomics and gaming
 \citep{ciodaro_et_al_2012, ma_et_al_2015, leung_et_al_2014,
   silver_et_al_2016}.
 
 Deep learning has become so ubiquitous that we are changing the
 way we build modern hardware to account for its computational demands.
 From the way edge devices like mobile phones or embedded systems are
-build over modern CPUs to specialized hardware designed only for deep
+built and modern CPUs to specialized hardware designed only for deep
 learning models \citep{deng_2019, boitano_2020, perez_2017,
   jouppi_et_al_2017}.
-Whole state-of-the-art supercomputers are build solely for deep
+Whole state-of-the-art supercomputers are built solely for deep
 learning \citep{langston_2020}.
-Hardware manifacturers are faced with a major challenge in meeting the
-computational demands arising from inference and more importantly
+Hardware manufacturer are faced with a major challenge in meeting the
+computational demands arising from inference, and more importantly,
 training deep learning models.
 OpenAI researchers have estimated that the computational costs of
 training increases exponentially; approximately every 3.4 months the
 cost doubles \citep{amodei_et_al_2019}.
-With the end of Moore's Law chip makers have to get creative in
-scaling up computing the same way machine learning researchers are
-scaling up their models \citep{simonite_2016}.
+With the end of Moore's Law \citep{loeffler_2018}, chip makers have to
+get creative in scaling up computing, the same way machine learning
+researchers are scaling up their models \citep{simonite_2016}.
 Production and research into new hardware designs for deep learning
 are well on the way.
 
@@ -251,30 +251,34 @@ Neuroscience has long been linked to deep learning, which has its
 origin in reasearch done by neuroscientists
 \citep{mcculloch_et_al_1943}.
 While in the recent past deep learning research has been more focused
-on mathematical topics like statistcs and probability theory,
-optimization or linear algebra, researchers are again looking over to
-neuroscience in order to further improve the capabilities of deep
+on mathematical topics like statistics and probability theory,
+optimization or linear algebra, researchers are again looking to
+neuroscience to further improve the capabilities of deep
 learning models \citep{marblestone_et_al_2016}.
 
-But not only the algorithms used by neuroscientists are drawing
-interest from the deep learning community.
+But the algorithms developed by computational neuroscientists are not
+the only aspect drawing attention from the deep learning community.
 Computational neuroscience has long been trying to develop hardware
-for the efficient modeling of the human brain.
-Neuromorphic computer architectures are being developed to meet the
-demands for efficient computing for running large-scale spiking neural
-networks used for modeling brain functions \citep{furber_2016}.
+for the efficient modeling of the human brain and neuromorphic
+computing---a computer architecture inspired by the biological
+nervous system---has been around since the 1980s \citep{mead_1989}.
+Today, neuromorphic computers are being developed to meet the
+demands for efficient computing needed to run large-scale
+spiking neural networks used for modeling brain
+functions \citep{furber_2016}.
 While being developed mainly for the task of modeling the human brain,
-deep learning has been linked to neuromorphic computing for some time,
-especially in the context of commercial usability.
-Both the low energy demands of neuromorphic computer chips and their
-general design concerning scalability and massive-parallelism are
-intriguing for two very important use cases of deep learning:
+deep learning has been linked to neuromorphic computing,
+especially in the context of commercial usability \citep{gomes_2017}.
+Both the low energy demands of neuromorphic computers---such as IBM's
+True North \citep{cassidy_et_al_2013} or The University of
+Manchester's Spiking Neural Network Architecture (SpiNNaker)
+\citep{furber_et_al_2006}---and their
+scalability and massive-parallelism are intriguing for two very
+important use cases of deep learning:
 (\romannumeral 1) edge computing, for example robotics
-and mobile devices and (\romannumeral 2) supercomputers and the
+and mobile devices, (\romannumeral 2) supercomputers and the
 cloud-era \citep{gomes_2017}.
 
-One of this neuromorphic computer architectures is the Spiking Neural
-Network Architecture (SpiNNaker).
 This thesis investigates the performance of SpiNNaker machines for
 deep learning by training the state-of-the-art computer vision model
 ResNet-50 under the closed division rules of the MLPerf benchmark
@@ -288,15 +292,15 @@ implementation was developed as part of this thesis.
 
 Section~\ref{sec:background} presents the background of this thesis.
 An introduction to deep learning is given, as well as an overview
-over the benchmark presented in Section~\ref{sec:benchmark}.
+of the benchmark presented in Section~\ref{sec:benchmark}.
 The SpiNNaker architecture is also described and compared to
 current deep learning hardware.
 Related work can be found in Section~\ref{subsec:related_work}.
 Section~\ref{sec:SpiDNN} presents the architecture of the
 prototype developed for benchmarking.
 In Section~\ref{sec:discussion} the results of the benchmark are
-discussed as well as the development process.
-Section~\ref{sec:conclusion} contains the conclusion while
+discussed, as well as the development process.
+Section~\ref{sec:conclusion} contains the conclusion, while
 Section~\ref{sec:next_steps} outlines the next steps for further
 increasing the performance of SpiNNaker by enhancing the
 prototype.
@@ -309,7 +313,7 @@ prototype.
 
 \begin{enumerate}
   \item history of DL
-  \item clearify that DNNs are statistical methods (glorified non-linear
+  \item clarify that DNNs are statistical methods (glorified non-linear
         classifiers) not biological like SNNs
   \item concepts of the MLP:
     \begin{itemize}
