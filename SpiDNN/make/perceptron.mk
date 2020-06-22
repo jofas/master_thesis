@@ -20,6 +20,7 @@ endif
 
 APP = perceptron
 SOURCES = perceptron.c
+CFLAGS += -Dtest
 
 APP_OUTPUT_DIR := $(abspath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))/../
 

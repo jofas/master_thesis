@@ -80,6 +80,11 @@ void c_main(void) { // {{{
 
   reset();
 
+#ifdef test
+  log_info("hale, I can use the C preprocessor!!!!!!!");
+#else
+  log_info("WTF");
+#endif
   // start execution
   log_info("\nStarting simulation\n");
   simulation_run();
