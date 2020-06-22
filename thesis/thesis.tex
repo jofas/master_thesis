@@ -267,17 +267,18 @@ demands for efficient computing needed to run large-scale
 spiking neural networks used for modeling brain
 functions \citep{furber_2016}.
 While being developed mainly for the task of modeling the human brain,
-deep learning has been linked to neuromorphic computing for some time,
-especially in the context of commercial usability.
-Both the low energy demands of neuromorphic computer chips and their
-general design concerning scalability and massive-parallelism are
-intriguing for two very important use cases of deep learning:
+deep learning has been linked to neuromorphic computing,
+especially in the context of commercial usability \citep{gomes_2017}.
+Both the low energy demands of neuromorphic computers---such as IBM's
+True North \citep{cassidy_et_al_2013} or The University of
+Manchester's Spiking Neural Network Architecture (SpiNNaker)
+\citep{furber_et_al_2006}---and their
+scalability and massive-parallelism are intriguing for two very
+important use cases of deep learning:
 (\romannumeral 1) edge computing, for example robotics
-and mobile devices and (\romannumeral 2) supercomputers and the
+and mobile devices, (\romannumeral 2) supercomputers and the
 cloud-era \citep{gomes_2017}.
 
-One of this neuromorphic computer architectures is the Spiking Neural
-Network Architecture (SpiNNaker).
 This thesis investigates the performance of SpiNNaker machines for
 deep learning by training the state-of-the-art computer vision model
 ResNet-50 under the closed division rules of the MLPerf benchmark
@@ -291,15 +292,15 @@ implementation was developed as part of this thesis.
 
 Section~\ref{sec:background} presents the background of this thesis.
 An introduction to deep learning is given, as well as an overview
-over the benchmark presented in Section~\ref{sec:benchmark}.
+of the benchmark presented in Section~\ref{sec:benchmark}.
 The SpiNNaker architecture is also described and compared to
 current deep learning hardware.
 Related work can be found in Section~\ref{subsec:related_work}.
 Section~\ref{sec:SpiDNN} presents the architecture of the
 prototype developed for benchmarking.
 In Section~\ref{sec:discussion} the results of the benchmark are
-discussed as well as the development process.
-Section~\ref{sec:conclusion} contains the conclusion while
+discussed, as well as the development process.
+Section~\ref{sec:conclusion} contains the conclusion, while
 Section~\ref{sec:next_steps} outlines the next steps for further
 increasing the performance of SpiNNaker by enhancing the
 prototype.
@@ -312,7 +313,7 @@ prototype.
 
 \begin{enumerate}
   \item history of DL
-  \item clearify that DNNs are statistical methods (glorified non-linear
+  \item clarify that DNNs are statistical methods (glorified non-linear
         classifiers) not biological like SNNs
   \item concepts of the MLP:
     \begin{itemize}
