@@ -7,6 +7,7 @@ import spiDNN.globals as globals
 from spiDNN.layers import Input, Extractor, Loss
 
 import time
+from threading import Condition
 
 import numpy as np
 
@@ -52,7 +53,7 @@ class Model:
         # connect extractor to the output layer
         extractor.connect_incoming(self._layers[-1], globals.forward_partition)
 
-        conn = self._setup_live_event_connection(extractor, X, result)
+        conn = self._setup_predict_live_event_connection(extractor, X, result)
 
         gfe.run()
         gfe.stop()
@@ -68,26 +69,13 @@ class Model:
 
         assert y.shape[1] == K
 
-        # trainable_params: backward_key ... that's all
-        #
-        # extend [Softmax]Perceptron -> Trainable[Softmax]Perceptron
-        #
         # trainable: do forward receive than wait for backward pass
         #            compute gradient descent
         #            if counter == batch_size: update weight
         #            pass E_i backwards to prev layer
-        #            E_i -> know size of next layer (1 for out_layer)
-        #
-        # ping-pong
-        #
-        # optimizer interface (in optimizations or after thesis)
-
-        # currently no optimizer interface... just put stuff
-        # (learning rate) into trainable neurons
-        #
 
         loss_layer = Loss("loss_unit", loss_fn, K)
-        y_injectors = Input(K)
+        y_injectors = Input(K, label="YInjector")
         pong = Extractor("pong")
 
         n_cores = self._all_neurons() + y_injectors.n_neurons + 2
@@ -111,7 +99,7 @@ class Model:
 
         pong.connect_incoming(self._layers[1], globals.backward_partition)
 
-        # live event conn doing ping pong with the board
+        conn = _setup_fit_live_event_connection(pong, y_injectors, X, y)
 
         gfe.run(1)
 
@@ -119,7 +107,7 @@ class Model:
 
         gfe.stop()
 
-        # conn.close()
+        conn.close()
 
     def _init_neurons(self, trainable=False, batch_size=None):
         """
@@ -169,7 +157,7 @@ class Model:
             self.__weights[i:i+2] = layer.extract_weights()
             i += 2
 
-    def _setup_live_event_connection(self, extractor, X, result):
+    def _setup_predict_live_event_connection(self, extractor, X, result):
         send_labels = self._layers[0].labels
         receive_labels = self._layers[-1].labels
 
@@ -180,8 +168,9 @@ class Model:
             machine_vertices=True
         )
 
-        injector_callback = self._generate_injector_callback(send_labels, X)
-        extractor_callback = self._generate_extractor_callback(
+        injector_callback = self._generate_predict_injector_callback(
+            send_labels, X)
+        extractor_callback = self._generate_predict_extractor_callback(
             receive_labels, result)
 
         for label in receive_labels:
@@ -192,34 +181,27 @@ class Model:
 
         return conn
 
-    def _generate_injector_callback(self, send_labels, X):
-        send_label_to_pos = \
-            {label: i for i, label in enumerate(send_labels)}
+    def _generate_predict_injector_callback(self, send_labels, X):
+        send_label_to_pos = {
+            label: i for i, label in enumerate(send_labels)}
 
         def injector_callback(label, conn):
-            for i, x in enumerate(X):
-                """
-                print("sending {} at step {} to neuron: {}".format(
-                    x[send_label_to_pos[label]], i, label
-                ))
-                """
+            for x in X:
                 conn.send_event_with_payload(
                     label,
                     0,
-                    util.float_to_uint32t(x[send_label_to_pos[label]])
-                )
+                    util.float_to_uint32t(x[send_label_to_pos[label]]))
 
                 time.sleep(0.075)
 
         return injector_callback
 
-    def _generate_extractor_callback(self, receive_labels, result):
+    def _generate_predict_extractor_callback(self, receive_labels, result):
         rlop = util.ReceivingLiveOutputProgress(
             result.shape[0], receive_labels)
 
         def extractor_callback(label, _, val):
             val = util.uint32t_to_float(val)
-            # print("received val: {}, neuron: {}".format(val, label))
             x = rlop.received(label)
             y = rlop.label_to_pos(label)
 
@@ -229,6 +211,72 @@ class Model:
                 gfe.stop_run()
 
         return extractor_callback
+
+    def _setup_fit_live_event_connection(self, extractor, y_injectors, X, y):
+        send_labels = self._layers[0].labels + y_injectors.labels
+        receive_labels = self._layers[1].labels
+
+        conn = LiveEventConnection(
+            extractor.labels[0],
+            receive_labels=receive_labels,
+            send_labels=send_labels,
+            machine_vertices=True
+        )
+
+        barrier = Condition()
+
+        extractor_callback = self._generate_fit_extractor_callback(
+            receive_labels, X, barrier)
+
+        y_injector_callback = self._generate_fit_injector_callback(
+            self.y_injectors.labels, y, barrier)
+
+        X_injector_callback = self._generate_fit_injector_callback(
+            self._layer[0].labels, X, barrier)
+
+        for label in receive_labels:
+            conn.add_receive_callback(label, extractor_callback)
+
+        for label in y_injectors.labels:
+            conn.add_start_resume_callback(label, y_injector_callback)
+
+        for label in self._layer[0].labels:
+            conn.add_start_resume_callback(label, X_injector_callback)
+
+        return conn
+
+    def _generate_fit_extractor_callback(self, receive_labels, X, barrier):
+        frlop = util.FitReceivingLiveOutputProgress(
+            epochs, len(X), barrier, len(receive_labels))
+
+        def extractor_callback(label, _0, _1):
+            frlop.receive()
+
+            if frlop.received_all:
+                if frlop.simulation_finished:
+                    gfe.stop_run()
+                else:
+                    frlop.notify_injectors()
+                frlop.reset()
+
+        return extractor_callback
+
+    def _generate_fit_injector_callback(self, send_labels, M, barrier):
+        send_label_to_pos = {
+            label: i for i, label in enumerate(send_labels)}
+
+        def injector_callback(label, conn):
+            barrier.acquire()
+            for m in enumerate(M):
+                conn.send_event_with_payload(
+                    label,
+                    0,
+                    util.float_to_uint32t(m[send_label_to_pos[label]]))
+
+                barrier.wait()
+            barrier.release()
+
+        return injector_callback
 
     def _all_neurons(self):
         return sum([layer.n_neurons for layer in self._layers])

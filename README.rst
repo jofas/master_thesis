@@ -50,15 +50,19 @@ Work Plan
 Optimizations
 -------------
 
-* trainable perceptrons
-
 * custom injectors which support partitions
+
+* pong receive without payload
 
 * split neurons (bigger layers)
 
 * quantization (speed and memory size)
 
 * populations or some other mechanism to combine neurons (saving cores)
+
+* VariableSDRAM static alternative?
+
+* optimizer interface
 
 * loss into perceptron (saving cores)
 

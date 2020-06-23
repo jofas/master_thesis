@@ -10,8 +10,8 @@ from spiDNN.machine_vertices import Injector
 
 
 class Input(AbstractLayerBase):
-    def __init__(self, n_neurons):
-        super(Input, self).__init__("unnamed", n_neurons, [])
+    def __init__(self, n_neurons, label="unnamed"):
+        super(Input, self).__init__(label, n_neurons, [])
 
     @overrides(LayerInterface.init_neurons)
     def init_neurons(self, **kwargs):

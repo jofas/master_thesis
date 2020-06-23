@@ -164,3 +164,39 @@ class ReceivingLiveOutputProgress:
     def simulation_finished(self):
         with self._lock_overall:
             return self._received_overall == self._receive_n_times
+
+
+class FitReceivingLiveOutputProgress:
+    def __init__(self, epochs, epoch_size, barrier, n_receive):
+        self.epochs = epochs
+        self.epoch_size = epoch_size
+        self.barrier = barrier
+        self.n_receive = n_receive
+
+        self.overall_receive_counter = 0
+        self.receive_counter = 0
+        self.lock = Lock()
+
+    def receive(self):
+        with self.lock:
+            self.receive_counter += 1
+            self.overall_receive_counter += 1
+
+    def reset(self):
+        with self.lock:
+            self.receive_counter = 0
+
+    def notify_injectors(self):
+        with self.barrier:
+            barrier.notify_all()
+
+    @property
+    def received_all(self):
+        with self.lock:
+            return self.receive_counter == self.n_receive
+
+    @property
+    def simulation_finished(self):
+        with self.lock:
+            return self.overall_receive_counter == \
+                self.epochs * self.epoch_size * n_receive
