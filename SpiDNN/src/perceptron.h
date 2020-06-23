@@ -185,17 +185,6 @@ static bool __init_base_params(uint32_t *timer_offset) { // {{{
   return true;
 } // }}}
 
-#ifdef trainable
-  void trainable_init() { // {{{
-    trainable_params_sdram =
-      data_specification_get_region(TRAINABLE_PARAMS, data);
-
-    backward_key = trainable_params_sdram->backward_key;
-    min_next_key = trainable_params_sdram->min_next_key;
-    n_errors = trainable_params_sdram->n_errors;
-  } // }}}
-#endif
-
 void base_init() { // {{{
   uint32_t timer_period, timer_offset;
 
@@ -216,6 +205,28 @@ void base_init() { // {{{
 
   __init_dtcm();
 } // }}}
+
+#ifdef trainable
+  void on_exit_extract_weights() { // {{{
+    // TODO: update weights one last time (incomplete batch)
+
+    log_info("Extracting weights");
+
+    sark_mem_cpy((void *)weights_sdram, (void *)weights,
+      sizeof(float) * n_weights);
+  } // }}}
+
+  void trainable_init() { // {{{
+    trainable_params_sdram =
+      data_specification_get_region(TRAINABLE_PARAMS, data);
+
+    backward_key = trainable_params_sdram->backward_key;
+    min_next_key = trainable_params_sdram->min_next_key;
+    n_errors = trainable_params_sdram->n_errors;
+
+    simulation_set_exit_function(on_exit_extract_weights);
+  } // }}}
+#endif
 
 void receive_data_void(uint key, uint unknown) { // {{{
   use(key);
