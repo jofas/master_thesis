@@ -44,12 +44,15 @@ class AbstractPerceptronBase(
 
     BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
-    def __init__(self, layer, id, weights, trainable, executable,
+    def __init__(self, layer, id, weights, trainable, batch_size, executable,
                  instance_params_data_size):
 
         self.trainable = trainable
+        self.batch_size = batch_size
 
         if self.trainable:
+            assert self.batch_size is not None
+
             self.trainable_params_data_size = 3 * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
@@ -173,6 +176,7 @@ class AbstractPerceptronBase(
 
         spec.switch_write_focus(
             region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
+        spec.write_value(self.batch_size)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
@@ -199,9 +203,9 @@ class Perceptron(AbstractPerceptronBase):
     INSTANCE_PARAMS_DATA_SIZE = 1 * BYTES_PER_WORD
     EXECUTABLE = "perceptron.aplx"
 
-    def __init__(self, layer, id, weights, trainable):
+    def __init__(self, layer, id, weights, trainable, batch_size):
         super(Perceptron, self).__init__(
-            layer, id, weights, trainable, self.EXECUTABLE,
+            layer, id, weights, trainable, batch_size, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
         self._activation_function_id = globals.activations[layer.activation]
@@ -227,9 +231,9 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
     INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
     EXECUTABLE = "softmax_perceptron.aplx"
 
-    def __init__(self, layer, id, weights, trainable):
+    def __init__(self, layer, id, weights, trainable, batch_size):
         super(SoftmaxPerceptron, self).__init__(
-            layer, id, weights, trainable, self.EXECUTABLE,
+            layer, id, weights, trainable, batch_size, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
         self._layer = layer

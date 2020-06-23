@@ -97,7 +97,7 @@ class Model:
         y_injectors.init_neurons(neurons_next_layer=1)
         pong.init_neurons()
 
-        self._init_neurons(trainable=True)
+        self._init_neurons(trainable=True, batch_size=batch_size)
         self._connect_layers_forward()
 
         loss_layer.connect_incoming(
@@ -121,7 +121,7 @@ class Model:
 
         # conn.close()
 
-    def _init_neurons(self, trainable=False):
+    def _init_neurons(self, trainable=False, batch_size=None):
         """
         Initializes all Neurons (MachineVertices) in self._layers.
         """
@@ -140,7 +140,8 @@ class Model:
             layer.init_neurons(
                 weights=self.__weights[i],
                 biases=self.__weights[i+1],
-                trainable=trainable)
+                trainable=trainable,
+                batch_size=batch_size)
             i += 2
 
     def _connect_layers_forward(self):
