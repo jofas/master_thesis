@@ -1,29 +1,13 @@
-/*
- * Copyright (c) 2017-2019 The University of Manchester
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "perceptron.h"
 
 typedef struct perceptron_params_region { // {{{
   uint32_t activation_function_id;
 } perceptron_params_region_t; // }}}
 
+perceptron_params_region_t *perceptron_params_sdram;
+
 uint activation_function_id;
 
-perceptron_params_region_t *perceptron_params_sdram;
 
 void activate() { // {{{
   generate_potential();
@@ -66,6 +50,10 @@ void update(uint ticks, uint b) { // {{{
 
 void c_main(void) { // {{{
   base_init();
+
+#ifdef trainable
+  trainable_init();
+#endif
 
   perceptron_params_sdram =
     data_specification_get_region(INSTANCE_PARAMS, data);

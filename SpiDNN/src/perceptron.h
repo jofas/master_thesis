@@ -15,6 +15,7 @@ typedef enum regions_e { // {{{
     BASE_PARAMS,
     WEIGHTS,
     INSTANCE_PARAMS,
+    TRAINABLE_PARAMS,
 } regions_e; // }}}
 
 //! human readable definitions of the activation functions (except
@@ -29,12 +30,19 @@ typedef enum activations_e { // {{{
 
 //! definitions of each element in the base_params region
 typedef struct base_params_region { // {{{
-    uint32_t has_key;
-    uint32_t forward_key;
-    uint32_t min_pre_key;
-    uint32_t timer_offset;
-    uint32_t n_weights;
+  uint32_t has_key;
+  uint32_t forward_key;
+  uint32_t min_pre_key;
+  uint32_t timer_offset;
+  uint32_t n_weights;
 } base_params_region_t; // }}}
+
+//! definitions of each element in the trainable_params region
+typedef struct trainable_params_region { // {{{
+  uint32_t backward_key;
+  uint32_t min_next_key;
+  uint32_t n_errors;
+} trainable_params_region_t; // }}}
 
 //! values for the priority for each callback
 typedef enum callback_priorities { // {{{
@@ -63,6 +71,14 @@ float potential;
 
 float *weights_sdram;
 base_params_region_t *base_params_sdram;
+
+#ifdef trainable
+  trainable_params_region_t *trainable_params_sdram;
+
+  uint backward_key;
+  uint min_next_key;
+  uint n_errors;
+#endif
 
 static uint32_t time;
 data_specification_metadata_t *data = NULL;
@@ -168,6 +184,17 @@ static bool __init_base_params(uint32_t *timer_offset) { // {{{
 
   return true;
 } // }}}
+
+#ifdef trainable
+  void trainable_init() { // {{{
+    trainable_params_sdram =
+      data_specification_get_region(TRAINABLE_PARAMS, data);
+
+    backward_key = trainable_params_sdram->backward_key;
+    min_next_key = trainable_params_sdram->min_next_key;
+    n_errors = trainable_params_sdram->n_errors;
+  } // }}}
+#endif
 
 void base_init() { // {{{
   uint32_t timer_period, timer_offset;

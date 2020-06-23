@@ -86,8 +86,6 @@ class Model:
         # (learning rate) into trainable neurons
         #
 
-        partition_manager = util.PartitionManager()
-
         loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K)
         pong = Extractor("pong")
@@ -95,9 +93,8 @@ class Model:
         n_cores = self._all_neurons() + y_injectors.n_neurons + 2
         gfe.setup(n_cores)
 
-        loss_layer.init_neurons(partition_manager=gfe.partition_manager)
-        y_injectors.init_neurons(
-            neurons_next_layer=1, partition_manager=gfe.partition_manager)
+        loss_layer.init_neurons()
+        y_injectors.init_neurons(neurons_next_layer=1)
         pong.init_neurons()
 
         self._init_neurons(trainable=True)

@@ -92,6 +92,7 @@ class AbstractPerceptronBase(
 
         self._write_weights(spec)
 
+        # needs to be implemented by the inheriting class
         self._write_instance_params(
             spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor)
