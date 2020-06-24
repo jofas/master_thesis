@@ -138,9 +138,9 @@ void reset() { // {{{
 #endif
 } // }}}
 
-void send(uint key) { // {{{
+void send(uint key, float val) { // {{{
   uint send_bytes;
-  sark_mem_cpy((void *)&send_bytes, &potential, sizeof(uint));
+  sark_mem_cpy((void *)&send_bytes, &val, sizeof(uint));
 
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);

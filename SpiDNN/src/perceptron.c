@@ -37,7 +37,11 @@ void activate() { // {{{
 
 void receive(uint key, float payload) {
 #ifdef trainable
-  // TODO
+  if (key > min_next_key) {
+    // TODO: do backward stuff
+  } else {
+    receive_potential_from_pre_layer(key, payload);
+  }
 #else
   receive_potential_from_pre_layer(key, payload);
 #endif
@@ -50,9 +54,8 @@ void update(uint ticks, uint b) { // {{{
   time++;
 
   if (FORWARD_PASS_COMPLETE) {
-    //received_potentials_counter == N_POTENTIALS) {
     activate();
-    send(forward_key);
+    send(forward_key, potential);
 #ifndef trainable
     reset();
 #endif
@@ -64,7 +67,12 @@ void update(uint ticks, uint b) { // {{{
 
     // pass error backwards with backward key
     //
-
+    // TODO
+    /*
+    for (uint i=0; i < n_backward_keys; i++) {
+      send(backward_keys[i]);
+    }
+    */
 
     // if batch_size full -> update weights with learning_rate * gradient
 

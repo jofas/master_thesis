@@ -53,12 +53,12 @@ void update(uint ticks, uint b) { // {{{
   if (received_softmax_counter == softmax_layer_size) {
 
     potential = potential / (softmax_denominator + potential);
-    send(forward_key);
+    send(forward_key, potential);
     softmax_reset();
 
   } else if (received_potentials_counter == N_POTENTIALS) {
     activate();
-    send(softmax_key);
+    send(softmax_key, potential);
 
     // reset so data is not send twice for softmax
     received_potentials_counter = 0;
