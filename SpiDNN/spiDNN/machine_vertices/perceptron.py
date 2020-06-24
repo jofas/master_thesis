@@ -1,6 +1,6 @@
 from spinn_utilities.overrides import overrides
 from pacman.model.graphs.machine import MachineVertex
-from pacman.model.resources import ResourceContainer, VariableSDRAM
+from pacman.model.resources import ResourceContainer, ConstantSDRAM
 from spinn_front_end_common.utilities.constants import (
     SYSTEM_BYTES_REQUIREMENT, BYTES_PER_WORD)
 from spinn_front_end_common.utilities.exceptions import ConfigurationException
@@ -214,8 +214,6 @@ class AbstractPerceptronBase(
             machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
         ]
 
-        # eeeehhhhmmmm.... make sure backward_keys[i] matches neuron I find
-        # when I retract the forward_pass... but should be default
         for partition in partitions:
             print(partition)
             if partition.startswith(
@@ -228,9 +226,6 @@ class AbstractPerceptronBase(
             region=PerceptronDataRegions.BACKWARD_KEYS.value)
         spec.write_array(backward_keys)
 
-        print(backward_keys)
-        raise Exception("Meh")
-
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
@@ -241,10 +236,7 @@ class AbstractPerceptronBase(
                        + self.trainable_params_data_size
                        + self.backward_keys_container_size)
 
-        per_timestep_sdram = 0
-
-        return ResourceContainer(
-            sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
+        return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
 
     def __repr__(self):
         return self.label

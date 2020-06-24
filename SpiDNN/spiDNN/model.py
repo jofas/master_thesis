@@ -97,7 +97,8 @@ class Model:
 
         self._connect_layers_backward()
 
-        self._layers[-1].connect_incoming_unique(loss_layer)
+        self._layers[-1].connect_incoming_unique(
+            loss_layer, base_name=globals.backward_partition_base_name)
 
         pong.connect_incoming_unique(
             self._layers[1], base_name=globals.backward_partition_base_name)
