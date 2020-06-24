@@ -33,6 +33,8 @@ class Model:
             source_layer = self._layers[-1]
             self.__weights += layer.generate_weights(source_layer)
 
+        layer.is_first_hidden_layer = len(self._layers) == 1
+
         self._layers.append(layer)
         return self
 

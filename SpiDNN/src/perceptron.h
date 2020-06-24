@@ -18,6 +18,7 @@ typedef enum regions_e { // {{{
     WEIGHTS,
     INSTANCE_PARAMS,
     TRAINABLE_PARAMS,
+    BACKWARD_KEYS,
 } regions_e; // }}}
 
 //! human readable definitions of the activation functions (except
@@ -42,7 +43,7 @@ typedef struct base_params_region { // {{{
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region { // {{{
   uint32_t batch_size;
-  uint32_t backward_key;
+  uint32_t n_backward_keys;
   uint32_t min_next_key;
   uint32_t n_errors;
 } trainable_params_region_t; // }}}
@@ -77,11 +78,14 @@ base_params_region_t *base_params_sdram;
 
 #ifdef trainable
   trainable_params_region_t *trainable_params_sdram;
+  uint *backward_keys_sdram;
 
   uint batch_size;
-  uint backward_key;
+  uint n_backward_keys;
   uint min_next_key;
   uint n_errors;
+
+  uint *backward_keys;
 
   float *gradients;
   float error;
@@ -120,7 +124,7 @@ void receive_potential_from_pre_layer(uint key, float payload) { // {{{
 } // }}}
 
 void reset() { // {{{
-  potential = BIAS;
+  potential = .0;
 
   for (uint i=0; i < N_POTENTIALS; i++) {
     received_potentials[i] = false;
@@ -234,9 +238,17 @@ void base_init() { // {{{
       data_specification_get_region(TRAINABLE_PARAMS, data);
 
     batch_size = trainable_params_sdram->batch_size;
-    backward_key = trainable_params_sdram->backward_key;
+    n_backward_keys = trainable_params_sdram->n_backward_keys;
     min_next_key = trainable_params_sdram->min_next_key;
     n_errors = trainable_params_sdram->n_errors;
+
+    backward_keys_sdram =
+      data_specification_get_region(BACKWARD_KEYS, data);
+
+    backward_keys = (uint *)malloc(sizeof(uint) * n_backward_keys);
+
+    sark_mem_cpy((void *)backward_keys, (void *)backward_keys_sdram,
+      sizeof(uint) * n_backward_keys);
 
     simulation_set_exit_function(on_exit_extract_weights);
   } // }}}

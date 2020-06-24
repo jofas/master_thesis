@@ -37,13 +37,7 @@ void activate() { // {{{
 
 void receive(uint key, float payload) {
 #ifdef trainable
-  if (key == backward_key) {
-    // E_i -> delta E_i / delta out -> sum in error
-    //
-    //receive_error_from_next_layer(key, payload);
-  } else if (key == forward_key) {
-    receive_potential_from_pre_layer(key, payload);
-  }
+  // TODO
 #else
   receive_potential_from_pre_layer(key, payload);
 #endif

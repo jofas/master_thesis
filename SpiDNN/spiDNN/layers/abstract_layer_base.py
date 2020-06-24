@@ -12,6 +12,8 @@ class AbstractLayerBase(LayerInterface):
         self._n_neurons = n_neurons
         self._neurons = neurons
 
+        self._is_first_hidden_layer = False
+
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
         for source_neuron in source_layer.neurons:
@@ -61,3 +63,12 @@ class AbstractLayerBase(LayerInterface):
     @overrides(LayerInterface.labels)
     def labels(self):
         return [neuron.label for neuron in self._neurons]
+
+    @property
+    @overrides(LayerInterface.is_first_hidden_layer)
+    def is_first_hidden_layer(self):
+        return self._is_first_hidden_layer
+
+    @is_first_hidden_layer.setter
+    def is_first_hidden_layer(self, is_first_hidden_layer):
+        self._is_first_hidden_layer = is_first_hidden_layer

@@ -47,6 +47,7 @@ class AbstractPerceptronBase(
 
     def __init__(self, layer, id, weights, trainable, batch_size, executable,
                  instance_params_data_size):
+        self.layer = layer
 
         self.instance_params_data_size = instance_params_data_size
 
@@ -59,11 +60,16 @@ class AbstractPerceptronBase(
         if self.trainable:
             assert self.batch_size is not None
 
-            self.trainable_params_data_size = 3 * BYTES_PER_WORD
-            self.backward_keys_container_size = \
-                self.weight_container_size - BYTES_PER_WORD
-
+            self.trainable_params_data_size = 4 * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
+
+            if self.layer.is_first_hidden_layer:
+                self.backward_keys_container_size = BYTES_PER_WORD
+                self.n_backward_keys = 1
+            else:
+                self.backward_keys_container_size = \
+                    self.weight_container_size - BYTES_PER_WORD
+                self.n_backward_keys = len(self.weights) - 1
         else:
             self.trainable_params_data_size = 0
             self.backward_keys_container_size = 0
@@ -102,12 +108,15 @@ class AbstractPerceptronBase(
         self._write_weights(spec)
 
         # needs to be implemented by the inheriting class
+        #
+        # TODO: in interface
         self._write_instance_params(
             spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor)
 
         if self.trainable:
             self._write_trainable_params(spec, machine_graph, routing_info)
+            self._write_backward_keys(spec, machine_graph, routing_info)
 
         spec.end_specification()
 
@@ -172,26 +181,10 @@ class AbstractPerceptronBase(
 
     def _write_trainable_params(
             self, spec, machine_graph, routing_info):
-
-        # then backward keys -> outgoing partitions
-        #
-        # I know how many neurons are in prev layer (base_params)
-        # len(self.weights) - 1 = n_weights - 1 = n_potentials
-        #
-        # write_array into backward_keys dataregion with all dem keys
-
-        print(dir(machine_graph))
-        print(dir(routing_info))
-
-        edges = list(machine_graph.get_edges_ending_at_vertex(self))
-
-        partitions = [
-            machine_graph.get_outgoing_partition_for_edge(edge).identifier
-            for edge in edges]
-
         min_next_key = None
         n_errors = 0
 
+        edges = list(machine_graph.get_edges_ending_at_vertex(self))
         for edge in edges:
             partition = \
                 machine_graph.get_outgoing_partition_for_edge(edge).identifier
@@ -205,6 +198,15 @@ class AbstractPerceptronBase(
 
                 n_errors += 1
 
+        spec.switch_write_focus(
+            region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
+        spec.write_value(self.batch_size)
+        spec.write_value(self.n_backward_keys)
+        spec.write_value(min_next_key)
+        spec.write_value(n_errors)
+
+    def _write_backward_keys(
+            self, spec, machine_graph, routing_info):
         backward_keys = []
 
         partitions = [
@@ -222,23 +224,12 @@ class AbstractPerceptronBase(
                     routing_info.get_first_key_from_pre_vertex(
                         self, partition))
 
-        # special case: first hidden layer which is connected to
-        # pong
-        n_neurons_in_prev_layer = len(self.weights - 1) - 1
-        if len(backward_keys) == 1 and n_neurons_in_prev_layer > 1:
-            backward_keys *= n_neurons_in_prev_layer
+        spec.switch_write_focus(
+            region=PerceptronDataRegions.BACKWARD_KEYS.value)
+        spec.write_array(backward_keys)
 
         print(backward_keys)
-        # TODO: get backward_keys
         raise Exception("Meh")
-
-
-        spec.switch_write_focus(
-            region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
-        spec.write_value(self.batch_size)
-        spec.write_value(backward_key)
-        spec.write_value(min_next_key)
-        spec.write_value(n_errors)
 
     @property
     @overrides(MachineVertex.resources_required)
@@ -296,8 +287,6 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
             layer, id, weights, trainable, batch_size, self.EXECUTABLE,
             self.INSTANCE_PARAMS_DATA_SIZE)
 
-        self._layer = layer
-
     def _write_instance_params(
             self, spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor):
@@ -324,4 +313,4 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
             region=PerceptronDataRegions.INSTANCE_PARAMS.value)
         spec.write_value(softmax_key)
         spec.write_value(min_softmax_key)
-        spec.write_value(self._layer.n_neurons)
+        spec.write_value(self.layer.n_neurons)
