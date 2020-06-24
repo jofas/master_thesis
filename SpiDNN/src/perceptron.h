@@ -8,6 +8,8 @@
 
 #define BIAS weights[n_weights - 1]
 #define N_POTENTIALS n_weights - 1
+#define FORWARD_PASS_COMPLETE received_potentials_counter == N_POTENTIALS
+#define BACKWARD_PASS_COMPLETE received_errors_counter == n_errors
 
 //! human readable definitions of each region in SDRAM
 typedef enum regions_e { // {{{
@@ -66,7 +68,7 @@ float *weights;
 
 float *potentials;
 bool  *received_potentials;
-uint received_potentials_counter = 0;
+uint received_potentials_counter;
 
 float potential;
 
@@ -80,6 +82,10 @@ base_params_region_t *base_params_sdram;
   uint backward_key;
   uint min_next_key;
   uint n_errors;
+
+  float *gradients;
+  float error;
+  uint received_errors_counter;
 #endif
 
 static uint32_t time;
@@ -114,13 +120,18 @@ void receive_potential_from_pre_layer(uint key, float payload) { // {{{
 } // }}}
 
 void reset() { // {{{
-  potential = .0;
+  potential = BIAS;
 
   for (uint i=0; i < N_POTENTIALS; i++) {
     received_potentials[i] = false;
   }
 
   received_potentials_counter = 0;
+
+#ifdef trainable
+  error = .0;
+  received_errors_counter = 0;
+#endif
 } // }}}
 
 void send(uint key) { // {{{

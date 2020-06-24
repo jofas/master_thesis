@@ -35,17 +35,48 @@ void activate() { // {{{
   }
 } // }}}
 
+void receive(uint key, float payload) {
+#ifdef trainable
+  if (key == backward_key) {
+    // E_i -> delta E_i / delta out -> sum in error
+    //
+    //receive_error_from_next_layer(key, payload);
+  } else if (key == forward_key) {
+    receive_potential_from_pre_layer(key, payload);
+  }
+#else
+  receive_potential_from_pre_layer(key, payload);
+#endif
+}
+
 void update(uint ticks, uint b) { // {{{
   use(b);
   use(ticks);
 
   time++;
 
-  if (received_potentials_counter == N_POTENTIALS) {
+  if (FORWARD_PASS_COMPLETE) {
+    //received_potentials_counter == N_POTENTIALS) {
     activate();
     send(forward_key);
+#ifndef trainable
+    reset();
+#endif
+  }
+#ifdef trainable
+  else if (BACKWARD_PASS_COMPLETE) {
+    // when all errors are received -> compute gradients for each
+    // weight -> sum in *gradients
+
+    // pass error backwards with backward key
+    //
+
+
+    // if batch_size full -> update weights with learning_rate * gradient
+
     reset();
   }
+#endif
 } // }}}
 
 void c_main(void) { // {{{
@@ -62,8 +93,7 @@ void c_main(void) { // {{{
     perceptron_params_sdram->activation_function_id;
 
   // register callbacks
-  spin1_callback_on(MCPL_PACKET_RECEIVED,
-    receive_potential_from_pre_layer, MC_PACKET);
+  spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
   spin1_callback_on(TIMER_TICK, update, TIMER);
 
   reset();
