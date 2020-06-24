@@ -9,6 +9,8 @@ backward_partition = "PARTITION_BACKWARD"
 softmax_partition = "PARTITION_SOFTMAX"
 y_partition = "PARTITION_Y"
 
+backward_partition_base_name = "BACKWARD"
+
 # mask for key space
 mask = 0xffffffff
 

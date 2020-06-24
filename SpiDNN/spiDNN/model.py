@@ -97,9 +97,11 @@ class Model:
 
         self._layers[-1].connect_incoming_unique(loss_layer)
 
-        pong.connect_incoming(self._layers[1], globals.backward_partition)
+        pong.connect_incoming_unique(
+            self._layers[1], base_name=globals.backward_partition_base_name)
 
-        conn = _setup_fit_live_event_connection(pong, y_injectors, X, y)
+        conn = self._setup_fit_live_event_connection(
+            pong, y_injectors, X, y, epochs)
 
         gfe.run(1)
 
@@ -148,7 +150,8 @@ class Model:
         i = 2
         for layer in self._layers[1:-1]:
             source_layer = self._layers[i]
-            layer.connect_incoming(source_layer, globals.backward_partition)
+            layer.connect_incoming_unique(
+                source_layer, base_name=globals.backward_partition_base_name)
             i += 1
 
     def _extract_weights(self):
@@ -212,7 +215,8 @@ class Model:
 
         return extractor_callback
 
-    def _setup_fit_live_event_connection(self, extractor, y_injectors, X, y):
+    def _setup_fit_live_event_connection(
+            self, extractor, y_injectors, X, y, epochs):
         send_labels = self._layers[0].labels + y_injectors.labels
         receive_labels = self._layers[1].labels
 
@@ -226,13 +230,13 @@ class Model:
         barrier = Condition()
 
         extractor_callback = self._generate_fit_extractor_callback(
-            receive_labels, X, barrier)
+            receive_labels, X, barrier, epochs)
 
         y_injector_callback = self._generate_fit_injector_callback(
-            self.y_injectors.labels, y, barrier)
+            y_injectors.labels, y, barrier)
 
         X_injector_callback = self._generate_fit_injector_callback(
-            self._layer[0].labels, X, barrier)
+            self._layers[0].labels, X, barrier)
 
         for label in receive_labels:
             conn.add_receive_callback(label, extractor_callback)
@@ -240,12 +244,13 @@ class Model:
         for label in y_injectors.labels:
             conn.add_start_resume_callback(label, y_injector_callback)
 
-        for label in self._layer[0].labels:
+        for label in self._layers[0].labels:
             conn.add_start_resume_callback(label, X_injector_callback)
 
         return conn
 
-    def _generate_fit_extractor_callback(self, receive_labels, X, barrier):
+    def _generate_fit_extractor_callback(
+            self, receive_labels, X, barrier, epochs):
         frlop = util.FitReceivingLiveOutputProgress(
             epochs, len(X), barrier, len(receive_labels))
 
