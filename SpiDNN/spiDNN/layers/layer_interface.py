@@ -34,13 +34,6 @@ class LayerInterface(object):
         Labels of the neurons of the layer.
         """
 
-    @abstractproperty
-    def is_first_hidden_layer(self):
-        """
-        Boolean, whether this layer is the first hidden layer (needed
-        for handling live extraction during backpropagation)
-        """
-
     @abstractmethod
     def init_neurons(self, **kwargs):
         """
