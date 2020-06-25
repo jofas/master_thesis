@@ -96,10 +96,10 @@ class Model:
         self._connect_layers_backward()
 
         self._layers[-1].connect_incoming_unique(
-            loss_layer, base_name=globals.backward_partition_base_name)
+            loss_layer, base_name=globals.backward_partition)
 
-        pong.connect_incoming_unique(
-            self._layers[1], base_name=globals.backward_partition_base_name)
+        pong.connect_incoming(
+            self._layers[1], globals.backward_partition)
 
         conn = self._setup_fit_live_event_connection(
             pong, y_injectors, X, y, epochs)
@@ -151,8 +151,8 @@ class Model:
         i = 2
         for layer in self._layers[1:-1]:
             source_layer = self._layers[i]
-            layer.connect_incoming_unique(
-                source_layer, base_name=globals.backward_partition_base_name)
+            layer.connect_incoming(
+                source_layer, globals.backward_partition)
             i += 1
 
     def _extract_weights(self):

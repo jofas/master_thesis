@@ -35,7 +35,7 @@ class PerceptronDataRegions(Enum):
     WEIGHTS = 2
     INSTANCE_PARAMS = 3
     TRAINABLE_PARAMS = 4
-    BACKWARD_KEYS = 5
+    NEXT_LAYER_WEIGHTS = 5
 
 
 class AbstractPerceptronBase(
@@ -48,6 +48,7 @@ class AbstractPerceptronBase(
     def __init__(self, layer, id, weights, trainable, batch_size, executable,
                  instance_params_data_size):
         self.layer = layer
+        self.id = id
 
         self.instance_params_data_size = instance_params_data_size
 
@@ -62,20 +63,15 @@ class AbstractPerceptronBase(
 
             self.trainable_params_data_size = 4 * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
-
-            if self.layer.is_first_hidden_layer:
-                self.backward_keys_container_size = BYTES_PER_WORD
-                self.n_backward_keys = 1
-            else:
-                self.backward_keys_container_size = \
-                    self.weight_container_size - BYTES_PER_WORD
-                self.n_backward_keys = len(self.weights) - 1
         else:
             self.trainable_params_data_size = 0
-            self.backward_keys_container_size = 0
+
+        # set during data_spec generation, because I need the machine
+        # graph to collect the weights
+        self.next_layer_weights_container_size = 0
 
         super(AbstractPerceptronBase, self).__init__(
-            "{}_{}".format(layer.label, id), executable)
+            "{}_{}".format(layer.label, self.id), executable)
 
     def extract_weights(self):
         transceiver = gfe.transceiver()
@@ -115,8 +111,8 @@ class AbstractPerceptronBase(
             reverse_iptags, machine_time_step, time_scale_factor)
 
         if self.trainable:
-            self._write_trainable_params(spec, machine_graph, routing_info)
-            self._write_backward_keys(spec, machine_graph, routing_info)
+            self._generate_and_write_trainable_regions(
+                spec, machine_graph, routing_info)
 
         spec.end_specification()
 
@@ -144,17 +140,6 @@ class AbstractPerceptronBase(
             size=self.instance_params_data_size,
             label="instance_params")
 
-        if self.trainable:
-            spec.reserve_memory_region(
-                region=PerceptronDataRegions.TRAINABLE_PARAMS.value,
-                size=self.trainable_params_data_size,
-                label="trainable_params")
-
-            spec.reserve_memory_region(
-                region=PerceptronDataRegions.BACKWARD_KEYS.value,
-                size=self.backward_keys_container_size,
-                label="backward_keys")
-
     def _write_base_params(self, spec, placement, machine_graph, routing_info):
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
@@ -179,52 +164,69 @@ class AbstractPerceptronBase(
             region=PerceptronDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
-    def _write_trainable_params(
+    def _generate_and_write_trainable_regions(
             self, spec, machine_graph, routing_info):
-        min_next_key = None
-        n_errors = 0
 
-        edges = list(machine_graph.get_edges_ending_at_vertex(self))
-        for edge in edges:
-            partition = \
-                machine_graph.get_outgoing_partition_for_edge(edge).identifier
+        spec.reserve_memory_region(
+            region=PerceptronDataRegions.TRAINABLE_PARAMS.value,
+            size=self.trainable_params_data_size,
+            label="trainable_params")
 
-            if partition.startswith(globals.backward_partition_base_name):
-                key = routing_info.get_first_key_from_pre_vertex(
-                    edge.pre_vertex, partition)
+        backward_key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.backward_partition)
 
-                if min_next_key is None or key < min_next_key:
-                    min_next_key = key
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, globals.backward_partition))
 
-                n_errors += 1
+        is_output_layer = len(edges) == 0
+
+        if is_output_layer:
+            """
+            edges = self \
+                .get_edges_ending_at_vertex_where_partition_name_starts_with(
+                    machine_graph, globals.backward_partition)
+            """
+            assert len(edges) == 1
+
+            print(dir(routing_info))
+            raise Exception("meh")
+
+            min_next_key = routing_info.get_first_key_from_pre_vertex(
+                edges[0].pre_vertex,
+                machine_graph.get_outgoing_partition_for_edge(edges[0]))
+
+            n_errors = 1
+        else:
+            min_next_key = min([
+                routing_info.get_first_key_from_pre_vertex(
+                    edge.pre_vertex, globals.backward_partition)
+                for edge in edges])
+
+            n_errors = len(edges)
+
+            self.next_layer_weights_container_size = \
+                len(edges) * BYTES_PER_WORD
+
+            spec.reserve_memory_region(
+                region=PerceptronDataRegions.NEXT_LAYER_WEIGHTS.value,
+                size=self.next_layer_weights_container_size,
+                label="next_layer_weights")
+
+            # edges are ordered
+            next_layer_weights = [
+                edge.post_vertex.weights[self.id] for edge in edges]
+
+            # TODO: write next_layer_weights
+
+        # TODO: write size of next_layer_weights
 
         spec.switch_write_focus(
             region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(self.batch_size)
-        spec.write_value(self.n_backward_keys)
+        spec.write_value(backward_key)
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
-
-    def _write_backward_keys(
-            self, spec, machine_graph, routing_info):
-        backward_keys = []
-
-        partitions = [
-            partition.identifier for partition in
-            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
-        ]
-
-        for partition in partitions:
-            print(partition)
-            if partition.startswith(
-                    globals.backward_partition_base_name):
-                backward_keys.append(
-                    routing_info.get_first_key_from_pre_vertex(
-                        self, partition))
-
-        spec.switch_write_focus(
-            region=PerceptronDataRegions.BACKWARD_KEYS.value)
-        spec.write_array(backward_keys)
 
     @property
     @overrides(MachineVertex.resources_required)
@@ -234,9 +236,25 @@ class AbstractPerceptronBase(
                        + self.weight_container_size
                        + self.instance_params_data_size
                        + self.trainable_params_data_size
-                       + self.backward_keys_container_size)
+                       + self.next_layer_weights_container_size)
 
         return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
+
+    def get_edges_ending_at_vertex_where_partition_name_starts_with(
+            self, machine_graph, starts_with_str):
+
+        edges = machine_graph.get_edges_ending_at_vertex(self)
+
+        result = []
+
+        for edge in edges:
+            partition = machine_graph.get_outgoing_partition_for_edge(edge) \
+                .identifier
+
+            if partition.startswith(starts_with_str):
+                result.append(edge)
+
+        return result
 
     def __repr__(self):
         return self.label

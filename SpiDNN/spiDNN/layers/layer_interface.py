@@ -50,7 +50,7 @@ class LayerInterface(object):
         """
 
     @abstractmethod
-    def connect_incoming_unique(self, source_layer, base_name="PARTITION"):
+    def connect_incoming_unique(self, source_layer, base_name):
         """
         Connects the neurons of this layer with the neurons in
         source_layer, such that the generated connection is a directed

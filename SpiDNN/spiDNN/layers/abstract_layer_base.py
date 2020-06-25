@@ -24,7 +24,7 @@ class AbstractLayerBase(LayerInterface):
                     source_neuron, neuron, partition)
 
     @overrides(LayerInterface.connect_incoming_unique)
-    def connect_incoming_unique(self, source_layer, base_name="PARTITION"):
+    def connect_incoming_unique(self, source_layer, base_name):
         for neuron in self.neurons:
             for source_neuron in source_layer.neurons:
                 partition = "{}_{}_to_{}".format(
