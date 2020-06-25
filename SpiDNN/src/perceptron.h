@@ -40,6 +40,20 @@ typedef struct base_params_region { // {{{
   uint32_t n_weights;
 } base_params_region_t; // }}}
 
+//! definitions of each element in the instance_params region, when
+//! perceptron has other activation function than softmax
+typedef struct perceptron_params_region { // {{{
+  uint32_t activation_function_id;
+} perceptron_params_region_t; // }}}
+
+//! definitions of each element in the instance_params region, when
+//! perceptron has softmax as its activation
+typedef struct softmax_params_region { // {{{
+  uint32_t key;
+  uint32_t min_layer_key;
+  uint32_t layer_size;
+} softmax_params_region_t; // }}}
+
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region { // {{{
   uint32_t batch_size;
@@ -76,6 +90,23 @@ float potential;
 float *weights_sdram;
 base_params_region_t *base_params_sdram;
 
+// instance variables
+#ifdef softmax
+  softmax_params_region_t *softmax_params_sdram;
+
+  uint softmax_key;
+  uint min_softmax_key;
+  uint softmax_layer_size;
+
+  float softmax_denominator;
+  uint received_softmax_counter;
+#else
+  perceptron_params_region_t *perceptron_params_sdram;
+
+  uint activation_function_id;
+#endif
+
+// additional trainable variables
 #ifdef trainable
   trainable_params_region_t *trainable_params_sdram;
   uint *backward_keys_sdram;
@@ -131,6 +162,14 @@ void reset() { // {{{
   }
 
   received_potentials_counter = 0;
+
+#ifdef softmax
+  softmax_denominator = .0;
+
+  // 1 because we have already 'received' the potential of this per-
+  // ceptron instance.
+  received_softmax_counter = 1;
+#endif
 
 #ifdef trainable
   error = .0;

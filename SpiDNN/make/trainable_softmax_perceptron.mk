@@ -19,10 +19,10 @@ ifndef SPINN_DIRS
 endif
 
 APP = trainable_softmax_perceptron
-SOURCES = softmax_perceptron.c
+SOURCES = perceptron.c
 
 APP_OUTPUT_DIR := $(abspath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))/../
 
 include $(SPINN_DIRS)/make/local.mk
 
-CLFAGS += -Dtrainable
+CFLAGS += -Dsoftmax -Dtrainable
