@@ -9,6 +9,7 @@
 #define BIAS weights[n_weights - 1]
 #define N_POTENTIALS n_weights - 1
 #define FORWARD_PASS_COMPLETE received_potentials_counter == N_POTENTIALS
+#define SOFTMAX_PASS_COMPLETE received_softmax_counter == softmax_layer_size
 #define BACKWARD_PASS_COMPLETE received_errors_counter == n_errors
 
 //! human readable definitions of each region in SDRAM
@@ -221,24 +222,22 @@ static bool __init_simulation_and_data_spec(uint32_t *timer_period) { // {{{
   return true;
 } // }}}
 
-static bool __init_base_params(uint32_t *timer_offset) { // {{{
+void __init_base_params(uint32_t *timer_offset) { // {{{
   base_params_sdram = data_specification_get_region(BASE_PARAMS, data);
-
+  /* TODO: remove has_key from base region
   if (!base_params_sdram->has_key) {
     log_error(
       "this conways cell can't affect anything, deduced as an error,"
       "please fix the application fabric and try again");
     return false;
   }
-
+  */
   forward_key = base_params_sdram->forward_key;
   min_pre_key = base_params_sdram->min_pre_key;
 
   n_weights = base_params_sdram->n_weights;
 
   *timer_offset = base_params_sdram->timer_offset;
-
-  return true;
 } // }}}
 
 void base_init() { // {{{
@@ -252,14 +251,28 @@ void base_init() { // {{{
     rt_error(RTE_SWERR);
   }
 
-  if (!__init_base_params(&timer_offset)) {
-    log_error("Error in initializing base parameters - exiting!");
-    rt_error(RTE_SWERR);
-  }
-
-  spin1_set_timer_tick_and_phase(timer_period, timer_offset);
+  __init_base_params(&timer_offset);
 
   __init_dtcm();
+
+  spin1_set_timer_tick_and_phase(timer_period, timer_offset);
+} // }}}
+
+void instance_init() { // {{{
+#ifdef softmax
+  softmax_params_sdram =
+    data_specification_get_region(INSTANCE_PARAMS, data);
+
+  softmax_key = softmax_params_sdram->key;
+  min_softmax_key = softmax_params_sdram->min_layer_key;
+  softmax_layer_size = softmax_params_sdram->layer_size;
+#else
+  perceptron_params_sdram =
+    data_specification_get_region(INSTANCE_PARAMS, data);
+
+  activation_function_id =
+    perceptron_params_sdram->activation_function_id;
+#endif
 } // }}}
 
 #ifdef trainable

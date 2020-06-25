@@ -32,29 +32,23 @@ void activate() { // {{{
 void receive(uint key, float payload) {
 #ifdef softmax
   // min_pre_key will always be bigger than min_softmax_key, because
-  // softmax partitions are explicitly allocated in the key space
-  // beginning from 0.
-  if (key >= min_softmax_key && key < min_pre_key) {
+  // softmax partitions are touched by the toolchain before forward
+  // and backward partitions
+  if (key < min_pre_key) {
     softmax_denominator += payload;
     received_softmax_counter++;
-  } else {
+  } else
+#elif defined trainable
+  // min_next_key will always be bigger than min_pre_key, because
+  // the forward partition is touched by the toolchain before the
+  // backward partition
+  if (key >= min_next_key) {
+    // TODO: backward stuff
+  } else
+#endif
+  {
     receive_potential_from_pre_layer(key, payload);
   }
-#else
-  receive_potential_from_pre_layer(key, payload);
-#endif
-
-/*
-#ifdef trainable
-  if (key > min_next_key) {
-    // TODO: do backward stuff
-  } else {
-    receive_potential_from_pre_layer(key, payload);
-  }
-#else
-  receive_potential_from_pre_layer(key, payload);
-#endif
-*/
 }
 
 void update(uint ticks, uint b) { // {{{
@@ -64,29 +58,35 @@ void update(uint ticks, uint b) { // {{{
   time++;
 
 #ifdef softmax
-  if (received_softmax_counter == softmax_layer_size) {
+  if (SOFTMAX_PASS_COMPLETE) {
 
     potential = potential / (softmax_denominator + potential);
     send(forward_key, potential);
     reset();
-
-  } else if (FORWARD_PASS_COMPLETE) {
-    activate();
-    send(softmax_key, potential);
-
-    // reset so data is not send twice for softmax
-    received_potentials_counter = 0;
+    return;
   }
-#else
+#endif
+
   if (FORWARD_PASS_COMPLETE) {
     activate();
+#ifdef softmax
+    send(softmax_key, potential);
+    // reset so data is not send twice for softmax (update being
+    // executed before SOFTMAX_PASS_COMPLETE
+    received_potentials_counter = 0;
+#elif !defined trainable
     send(forward_key, potential);
-#ifndef trainable
+    // only reset when a normal perceptron (not softmax) and not
+    // trainable
     reset();
+#else
+    send(forward_key, potential);
 #endif
+    return;
   }
+
 #ifdef trainable
-  else if (BACKWARD_PASS_COMPLETE) {
+  if (BACKWARD_PASS_COMPLETE) {
     // when all errors are received -> compute gradients for each
     // weight -> sum in *gradients
 
@@ -104,27 +104,12 @@ void update(uint ticks, uint b) { // {{{
     reset();
   }
 #endif
-#endif
 } // }}}
 
 void c_main(void) { // {{{
   base_init();
 
-#ifdef softmax
-  log_info("HELLO FROM SOFTMAX");
-  softmax_params_sdram =
-    data_specification_get_region(INSTANCE_PARAMS, data);
-
-  softmax_key = softmax_params_sdram->key;
-  min_softmax_key = softmax_params_sdram->min_layer_key;
-  softmax_layer_size = softmax_params_sdram->layer_size;
-#else
-  perceptron_params_sdram =
-    data_specification_get_region(INSTANCE_PARAMS, data);
-
-  activation_function_id =
-    perceptron_params_sdram->activation_function_id;
-#endif
+  instance_init();
 
 #ifdef trainable
   trainable_init();
