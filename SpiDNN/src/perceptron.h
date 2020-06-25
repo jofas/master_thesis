@@ -117,6 +117,7 @@ base_params_region_t *base_params_sdram;
   uint min_next_key;
   uint n_errors;
 
+  // float *next_layer_weights;
   uint *backward_keys;
 
   float *gradients;

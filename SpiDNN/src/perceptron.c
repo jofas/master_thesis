@@ -59,10 +59,11 @@ void update(uint ticks, uint b) { // {{{
 
 #ifdef softmax
   if (SOFTMAX_PASS_COMPLETE) {
-
     potential = potential / (softmax_denominator + potential);
     send(forward_key, potential);
+#ifndef trainable
     reset();
+#endif
     return;
   }
 #endif
@@ -72,7 +73,7 @@ void update(uint ticks, uint b) { // {{{
 #ifdef softmax
     send(softmax_key, potential);
     // reset so data is not send twice for softmax (update being
-    // executed before SOFTMAX_PASS_COMPLETE
+    // executed again before SOFTMAX_PASS_COMPLETE)
     received_potentials_counter = 0;
 #elif !defined trainable
     send(forward_key, potential);
