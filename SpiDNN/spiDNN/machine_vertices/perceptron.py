@@ -187,9 +187,12 @@ class AbstractPerceptronBase(
 
             assert len(edges) == 1
 
+            out_edge = edges[0]
+            partition = machine_graph.get_outgoing_partition_for_edge(
+                out_edge).identifier
+
             min_next_key = routing_info.get_first_key_from_pre_vertex(
-                edges[0].pre_vertex,
-                machine_graph.get_outgoing_partition_for_edge(edges[0]))
+                out_edge.pre_vertex, partition)
 
             n_errors = 1
         else:
@@ -212,7 +215,7 @@ class AbstractPerceptronBase(
                 label="next_layer_weights")
 
             spec.switch_write_focus(
-                region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
+                region=PerceptronDataRegions.NEXT_LAYER_WEIGHTS.value)
             spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
 
         spec.switch_write_focus(
