@@ -187,6 +187,8 @@ void send(uint key, float val) { // {{{
   uint send_bytes;
   sark_mem_cpy((void *)&send_bytes, &val, sizeof(uint));
 
+  log_info("sending value: %f with key: %d", val, key);
+
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);
   }
@@ -353,6 +355,8 @@ void activate() { // {{{
 } // }}}
 
 void receive(uint key, float payload) { // {{{
+  log_info("received potential from %d: %f", key, payload);
+
 #ifdef softmax
   // min_pre_key will always be bigger than min_softmax_key, because
   // softmax partitions are touched by the toolchain before forward
@@ -384,7 +388,9 @@ void update(uint ticks, uint b) { // {{{
   if (SOFTMAX_PASS_COMPLETE) {
     potential = potential / (softmax_denominator + potential);
     send(forward_key, potential);
-#ifndef trainable
+#ifdef trainable
+    received_softmax_counter = 1;
+#else
     reset();
 #endif
     return;
@@ -405,6 +411,8 @@ void update(uint ticks, uint b) { // {{{
     reset();
 #else
     send(forward_key, potential);
+    // reset so data is not send twice during forward pass
+    received_potentials_counter = 0;
 #endif
     return;
   }

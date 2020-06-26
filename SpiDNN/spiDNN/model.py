@@ -69,6 +69,8 @@ class Model:
 
         assert y.shape[1] == K
 
+        # TODO: check batch_size is not bigger than len(X)
+
         # trainable: do forward receive than wait for backward pass
         #            compute gradient descent
         #            if counter == batch_size: update weight
@@ -273,7 +275,9 @@ class Model:
 
         def injector_callback(label, conn):
             barrier.acquire()
-            for m in enumerate(M):
+            for m in M:
+                print("sending value: {} to label: {}".format(
+                    m[send_label_to_pos[label]], label))
                 conn.send_event_with_payload(
                     label,
                     0,

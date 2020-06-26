@@ -7,7 +7,7 @@ from keras.layers import Dense as KDense
 from keras.models import Sequential
 
 
-K = 50
+K = 3
 
 
 def test_training():
@@ -24,10 +24,10 @@ def test_training():
     """
 
     model = Model().add(Input(K)) \
-                   .add(Dense(150, activation="relu")) \
-                   .add(Dense(150, activation="softmax")) \
-                   .add(Dense(150, activation="tanh")) \
-                   .add(Dense(150, activation="sigmoid")) \
+                   .add(Dense(2, activation="relu")) \
+                   .add(Dense(2, activation="softmax")) \
+                   .add(Dense(2, activation="tanh")) \
+                   .add(Dense(2, activation="sigmoid")) \
                    .add(Dense(K, activation="softmax"))
 
     model.fit(X, y, "mean_squared_error", epochs=5, batch_size=1024)
