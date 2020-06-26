@@ -58,9 +58,10 @@ typedef struct softmax_params_region { // {{{
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region { // {{{
   uint32_t batch_size;
-  uint32_t n_backward_keys;
+  uint32_t backward_key;
   uint32_t min_next_key;
   uint32_t n_errors;
+  uint32_t is_output_layer;
 } trainable_params_region_t; // }}}
 
 //! values for the priority for each callback
@@ -113,9 +114,10 @@ base_params_region_t *base_params_sdram;
   uint *backward_keys_sdram;
 
   uint batch_size;
-  uint n_backward_keys;
+  uint backward_key;
   uint min_next_key;
   uint n_errors;
+  uint is_output_layer;
 
   // float *next_layer_weights;
   uint *backward_keys;
@@ -291,10 +293,12 @@ void instance_init() { // {{{
       data_specification_get_region(TRAINABLE_PARAMS, data);
 
     batch_size = trainable_params_sdram->batch_size;
-    n_backward_keys = trainable_params_sdram->n_backward_keys;
+    backward_key = trainable_params_sdram->backward_key;
     min_next_key = trainable_params_sdram->min_next_key;
     n_errors = trainable_params_sdram->n_errors;
+    is_output_layer = trainable_params_sdram->is_output_layer;
 
+    /*
     backward_keys_sdram =
       data_specification_get_region(BACKWARD_KEYS, data);
 
@@ -302,6 +306,7 @@ void instance_init() { // {{{
 
     sark_mem_cpy((void *)backward_keys, (void *)backward_keys_sdram,
       sizeof(uint) * n_backward_keys);
+    */
 
     simulation_set_exit_function(on_exit_extract_weights);
   } // }}}
