@@ -19,7 +19,7 @@ typedef enum regions_e { // {{{
     WEIGHTS,
     INSTANCE_PARAMS,
     TRAINABLE_PARAMS,
-    BACKWARD_KEYS,
+    NEXT_LAYER_WEIGHTS,
 } regions_e; // }}}
 
 //! human readable definitions of the activation functions (except
@@ -111,7 +111,7 @@ base_params_region_t *base_params_sdram;
 // additional trainable variables
 #ifdef trainable
   trainable_params_region_t *trainable_params_sdram;
-  uint *backward_keys_sdram;
+  float *next_layer_weights_sdram;
 
   uint batch_size;
   uint backward_key;
@@ -119,8 +119,7 @@ base_params_region_t *base_params_sdram;
   uint n_errors;
   uint is_output_layer;
 
-  // float *next_layer_weights;
-  uint *backward_keys;
+  float *next_layer_weights;
 
   float *gradients;
   float error;
@@ -298,15 +297,18 @@ void instance_init() { // {{{
     n_errors = trainable_params_sdram->n_errors;
     is_output_layer = trainable_params_sdram->is_output_layer;
 
-    /*
-    backward_keys_sdram =
-      data_specification_get_region(BACKWARD_KEYS, data);
+    if (!is_output_layer) {
+      next_layer_weights_sdram =
+        data_specification_get_region(NEXT_LAYER_WEIGHTS, data);
 
-    backward_keys = (uint *)malloc(sizeof(uint) * n_backward_keys);
+      next_layer_weights = (float *)malloc(sizeof(float) * n_errors);
 
-    sark_mem_cpy((void *)backward_keys, (void *)backward_keys_sdram,
-      sizeof(uint) * n_backward_keys);
-    */
+      sark_mem_cpy(
+        (void *)next_layer_weights,
+        (void *)next_layer_weights_sdram,
+        sizeof(float) * n_errors
+      );
+    }
 
     simulation_set_exit_function(on_exit_extract_weights);
   } // }}}
