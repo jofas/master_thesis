@@ -58,6 +58,7 @@ class Model:
         gfe.run()
         gfe.stop()
         conn.close()
+        self._reset_layers()
 
         return result
 
@@ -68,8 +69,12 @@ class Model:
         K = self._layers[-1].n_neurons
 
         assert y.shape[1] == K
+        assert X.shape[1] == self._layers[0].n_neurons
 
-        # TODO: check batch_size is not bigger than len(X)
+        assert len(X) == len(y)
+
+        if batch_size > len(X):
+            batch_size = len(X)
 
         # trainable: do forward receive than wait for backward pass
         #            compute gradient descent
@@ -106,13 +111,17 @@ class Model:
         conn = self._setup_fit_live_event_connection(
             pong, y_injectors, X, y, epochs)
 
-        gfe.run(1)
+        gfe.run()
 
         self._extract_weights()
 
         gfe.stop()
-
         conn.close()
+        self._reset_layers()
+
+    def _reset_layers(self):
+        for layer in self._layers:
+            layer.reset()
 
     def _init_neurons(self, trainable=False, batch_size=None):
         """
@@ -193,6 +202,7 @@ class Model:
 
         def injector_callback(label, conn):
             for x in X:
+                print("predict: injecting item")
                 conn.send_event_with_payload(
                     label,
                     0,
@@ -236,10 +246,10 @@ class Model:
             receive_labels, X, barrier, epochs)
 
         y_injector_callback = self._generate_fit_injector_callback(
-            y_injectors.labels, y, barrier)
+            y_injectors.labels, y, barrier, epochs)
 
         X_injector_callback = self._generate_fit_injector_callback(
-            self._layers[0].labels, X, barrier)
+            self._layers[0].labels, X, barrier, epochs)
 
         for label in receive_labels:
             conn.add_receive_callback(label, extractor_callback)
@@ -269,21 +279,22 @@ class Model:
 
         return extractor_callback
 
-    def _generate_fit_injector_callback(self, send_labels, M, barrier):
+    def _generate_fit_injector_callback(self, send_labels, M, barrier, epochs):
         send_label_to_pos = {
             label: i for i, label in enumerate(send_labels)}
 
         def injector_callback(label, conn):
             barrier.acquire()
-            for m in M:
-                print("sending value: {} to label: {}".format(
-                    m[send_label_to_pos[label]], label))
-                conn.send_event_with_payload(
-                    label,
-                    0,
-                    util.float_to_uint32t(m[send_label_to_pos[label]]))
-
-                barrier.wait()
+            for epoch in range(0, epochs):
+                for m in M:
+                    #print("sending value: {} to label: {}".format(
+                    #    m[send_label_to_pos[label]], label))
+                    conn.send_event_with_payload(
+                        label,
+                        0,
+                        util.float_to_uint32t(m[send_label_to_pos[label]]))
+                    barrier.wait()
+                #print("epoch done: {}".format(epoch))
             barrier.release()
 
         return injector_callback

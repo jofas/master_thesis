@@ -125,8 +125,12 @@ base_params_region_t *base_params_sdram;
   float *next_layer_weights;
 
   float *gradients;
+  float *next_layer_gradients;
+
   float error;
+
   uint received_errors_counter;
+  uint backward_passes = 0;
 #endif
 
 static uint32_t time;
@@ -162,13 +166,11 @@ void receive_potential_from_pre_layer(uint key, float payload) { // {{{
 
 void reset() { // {{{
   potential = .0;
+  received_potentials_counter = 0;
 
   for (uint i=0; i < N_POTENTIALS; i++) {
     received_potentials[i] = false;
   }
-
-  received_potentials_counter = 0;
-
 #ifdef softmax
   softmax_denominator = .0;
 
@@ -183,11 +185,11 @@ void reset() { // {{{
 #endif
 } // }}}
 
-void send(uint key, float val) { // {{{
+void send(uint key, float payload) { // {{{
   uint send_bytes;
-  sark_mem_cpy((void *)&send_bytes, &val, sizeof(uint));
+  sark_mem_cpy((void *)&send_bytes, &payload, sizeof(uint));
 
-  //log_info("sending value: %f with key: %d", val, key);
+  log_info("sending value: %f with key: %d", payload, key);
 
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);
@@ -283,13 +285,38 @@ void instance_init() { // {{{
 } // }}}
 
 #ifdef trainable
+  void reset_batch() {
+    backward_passes = 0;
+
+    for (uint i=0; i < n_weights; i++) {
+      gradients[i] = .0;
+    }
+
+    if (!is_output_layer) {
+      for (uint i=0; i < n_errors; i++) {
+        next_layer_gradients[i] = .0;
+      }
+    }
+  }
+
   void on_exit_extract_weights() { // {{{
     // TODO: update weights one last time (incomplete batch)
 
     log_info("Extracting weights");
 
+    /*
+    for (uint i=0; i < n_weights; i++) {
+      weights_sdram[i] = weights[i];
+      if (i == N_POTENTIALS) {
+        log_info("COPYING BIAS TO SDRAM: %f", weights_sdram[i]);
+      }
+    }*/
+
     sark_mem_cpy((void *)weights_sdram, (void *)weights,
       sizeof(float) * n_weights);
+
+    //log_info("COPYING BIAS TO SDRAM: %f", weights_sdram[N_POTENTIALS]);
+    //log_info("done extracting weights");
   } // }}}
 
   void trainable_init() { // {{{
@@ -302,6 +329,8 @@ void instance_init() { // {{{
     n_errors = trainable_params_sdram->n_errors;
     is_output_layer = trainable_params_sdram->is_output_layer;
 
+    gradients = (float *)malloc(sizeof(float) * n_weights);
+
     if (!is_output_layer) {
       next_layer_weights_sdram =
         data_specification_get_region(NEXT_LAYER_WEIGHTS, data);
@@ -313,6 +342,8 @@ void instance_init() { // {{{
         (void *)next_layer_weights_sdram,
         sizeof(float) * n_errors
       );
+
+      next_layer_gradients = (float *)malloc(sizeof(float) * n_errors);
     }
 
     simulation_set_exit_function(on_exit_extract_weights);
@@ -355,7 +386,7 @@ void activate() { // {{{
 } // }}}
 
 void receive(uint key, float payload) { // {{{
-  //log_info("received potential from %d: %f", key, payload);
+  log_info("received potential from %d: %f", key, payload);
 
 #ifdef softmax
   // min_pre_key will always be bigger than min_softmax_key, because
@@ -370,17 +401,12 @@ void receive(uint key, float payload) { // {{{
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
-    // TODO: backward stuff
-    //
-    //
-    // then compute error to be summed up in error
-
-    if (!is_output_layer) {
-      // okay here update next_layer_weights with error
-      // mtrfckr I need next_layer_gradients as well.... damn... poor
-      // dtcm
+    if (is_output_layer) {
+      error += payload;
+    } else {
+      error += payload * next_layer_weights[key - min_next_key];
+      next_layer_gradients[key - min_next_key] += payload * potential;
     }
-
     received_errors_counter++;
   } else
 #endif
@@ -433,23 +459,44 @@ void update(uint ticks, uint b) { // {{{
 
 #ifdef trainable
   if (BACKWARD_PASS_COMPLETE) {
+    log_info("backward_pass_complete. Error is: %f", error);
+
+    backward_passes++;
+
+    // TODO: depending on activation function
+    float neuron_error = error * potential * (1 - potential);
+
     // when all errors are received -> compute gradients for each
     // weight -> sum in *gradients
+    for (uint i=0; i < N_POTENTIALS; i++) {
+      gradients[i] += neuron_error * potentials[i];
+    }
+    // special case: bias neuron has potential := 1
+    gradients[N_POTENTIALS] += neuron_error;
+
+    log_info("gradient for bias: %f", gradients[N_POTENTIALS]);
 
     // if batch_size full -> update weights with learning_rate * gradient
     // also update next_layer_weights if applicable
+    if (backward_passes == batch_size) {
+      for (uint i=0; i < n_weights; i++) {
+        weights[i] -= 0.01 * gradients[i];
+      }
 
-    // pass error backwards with backward key
-    //
-    // TODO
-    /*
-    for (uint i=0; i < n_backward_keys; i++) {
-      send(backward_keys[i]);
+      if (!is_output_layer) {
+        for (uint i=0; i < n_errors; i++) {
+          next_layer_weights[i] -= 0.01 * next_layer_gradients[i];
+        }
+      }
+
+      reset_batch();
+      // WHY TF NOT WORKING in on exit??
+      on_exit_extract_weights();
     }
-    */
+
+    send(backward_key, neuron_error);
 
     reset();
-    return;
   }
 #endif
 } // }}}

@@ -7,39 +7,40 @@ from keras.layers import Dense as KDense
 from keras.models import Sequential
 
 
-K = 3
-
-
 def test_training():
-    X = np.random.rand(500, K)
-    y = np.random.rand(500, K)
+    X = np.array([[.0, .0], [.0, 1.], [1., .0], [1., 1.]])
+    y = np.array([[.0], [1.], [1.], [.0]])
 
-    """
     kmodel = Sequential()
-    kmodel.add(KDense(150, activation="relu", input_shape=(N,)))
-    kmodel.add(KDense(150, activation="softmax"))
-    kmodel.add(KDense(150, activation="tanh"))
-    kmodel.add(KDense(150, activation="sigmoid"))
-    kmodel.add(KDense(100, activation="softmax"))
-    """
+    kmodel.add(KDense(2, activation="sigmoid", input_shape=(2,)))
+    kmodel.add(KDense(1, activation="sigmoid"))
+    kmodel.compile(loss="mean_squared_error", optimizer="sgd")
 
-    model = Model().add(Input(K)) \
-                   .add(Dense(2, activation="relu")) \
-                   .add(Dense(2, activation="softmax")) \
-                   .add(Dense(2, activation="tanh")) \
+    model = Model().add(Input(2)) \
                    .add(Dense(2, activation="sigmoid")) \
-                   .add(Dense(K, activation="softmax"))
+                   .add(Dense(1, activation="sigmoid"))
 
-    model.fit(X, y, "mean_squared_error", epochs=5, batch_size=1024)
-
-    """
     model.set_weights_from_keras(kmodel.weights)
 
+    print(model.get_weights())
+
+    kmodel.fit(X, y, epochs=1, batch_size=4, shuffle=False)
+    model.fit(X, y, "mean_squared_error", epochs=1, batch_size=4)
+
+    w = model.get_weights()
+    w_ = kmodel.get_weights()
+
+    error = [x - x_ for x, x_ in zip(w, w_)]
+
+    print(error)
+
+    """
     p = model.predict(X)
     p_ = kmodel.predict(X)
 
     error = np.absolute(p - p_)
-    assert np.amax(error) < 0.0001
+    print(error)
+    #assert np.amax(error) < 0.0002
     """
 
 

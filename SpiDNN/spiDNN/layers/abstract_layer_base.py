@@ -12,6 +12,11 @@ class AbstractLayerBase(LayerInterface):
         self._n_neurons = n_neurons
         self._neurons = neurons
 
+    @overrides(LayerInterface.init_neurons)
+    def init_neurons(self, **kwargs):
+        for neuron in self.neurons:
+            gfe.add_machine_vertex_instance(neuron)
+
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
         for source_neuron in source_layer.neurons:
@@ -33,10 +38,9 @@ class AbstractLayerBase(LayerInterface):
                 gfe.add_machine_edge_instance(
                     source_neuron, neuron, partition)
 
-    @overrides(LayerInterface.init_neurons)
-    def init_neurons(self, **kwargs):
-        for neuron in self.neurons:
-            gfe.add_machine_vertex_instance(neuron)
+    @overrides(LayerInterface.reset)
+    def reset(self):
+        self._neurons = []
 
     @property
     @overrides(LayerInterface.n_neurons)

@@ -60,3 +60,10 @@ class LayerInterface(object):
         The unique partitions are touched in such a way that the
         destination neurons see the source neurons consecutively.
         """
+
+    @abstractmethod
+    def reset(self):
+        """
+        Resets layer once the simulation has finished (all neurons are
+        deleted).
+        """

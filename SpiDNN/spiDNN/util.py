@@ -188,7 +188,7 @@ class FitReceivingLiveOutputProgress:
 
     def notify_injectors(self):
         with self.barrier:
-            barrier.notify_all()
+            self.barrier.notify_all()
 
     @property
     def received_all(self):
@@ -199,4 +199,4 @@ class FitReceivingLiveOutputProgress:
     def simulation_finished(self):
         with self.lock:
             return self.overall_receive_counter == \
-                self.epochs * self.epoch_size * n_receive
+                self.epochs * self.epoch_size * self.n_receive

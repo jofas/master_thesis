@@ -83,7 +83,7 @@ class AbstractPerceptronBase(
         raw_data = transceiver.read_memory(
             placement.x, placement.y,
             weights_region_base_address,
-            self._weight_container_size)
+            self.weight_container_size)
 
         unpacked_data = struct.unpack("<{}f".format(
             self.weights.shape[0]), raw_data)
