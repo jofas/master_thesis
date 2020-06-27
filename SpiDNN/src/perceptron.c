@@ -187,7 +187,7 @@ void send(uint key, float val) { // {{{
   uint send_bytes;
   sark_mem_cpy((void *)&send_bytes, &val, sizeof(uint));
 
-  log_info("sending value: %f with key: %d", val, key);
+  //log_info("sending value: %f with key: %d", val, key);
 
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);
@@ -355,7 +355,7 @@ void activate() { // {{{
 } // }}}
 
 void receive(uint key, float payload) { // {{{
-  log_info("received potential from %d: %f", key, payload);
+  //log_info("received potential from %d: %f", key, payload);
 
 #ifdef softmax
   // min_pre_key will always be bigger than min_softmax_key, because
@@ -371,6 +371,17 @@ void receive(uint key, float payload) { // {{{
   // backward partition
   if (key >= min_next_key) {
     // TODO: backward stuff
+    //
+    //
+    // then compute error to be summed up in error
+
+    if (!is_output_layer) {
+      // okay here update next_layer_weights with error
+      // mtrfckr I need next_layer_gradients as well.... damn... poor
+      // dtcm
+    }
+
+    received_errors_counter++;
   } else
 #endif
   {
@@ -385,6 +396,9 @@ void update(uint ticks, uint b) { // {{{
   time++;
 
 #ifdef softmax
+  // TODO: current implementation does not support single neuron
+  //       softmax layer ... change to sending potential to self as
+  //       well
   if (SOFTMAX_PASS_COMPLETE) {
     potential = potential / (softmax_denominator + potential);
     send(forward_key, potential);
@@ -422,6 +436,9 @@ void update(uint ticks, uint b) { // {{{
     // when all errors are received -> compute gradients for each
     // weight -> sum in *gradients
 
+    // if batch_size full -> update weights with learning_rate * gradient
+    // also update next_layer_weights if applicable
+
     // pass error backwards with backward key
     //
     // TODO
@@ -431,9 +448,8 @@ void update(uint ticks, uint b) { // {{{
     }
     */
 
-    // if batch_size full -> update weights with learning_rate * gradient
-
     reset();
+    return;
   }
 #endif
 } // }}}
