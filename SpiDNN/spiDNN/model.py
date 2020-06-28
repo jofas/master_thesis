@@ -294,7 +294,7 @@ class Model:
                         0,
                         util.float_to_uint32t(m[send_label_to_pos[label]]))
                     barrier.wait()
-                #print("epoch done: {}".format(epoch))
+                print("epoch done: {}".format(epoch))
             barrier.release()
 
         return injector_callback

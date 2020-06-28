@@ -130,7 +130,7 @@ base_params_region_t *base_params_sdram;
   float error;
 
   uint received_errors_counter;
-  uint backward_passes = 0;
+  uint backward_passes;
 #endif
 
 static uint32_t time;
@@ -508,6 +508,7 @@ void c_main(void) { // {{{
 
 #ifdef trainable
   trainable_init();
+  reset_batch();
 #endif
 
   // register callbacks

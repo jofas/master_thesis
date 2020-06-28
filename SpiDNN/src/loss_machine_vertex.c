@@ -226,6 +226,14 @@ void update(uint ticks, uint b) { // {{{
   if ((received_potentials_counter == K) &&
       (received_y_counter == K))
   {
+    float loss_ = .0;
+    for (uint i=0; i < K; i++) {
+      float diff = y[i] - potentials[i];
+      loss_ += diff * diff;
+    }
+    loss_ = loss_ / (float) K;
+    log_info("loss: %f", loss_);
+
     float loss_i;
     for (uint i=0; i < K; i++) {
       loss_i = compute_loss(i);
