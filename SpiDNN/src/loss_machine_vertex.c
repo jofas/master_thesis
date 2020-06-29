@@ -36,7 +36,6 @@ float *potentials;
 bool *received_potentials;
 
 float *y;
-bool *received_y;
 
 uint received_potentials_counter;
 uint received_y_counter;
@@ -50,21 +49,13 @@ uint *keys_sdram;
 void receive_y(uint key, float payload) {
   uint idx = key - min_y_key;
 
-  if (received_y[idx]) {
-    log_error("received y too fast. Last input wasn't
-               properly processed yet - exiting!");
-    rt_error(RTE_SWERR);
-  } else {
-    y[idx] = payload;
-    received_y[idx] = true;
-    received_y_counter++;
-  }
+  y[idx] = payload;
+  received_y_counter++;
 }
 
 void reset() {
   for (uint i=0; i < K; i++) {
     received_potentials[i] = false;
-    received_y[i] = false;
   }
 
   received_potentials_counter = 0;
@@ -130,7 +121,6 @@ void init_keys_and_y() {
     sizeof(uint) * K);
 
   y = (float *)malloc(sizeof(float) * K);
-  received_y = (bool *)malloc(sizeof(bool) * K);
 }
 
 void c_main(void) {
