@@ -7,11 +7,10 @@
 #include <math.h>
 
 
-/* functions which have to be implemented by a machine vertex using
- * this header */
+/* function which has to be implemented by a machine vertex including
+ * spiDNN.h */
 void __init_base_params(
     uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key);
-void __init_dtcm();
 
 
 //! values for the priority for each callback
@@ -96,8 +95,6 @@ void base_init() {
 
   potentials = (float *)malloc(sizeof(float) * n_potentials);
   received_potentials = (bool *)malloc(sizeof(bool) * n_potentials);
-
-  __init_dtcm();
 
   spin1_set_timer_tick_and_phase(timer_period, timer_offset);
 }

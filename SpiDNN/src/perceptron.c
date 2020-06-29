@@ -20,14 +20,6 @@
   uint activation_function_id;
 #endif
 
-void generate_potential() {
-  for (uint i = 0; i < N_POTENTIALS; i++) {
-    potential += potentials[i] * weights[i];
-  }
-
-  potential += BIAS;
-}
-
 void reset() {
   potential = .0;
   received_potentials_counter = 0;
@@ -194,6 +186,8 @@ void c_main(void) {
 
   instance_init();
 
+  init_weights();
+
 #ifdef trainable
   trainable_init();
   reset_batch();
@@ -205,7 +199,6 @@ void c_main(void) {
 
   reset();
 
-  // start execution
   log_info("\nStarting simulation\n");
   simulation_run();
 }

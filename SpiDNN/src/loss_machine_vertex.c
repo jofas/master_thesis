@@ -47,7 +47,7 @@ uint *keys_sdram;
 
 /* functions */
 
-void receive_y(uint key, float payload) { // {{{
+void receive_y(uint key, float payload) {
   uint idx = key - min_y_key;
 
   if (received_y[idx]) {
@@ -59,9 +59,9 @@ void receive_y(uint key, float payload) { // {{{
     received_y[idx] = true;
     received_y_counter++;
   }
-} // }}}
+}
 
-void reset() { // {{{
+void reset() {
   for (uint i=0; i < K; i++) {
     received_potentials[i] = false;
     received_y[i] = false;
@@ -69,7 +69,7 @@ void reset() { // {{{
 
   received_potentials_counter = 0;
   received_y_counter = 0;
-} // }}}
+}
 
 void receive(uint key, float payload) {
   log_info("received potential from %d: %f", key, payload);
@@ -96,7 +96,7 @@ float compute_loss(uint i) {
   }
 }
 
-void update(uint ticks, uint b) { // {{{
+void update(uint ticks, uint b) {
   use(b);
   use(ticks);
 
@@ -120,26 +120,9 @@ void update(uint ticks, uint b) { // {{{
     }
     reset();
   }
-} // }}}
+}
 
-void c_main(void) { // {{{
-  base_init();
-
-  // register callbacks
-  spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
-  spin1_callback_on(TIMER_TICK, update, TIMER);
-
-  reset();
-
-  // start execution
-  log_info("\nStarting simulation\n");
-  simulation_run();
-} // }}}
-
-
-/* functions which need to be implemented for base_init in spiDNN.h */
-
-void __init_dtcm() { // {{{
+void init_keys_and_y() {
   keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
 
   keys = (uint *)malloc(sizeof(uint) * K);
@@ -148,10 +131,28 @@ void __init_dtcm() { // {{{
 
   y = (float *)malloc(sizeof(float) * K);
   received_y = (bool *)malloc(sizeof(bool) * K);
-} // }}}
+}
 
+void c_main(void) {
+  base_init();
+
+  init_keys_and_y();
+
+  // register callbacks
+  spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
+  spin1_callback_on(TIMER_TICK, update, TIMER);
+
+  reset();
+
+  log_info("\nStarting simulation\n");
+  simulation_run();
+}
+
+/* function which has to be implemented by a machine vertex including
+ * spiDNN.h */
 void __init_base_params(
-    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key) {
+    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key)
+{
   params_sdram = data_specification_get_region(PARAMS, data_spec_meta);
 
   loss_function_id = params_sdram->loss_function_id;
@@ -161,4 +162,4 @@ void __init_base_params(
   *timer_offset = params_sdram->timer_offset;
   *n_potentials = K;
   *min_pre_key = params_sdram->min_pre_key;
-} // }}}
+}

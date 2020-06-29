@@ -79,9 +79,17 @@ float *weights_sdram;
 base_params_region_t *base_params_sdram;
 
 
-/* functions which need to be implemented for base_init in spiDNN.h */
+/* functions */
 
-void __init_dtcm() {
+void generate_potential() {
+  for (uint i = 0; i < N_POTENTIALS; i++) {
+    potential += potentials[i] * weights[i];
+  }
+
+  potential += BIAS;
+}
+
+void init_weights() {
   weights_sdram = data_specification_get_region(WEIGHTS, data_spec_meta);
 
   weights = (float *)malloc(sizeof(float) * n_weights);
@@ -90,8 +98,11 @@ void __init_dtcm() {
     sizeof(float) * n_weights);
 }
 
+/* function which has to be implemented by a machine vertex including
+ * spiDNN.h */
 void __init_base_params(
-    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key) {
+    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key)
+{
   base_params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
   forward_key = base_params_sdram->forward_key;
