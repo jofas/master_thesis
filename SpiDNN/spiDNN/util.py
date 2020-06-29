@@ -139,10 +139,9 @@ class PartitionManager:
 
 
 class PingPongExtractionManager:
-    def __init__(self, epochs, epoch_size, barrier, n_receive):
+    def __init__(self, epochs, epoch_size,  n_receive):
         self.epochs = epochs
         self.epoch_size = epoch_size
-        self.barrier = barrier
         self.n_receive = n_receive
 
         self.overall_receive_counter = 0
@@ -158,10 +157,6 @@ class PingPongExtractionManager:
     def reset(self):
         with self.lock:
             self.receive_counter = 0
-
-    def notify_injectors(self):
-        with self.barrier:
-            self.barrier.notify_all()
 
     @property
     def received_all(self):

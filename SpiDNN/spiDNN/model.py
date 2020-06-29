@@ -201,7 +201,7 @@ class Model:
     def _generate_predict_extractor_callback(
             self, receive_labels, result, barrier):
         extractor_manager = util.PingPongExtractionManager(
-            1, result.shape[0], barrier, len(receive_labels))
+            1, result.shape[0], len(receive_labels))
 
         label_to_pos = {
             label: i for i, label in enumerate(receive_labels)}
@@ -216,7 +216,8 @@ class Model:
                 if extractor_manager.simulation_finished:
                     gfe.stop_run()
                 else:
-                    extractor_manager.notify_injectors()
+                    with barrier:
+                        barrier.notify_all()
                 extractor_manager.reset()
 
         return extractor_callback
@@ -274,7 +275,7 @@ class Model:
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
         extractor_manager = util.PingPongExtractionManager(
-            epochs, len(X), barrier, len(receive_labels))
+            epochs, len(X), len(receive_labels))
 
         def extractor_callback(label, _0, _1):
             extractor_manager.receive()
@@ -283,7 +284,8 @@ class Model:
                 if extractor_manager.simulation_finished:
                     gfe.stop_run()
                 else:
-                    extractor_manager.notify_injectors()
+                    with barrier:
+                        barrier.notify_all()
                 extractor_manager.reset()
 
         return extractor_callback
