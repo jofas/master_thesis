@@ -175,12 +175,10 @@ void reset() {
   for (uint i=0; i < N_POTENTIALS; i++) {
     received_potentials[i] = false;
   }
+
 #ifdef softmax
   softmax_denominator = .0;
-
-  // 1 because we have already 'received' the potential of this per-
-  // ceptron instance.
-  received_softmax_counter = 1;
+  received_softmax_counter = 0;
 #endif
 
 #ifdef trainable
@@ -434,10 +432,10 @@ void update(uint ticks, uint b) {
   //       softmax layer ... change to sending potential to self as
   //       well
   if (SOFTMAX_PASS_COMPLETE) {
-    potential = potential / (softmax_denominator + potential);
+    potential = potential / softmax_denominator;
     send(forward_key, potential);
 #ifdef trainable
-    received_softmax_counter = 1;
+    received_softmax_counter = 0;
 #else
     reset();
 #endif

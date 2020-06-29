@@ -21,10 +21,6 @@ class AbstractLayerBase(LayerInterface):
     def connect_incoming(self, source_layer, partition):
         for source_neuron in source_layer.neurons:
             for neuron in self.neurons:
-                # in case of connecting self with self
-                if source_neuron == neuron:
-                    continue
-
                 gfe.add_machine_edge_instance(
                     source_neuron, neuron, partition)
 
