@@ -43,7 +43,7 @@ class AbstractPerceptronBase(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
+    BASE_PARAMS_DATA_SIZE = 4 * BYTES_PER_WORD
 
     def __init__(
             self, layer, id, weights, trainable, batch_size, learning_rate,
@@ -156,8 +156,7 @@ class AbstractPerceptronBase(
 
         spec.switch_write_focus(
             region=PerceptronDataRegions.BASE_PARAMS.value)
-        spec.write_value(0 if key is None else 1)
-        spec.write_value(0 if key is None else key)
+        spec.write_value(key)
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
         spec.write_value(len(self.weights))
