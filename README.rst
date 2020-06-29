@@ -64,6 +64,8 @@ Optimizations and features
 
 * loss into perceptron (saving cores but higher complexity)
 
+* progress interface with epoch loss (loss computed by host?)
+
 * monitor/sync core for each layer (simplifying interface)
 
 * weight extraction (dtcm -> sdram) only when training is finished,
