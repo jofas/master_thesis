@@ -76,11 +76,6 @@ class Model:
         if batch_size > len(X):
             batch_size = len(X)
 
-        # trainable: do forward receive than wait for backward pass
-        #            compute gradient descent
-        #            if counter == batch_size: update weight
-        #            pass E_i backwards to prev layer
-
         loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K, label="YInjector")
         pong = Extractor("pong")
@@ -187,10 +182,13 @@ class Model:
             machine_vertices=True
         )
 
-        injector_callback = self._generate_predict_injector_callback(
-            send_labels, X)
+        barrier = Condition()
+
         extractor_callback = self._generate_predict_extractor_callback(
-            receive_labels, result)
+            receive_labels, result, barrier)
+
+        injector_callback = self._generate_predict_injector_callback(
+            send_labels, X, barrier)
 
         for label in receive_labels:
             conn.add_receive_callback(label, extractor_callback)
@@ -200,36 +198,44 @@ class Model:
 
         return conn
 
-    def _generate_predict_injector_callback(self, send_labels, X):
+    def _generate_predict_extractor_callback(
+            self, receive_labels, result, barrier):
+        extractor_manager = util.PingPongExtractionManager(
+            1, result.shape[0], barrier, len(receive_labels))
+
+        label_to_pos = {
+            label: i for i, label in enumerate(receive_labels)}
+
+        def extractor_callback(label, _, val):
+            x = extractor_manager.receive()
+
+            val = util.uint32t_to_float(val)
+            result[x, label_to_pos[label]] = val
+
+            if extractor_manager.received_all:
+                if extractor_manager.simulation_finished:
+                    gfe.stop_run()
+                else:
+                    extractor_manager.notify_injectors()
+                extractor_manager.reset()
+
+        return extractor_callback
+
+    def _generate_predict_injector_callback(self, send_labels, X, barrier):
         send_label_to_pos = {
             label: i for i, label in enumerate(send_labels)}
 
         def injector_callback(label, conn):
+            barrier.acquire()
             for x in X:
                 conn.send_event_with_payload(
                     label,
                     0,
                     util.float_to_uint32t(x[send_label_to_pos[label]]))
-
-                time.sleep(0.075)
+                barrier.wait()
+            barrier.release()
 
         return injector_callback
-
-    def _generate_predict_extractor_callback(self, receive_labels, result):
-        extractor_manager = util.ReceivingLiveOutputProgress(
-            result.shape[0], receive_labels)
-
-        def extractor_callback(label, _, val):
-            val = util.uint32t_to_float(val)
-            x = extractor_manager.received(label)
-            y = extractor_manager.label_to_pos(label)
-
-            result[x, y] = val
-
-            if extractor_manager.simulation_finished:
-                gfe.stop_run()
-
-        return extractor_callback
 
     def _setup_fit_live_event_connection(
             self, extractor, y_injectors, X, y, epochs):
@@ -267,7 +273,7 @@ class Model:
 
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
-        extractor_manager = util.FitReceivingLiveOutputProgress(
+        extractor_manager = util.PingPongExtractionManager(
             epochs, len(X), barrier, len(receive_labels))
 
         def extractor_callback(label, _0, _1):
