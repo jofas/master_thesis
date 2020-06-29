@@ -216,17 +216,17 @@ class Model:
         return injector_callback
 
     def _generate_predict_extractor_callback(self, receive_labels, result):
-        rlop = util.ReceivingLiveOutputProgress(
+        extractor_manager = util.ReceivingLiveOutputProgress(
             result.shape[0], receive_labels)
 
         def extractor_callback(label, _, val):
             val = util.uint32t_to_float(val)
-            x = rlop.received(label)
-            y = rlop.label_to_pos(label)
+            x = extractor_manager.received(label)
+            y = extractor_manager.label_to_pos(label)
 
             result[x, y] = val
 
-            if rlop.simulation_finished:
+            if extractor_manager.simulation_finished:
                 gfe.stop_run()
 
         return extractor_callback
@@ -267,18 +267,18 @@ class Model:
 
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
-        frlop = util.FitReceivingLiveOutputProgress(
+        extractor_manager = util.FitReceivingLiveOutputProgress(
             epochs, len(X), barrier, len(receive_labels))
 
         def extractor_callback(label, _0, _1):
-            frlop.receive()
+            extractor_manager.receive()
 
-            if frlop.received_all:
-                if frlop.simulation_finished:
+            if extractor_manager.received_all:
+                if extractor_manager.simulation_finished:
                     gfe.stop_run()
                 else:
-                    frlop.notify_injectors()
-                frlop.reset()
+                    extractor_manager.notify_injectors()
+                extractor_manager.reset()
 
         return extractor_callback
 
