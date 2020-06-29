@@ -87,7 +87,7 @@ void generate_potential() {
   potential += BIAS;
 }
 
-void init_weights() {
+void weights_init() {
   weights_sdram = data_specification_get_region(WEIGHTS, data_spec_meta);
 
   weights = (float *)malloc(sizeof(float) * n_weights);

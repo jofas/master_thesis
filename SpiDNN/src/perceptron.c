@@ -186,7 +186,7 @@ void c_main(void) {
 
   instance_init();
 
-  init_weights();
+  weights_init();
 
 #ifdef trainable
   trainable_init();

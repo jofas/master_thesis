@@ -108,7 +108,7 @@ void update(uint ticks, uint b) {
   }
 }
 
-void init_keys_and_y() {
+void keys_and_y_init() {
   keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
 
   keys = (uint *)malloc(sizeof(uint) * K);
@@ -121,7 +121,7 @@ void init_keys_and_y() {
 void c_main(void) {
   base_init();
 
-  init_keys_and_y();
+  keys_and_y_init();
 
   // register callbacks
   spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
