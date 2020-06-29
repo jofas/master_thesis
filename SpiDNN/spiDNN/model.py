@@ -62,7 +62,7 @@ class Model:
 
         return result
 
-    def fit(self, X, y, loss_fn, epochs, batch_size):
+    def fit(self, X, y, loss_fn, epochs, batch_size, learning_rate):
         X = np.array(X, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
 
@@ -91,8 +91,9 @@ class Model:
         loss_layer.init_neurons()
         y_injectors.init_neurons(neurons_next_layer=1)
         pong.init_neurons()
+        self._init_neurons(
+            trainable=True, batch_size=batch_size, learning_rate=learning_rate)
 
-        self._init_neurons(trainable=True, batch_size=batch_size)
         self._connect_layers_forward()
 
         loss_layer.connect_incoming(
@@ -116,6 +117,7 @@ class Model:
         self._extract_weights()
 
         gfe.stop()
+
         conn.close()
         self._reset_layers()
 
@@ -123,7 +125,8 @@ class Model:
         for layer in self._layers:
             layer.reset()
 
-    def _init_neurons(self, trainable=False, batch_size=None):
+    def _init_neurons(
+            self, trainable=False, batch_size=None, learning_rate=None):
         """
         Initializes all Neurons (MachineVertices) in self._layers.
         """
@@ -143,7 +146,8 @@ class Model:
                 weights=self.__weights[i],
                 biases=self.__weights[i+1],
                 trainable=trainable,
-                batch_size=batch_size)
+                batch_size=batch_size,
+                learning_rate=learning_rate)
             i += 2
 
     def _connect_layers_forward(self):

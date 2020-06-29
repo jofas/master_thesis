@@ -11,69 +11,70 @@
 #define FORWARD_PASS_COMPLETE received_potentials_counter == N_POTENTIALS
 #define SOFTMAX_PASS_COMPLETE received_softmax_counter == softmax_layer_size
 #define BACKWARD_PASS_COMPLETE received_errors_counter == n_errors
-
+#define BATCH_COMPLETE backward_passes == batch_size
 
 /* structs and enums */
 
 //! human readable definitions of each region in SDRAM
-typedef enum regions_e { // {{{
+typedef enum regions_e {
     SYSTEM_REGION,
     BASE_PARAMS,
     WEIGHTS,
     INSTANCE_PARAMS,
     TRAINABLE_PARAMS,
     NEXT_LAYER_WEIGHTS,
-} regions_e; // }}}
+} regions_e;
 
 //! human readable definitions of the activation functions (except
 //! softmax, which is handled by another type of perceptron)
-typedef enum activations_e { // {{{
+typedef enum activations_e {
   IDENTITY = 0,
   RELU = 1,
   SIGMOID = 2,
   TANH = 3,
   //SOFTMAX,
-} activations_e; // }}}
+} activations_e;
 
 //! definitions of each element in the base_params region
-typedef struct base_params_region { // {{{
+typedef struct base_params_region {
   uint32_t has_key;
   uint32_t forward_key;
   uint32_t min_pre_key;
   uint32_t timer_offset;
   uint32_t n_weights;
-} base_params_region_t; // }}}
+} base_params_region_t;
 
 //! definitions of each element in the instance_params region, when
 //! perceptron has other activation function than softmax
-typedef struct perceptron_params_region { // {{{
+typedef struct perceptron_params_region {
   uint32_t activation_function_id;
-} perceptron_params_region_t; // }}}
+} perceptron_params_region_t;
 
 //! definitions of each element in the instance_params region, when
 //! perceptron has softmax as its activation
-typedef struct softmax_params_region { // {{{
+typedef struct softmax_params_region {
   uint32_t key;
   uint32_t min_layer_key;
   uint32_t layer_size;
-} softmax_params_region_t; // }}}
+} softmax_params_region_t;
 
 //! definitions of each element in the trainable_params region
-typedef struct trainable_params_region { // {{{
+typedef struct trainable_params_region {
   uint32_t batch_size;
   uint32_t backward_key;
   uint32_t min_next_key;
   uint32_t n_errors;
   uint32_t is_output_layer;
-} trainable_params_region_t; // }}}
+  float learning_rate;
+} trainable_params_region_t;
 
 //! values for the priority for each callback
-typedef enum callback_priorities { // {{{
+typedef enum callback_priorities {
     MC_PACKET = -1,
     SDP = 1,
     TIMER = 2,
     DMA = 3
-} callback_priorities; // }}}
+} callback_priorities;
 
 
 /* global variables */
@@ -122,12 +123,15 @@ base_params_region_t *base_params_sdram;
   uint n_errors;
   uint is_output_layer;
 
+  float learning_rate;
+
   float *next_layer_weights;
 
   float *gradients;
   float *next_layer_gradients;
 
   float error;
+  float neuron_error;
 
   uint received_errors_counter;
   uint backward_passes;
@@ -142,15 +146,15 @@ uint cpsr = 0;
 
 /* functions */
 
-void generate_potential() { // {{{
+void generate_potential() {
   for (uint i = 0; i < N_POTENTIALS; i++) {
     potential += potentials[i] * weights[i];
   }
 
   potential += BIAS;
-} // }}}
+}
 
-void receive_potential_from_pre_layer(uint key, float payload) { // {{{
+void receive_potential_from_pre_layer(uint key, float payload) {
   uint idx = key - min_pre_key;
 
   if (received_potentials[idx]) {
@@ -162,9 +166,9 @@ void receive_potential_from_pre_layer(uint key, float payload) { // {{{
     received_potentials[idx] = true;
     received_potentials_counter++;
   }
-} // }}}
+}
 
-void reset() { // {{{
+void reset() {
   potential = .0;
   received_potentials_counter = 0;
 
@@ -183,9 +187,9 @@ void reset() { // {{{
   error = .0;
   received_errors_counter = 0;
 #endif
-} // }}}
+}
 
-void send(uint key, float payload) { // {{{
+void send(uint key, float payload) {
   uint send_bytes;
   sark_mem_cpy((void *)&send_bytes, &payload, sizeof(uint));
 
@@ -194,9 +198,9 @@ void send(uint key, float payload) { // {{{
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);
   }
-} // }}}
+}
 
-void __init_dtcm() { // {{{
+void __init_dtcm() {
   weights_sdram = data_specification_get_region(WEIGHTS, data);
 
   weights = (float *)malloc(sizeof(float) * n_weights);
@@ -207,9 +211,9 @@ void __init_dtcm() { // {{{
   potentials = (float *)malloc(sizeof(float) * N_POTENTIALS);
 
   received_potentials = (bool *)malloc(sizeof(bool) * N_POTENTIALS);
-} // }}}
+}
 
-static bool __init_simulation_and_data_spec(uint32_t *timer_period) { // {{{
+static bool __init_simulation_and_data_spec(uint32_t *timer_period) {
   // Get the address this core's DTCM data starts at from SRAM
   data = data_specification_get_data_address();
 
@@ -229,9 +233,9 @@ static bool __init_simulation_and_data_spec(uint32_t *timer_period) { // {{{
   }
 
   return true;
-} // }}}
+}
 
-void __init_base_params(uint32_t *timer_offset) { // {{{
+void __init_base_params(uint32_t *timer_offset) {
   base_params_sdram = data_specification_get_region(BASE_PARAMS, data);
   /* TODO: remove has_key from base region
   if (!base_params_sdram->has_key) {
@@ -247,9 +251,9 @@ void __init_base_params(uint32_t *timer_offset) { // {{{
   n_weights = base_params_sdram->n_weights;
 
   *timer_offset = base_params_sdram->timer_offset;
-} // }}}
+}
 
-void base_init() { // {{{
+void base_init() {
   uint32_t timer_period, timer_offset;
 
   // Start the time at "-1" so that the first tick will be 0
@@ -265,9 +269,9 @@ void base_init() { // {{{
   __init_dtcm();
 
   spin1_set_timer_tick_and_phase(timer_period, timer_offset);
-} // }}}
+}
 
-void instance_init() { // {{{
+void instance_init() {
 #ifdef softmax
   softmax_params_sdram =
     data_specification_get_region(INSTANCE_PARAMS, data);
@@ -282,9 +286,34 @@ void instance_init() { // {{{
   activation_function_id =
     perceptron_params_sdram->activation_function_id;
 #endif
-} // }}}
+}
 
 #ifdef trainable
+  void update_gradients() {
+    // TODO: depending on activation function
+    neuron_error = error * potential * (1 - potential);
+
+    // when all errors are received -> compute gradients for each
+    // weight -> sum in *gradients
+    for (uint i=0; i < N_POTENTIALS; i++) {
+      gradients[i] += neuron_error * potentials[i];
+    }
+    // special case: bias neuron has potential := 1
+    gradients[N_POTENTIALS] += neuron_error;
+  }
+
+  void update_weights() {
+    for (uint i=0; i < n_weights; i++) {
+      weights[i] -= learning_rate * gradients[i];
+    }
+
+    if (!is_output_layer) {
+      for (uint i=0; i < n_errors; i++) {
+        next_layer_weights[i] -= learning_rate * next_layer_gradients[i];
+      }
+    }
+  }
+
   void reset_batch() {
     backward_passes = 0;
 
@@ -299,27 +328,7 @@ void instance_init() { // {{{
     }
   }
 
-  void on_exit_extract_weights() { // {{{
-    // TODO: update weights one last time (incomplete batch)
-
-    log_info("Extracting weights");
-
-    /*
-    for (uint i=0; i < n_weights; i++) {
-      weights_sdram[i] = weights[i];
-      if (i == N_POTENTIALS) {
-        log_info("COPYING BIAS TO SDRAM: %f", weights_sdram[i]);
-      }
-    }*/
-
-    sark_mem_cpy((void *)weights_sdram, (void *)weights,
-      sizeof(float) * n_weights);
-
-    //log_info("COPYING BIAS TO SDRAM: %f", weights_sdram[N_POTENTIALS]);
-    //log_info("done extracting weights");
-  } // }}}
-
-  void trainable_init() { // {{{
+  void trainable_init() {
     trainable_params_sdram =
       data_specification_get_region(TRAINABLE_PARAMS, data);
 
@@ -328,6 +337,7 @@ void instance_init() { // {{{
     min_next_key = trainable_params_sdram->min_next_key;
     n_errors = trainable_params_sdram->n_errors;
     is_output_layer = trainable_params_sdram->is_output_layer;
+    learning_rate = trainable_params_sdram->learning_rate;
 
     gradients = (float *)malloc(sizeof(float) * n_weights);
 
@@ -345,18 +355,16 @@ void instance_init() { // {{{
 
       next_layer_gradients = (float *)malloc(sizeof(float) * n_errors);
     }
-
-    simulation_set_exit_function(on_exit_extract_weights);
-  } // }}}
+  }
 #endif
 
-void receive_data_void(uint key, uint unknown) { // {{{
+void receive_data_void(uint key, uint unknown) {
   use(key);
   use(unknown);
   log_error("this should never ever be done");
-} // }}}
+}
 
-void activate() { // {{{
+void activate() {
   generate_potential();
 #ifdef softmax
   potential = exp(potential);
@@ -383,9 +391,9 @@ void activate() { // {{{
       rt_error(RTE_SWERR);
   }
 #endif
-} // }}}
+}
 
-void receive(uint key, float payload) { // {{{
+void receive(uint key, float payload) {
   log_info("received potential from %d: %f", key, payload);
 
 #ifdef softmax
@@ -413,9 +421,9 @@ void receive(uint key, float payload) { // {{{
   {
     receive_potential_from_pre_layer(key, payload);
   }
-} // }}}
+}
 
-void update(uint ticks, uint b) { // {{{
+void update(uint ticks, uint b) {
   use(b);
   use(ticks);
 
@@ -463,35 +471,15 @@ void update(uint ticks, uint b) { // {{{
 
     backward_passes++;
 
-    // TODO: depending on activation function
-    float neuron_error = error * potential * (1 - potential);
+    update_gradients();
 
-    // when all errors are received -> compute gradients for each
-    // weight -> sum in *gradients
-    for (uint i=0; i < N_POTENTIALS; i++) {
-      gradients[i] += neuron_error * potentials[i];
-    }
-    // special case: bias neuron has potential := 1
-    gradients[N_POTENTIALS] += neuron_error;
-
-    log_info("gradient for bias: %f", gradients[N_POTENTIALS]);
-
-    // if batch_size full -> update weights with learning_rate * gradient
-    // also update next_layer_weights if applicable
-    if (backward_passes == batch_size) {
-      for (uint i=0; i < n_weights; i++) {
-        weights[i] -= 0.01 * gradients[i];
-      }
-
-      if (!is_output_layer) {
-        for (uint i=0; i < n_errors; i++) {
-          next_layer_weights[i] -= 0.01 * next_layer_gradients[i];
-        }
-      }
-
+    if (BATCH_COMPLETE) {
+      update_weights();
       reset_batch();
-      // WHY TF NOT WORKING in on exit??
-      on_exit_extract_weights();
+      // TODO: get rid of this call (simulation_exit not possible so
+      // get information from spiDNN side (epochs, epochs_len,...))
+      sark_mem_cpy((void *)weights_sdram, (void *)weights,
+        sizeof(float) * n_weights);
     }
 
     send(backward_key, neuron_error);
@@ -499,9 +487,9 @@ void update(uint ticks, uint b) { // {{{
     reset();
   }
 #endif
-} // }}}
+}
 
-void c_main(void) { // {{{
+void c_main(void) {
   base_init();
 
   instance_init();
@@ -520,4 +508,4 @@ void c_main(void) { // {{{
   // start execution
   log_info("\nStarting simulation\n");
   simulation_run();
-} // }}}
+}

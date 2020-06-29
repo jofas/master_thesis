@@ -31,6 +31,7 @@ class Dense(AbstractLayerBase):
         biases = kwargs["biases"]
         trainable = kwargs["trainable"]
         batch_size = kwargs["batch_size"]
+        learning_rate = kwargs["learning_rate"]
 
         assert weights.shape[1] == self.n_neurons
         assert biases.shape[0] == self.n_neurons
@@ -40,10 +41,12 @@ class Dense(AbstractLayerBase):
 
             if self.activation == "softmax":
                 neuron = SoftmaxPerceptron(
-                    self, i, weight_vector, trainable, batch_size)
+                    self, i, weight_vector, trainable, batch_size,
+                    learning_rate)
             else:
                 neuron = Perceptron(
-                    self, i, weight_vector, trainable, batch_size)
+                    self, i, weight_vector, trainable, batch_size,
+                    learning_rate)
 
             self.neurons.append(neuron)
 

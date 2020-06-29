@@ -11,6 +11,7 @@ from copy import deepcopy
 
 EPOCHS = 50
 BATCH_SIZE = 4
+LEARNING_RATE = 0.1
 
 def test_training():
     X = np.array([[.0, .0], [.0, 1.], [1., .0], [1., 1.]])
@@ -18,26 +19,29 @@ def test_training():
 
     kmodel = Sequential()
     kmodel.add(KDense(16, activation="sigmoid", input_shape=(2,)))
-    kmodel.add(KDense(32, activation="sigmoid"))
+    kmodel.add(KDense(16, activation="sigmoid"))
     kmodel.add(KDense(1, activation="sigmoid"))
-    kmodel.compile(loss="mean_squared_error", optimizer=SGD())
+    kmodel.compile(loss="mean_squared_error", optimizer=SGD(
+        learning_rate=LEARNING_RATE))
 
     model = Model().add(Input(2)) \
                    .add(Dense(16, activation="sigmoid")) \
-                   .add(Dense(32, activation="sigmoid")) \
+                   .add(Dense(16, activation="sigmoid")) \
                    .add(Dense(1, activation="sigmoid"))
 
     model.set_weights(kmodel.get_weights())
 
-    #unfitted_weights = deepcopy(model.get_weights())
+    unfitted_weights = deepcopy(model.get_weights())
 
-    model.fit(X, y, "mean_squared_error", epochs=EPOCHS, batch_size=BATCH_SIZE)
+    model.fit(X, y, "mean_squared_error", epochs=EPOCHS,
+              batch_size=BATCH_SIZE, learning_rate=LEARNING_RATE)
     kmodel.fit(X, y, epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=False)
 
     w = model.get_weights()
     w_ = kmodel.get_weights()
 
     error = [x - x_ for x, x_ in zip(w, w_)]
+    update = [x - x_ for x, x_ in zip(w, unfitted_weights)]
 
     #print(unfitted_weights)
     #print(w)
@@ -46,6 +50,8 @@ def test_training():
 
     for e in error:
         assert np.amax(np.absolute(e)) < 0.075
+    for u in update:
+        assert np.amax(np.absolute(u)) > 0.0
 
     """
     p = model.predict(X)
