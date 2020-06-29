@@ -47,8 +47,8 @@ Work Plan
 +---------------+----+----+----+----+----+----+----+----+----+----+
 
 
-Optimizations
--------------
+Optimizations and features
+--------------------------
 
 * custom injectors which support partitions
 
@@ -60,11 +60,14 @@ Optimizations
 
 * populations or some other mechanism to combine neurons (saving cores)
 
-* VariableSDRAM static alternative?
-
 * optimizer interface
 
-* loss into perceptron (saving cores)
+* loss into perceptron (saving cores but higher complexity)
+
+* monitor/sync core for each layer (simplifying interface)
+
+* weight extraction (dtcm -> sdram) only when training is finished,
+  not after each batch (speed)
 
 
 Links
