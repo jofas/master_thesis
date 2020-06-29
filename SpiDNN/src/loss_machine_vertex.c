@@ -49,10 +49,6 @@ void receive_y(uint key, float payload) {
 }
 
 void reset() {
-  for (uint i=0; i < K; i++) {
-    received_potentials[i] = false;
-  }
-
   received_potentials_counter = 0;
   received_y_counter = 0;
 }

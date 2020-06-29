@@ -32,7 +32,6 @@ uint cpsr = 0;
 
 
 float *potentials;
-bool *received_potentials;
 uint received_potentials_counter;
 uint min_pre_key;
 
@@ -50,15 +49,8 @@ void send(uint key, void *payload) {
 void receive_potential_from_pre_layer(uint key, float payload) {
   uint idx = key - min_pre_key;
 
-  if (received_potentials[idx]) {
-    log_error("received potential too fast. Last input wasn't
-               properly processed yet - exiting!");
-    rt_error(RTE_SWERR);
-  } else {
-    potentials[idx] = payload;
-    received_potentials[idx] = true;
-    received_potentials_counter++;
-  }
+  potentials[idx] = payload;
+  received_potentials_counter++;
 }
 
 static bool init_simulation_and_data_spec(uint32_t *timer_period) {
@@ -94,7 +86,6 @@ void base_init() {
   __init_base_params(&timer_offset, &n_potentials, &min_pre_key);
 
   potentials = (float *)malloc(sizeof(float) * n_potentials);
-  received_potentials = (bool *)malloc(sizeof(bool) * n_potentials);
 
   spin1_set_timer_tick_and_phase(timer_period, timer_offset);
 }

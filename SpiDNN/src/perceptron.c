@@ -24,10 +24,6 @@ void reset() {
   potential = .0;
   received_potentials_counter = 0;
 
-  for (uint i=0; i < N_POTENTIALS; i++) {
-    received_potentials[i] = false;
-  }
-
 #ifdef softmax
   softmax_denominator = .0;
   received_softmax_counter = 0;
@@ -122,9 +118,6 @@ void update(uint ticks, uint b) {
   time++;
 
 #ifdef softmax
-  // TODO: current implementation does not support single neuron
-  //       softmax layer ... change to sending potential to self as
-  //       well
   if (SOFTMAX_PASS_COMPLETE) {
     potential = potential / softmax_denominator;
     send(forward_key, (void *)&potential);
