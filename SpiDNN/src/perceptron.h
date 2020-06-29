@@ -70,8 +70,6 @@ uint n_weights;
 float *weights;
 
 float *potentials;
-bool  *received_potentials;
-uint received_potentials_counter;
 
 float potential;
 

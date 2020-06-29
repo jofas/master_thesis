@@ -23,7 +23,6 @@ typedef struct params_region {
 
 /* global variables */
 
-uint min_pre_key;
 uint min_y_key;
 
 uint loss_function_id;
@@ -32,12 +31,8 @@ uint K;
 
 uint *keys;
 
-float *potentials;
-bool *received_potentials;
-
 float *y;
 
-uint received_potentials_counter;
 uint received_y_counter;
 
 params_region_t *params_sdram;
