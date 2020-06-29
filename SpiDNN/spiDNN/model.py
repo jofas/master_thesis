@@ -206,7 +206,6 @@ class Model:
 
         def injector_callback(label, conn):
             for x in X:
-                print("predict: injecting item")
                 conn.send_event_with_payload(
                     label,
                     0,

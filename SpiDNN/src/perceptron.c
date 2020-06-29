@@ -193,7 +193,7 @@ void send(uint key, float payload) {
   uint send_bytes;
   sark_mem_cpy((void *)&send_bytes, &payload, sizeof(uint));
 
-  log_info("sending value: %f with key: %d", payload, key);
+  //log_info("sending value: %f with key: %d", payload, key);
 
   while (!spin1_send_mc_packet(key, send_bytes, WITH_PAYLOAD)) {
     spin1_delay_us(1);
@@ -394,7 +394,7 @@ void activate() {
 }
 
 void receive(uint key, float payload) {
-  log_info("received potential from %d: %f", key, payload);
+  //log_info("received potential from %d: %f", key, payload);
 
 #ifdef softmax
   // min_pre_key will always be bigger than min_softmax_key, because
