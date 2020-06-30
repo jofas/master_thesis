@@ -10,6 +10,8 @@ typedef enum regions_e {
 //! human readable definitions of the loss functions
 typedef enum loss_functions_e {
   MEAN_SQUARED_ERROR,
+  CATEGORICAL_CROSSENTROPY,
+  BINARY_CROSSENTROPY,
 } loss_functions_e;
 
 //! definitions of each element in the params region
@@ -66,6 +68,18 @@ float compute_loss(uint i) {
     case MEAN_SQUARED_ERROR:
       return potentials[i] - y[i];
 
+    case CATEGORICAL_CROSSENTROPY:
+      /*
+      if (potentials[i] == .0) {
+        log_error("lol wtf what now?");
+        rt_error(RTE_SWERR);
+      }
+      */
+      return - y[i] / potentials[i];
+
+    case BINARY_CROSSENTROPY:
+      return - y[i] / potentials[i] + (1 - y[i]) / (1 - potentials[i]);
+
     default:
       log_error("Unknown loss function %d - exiting!",
         loss_function_id);
@@ -81,7 +95,7 @@ void update(uint ticks, uint b) {
 
   if ((received_potentials_counter == K) && (received_y_counter == K))
   {
-
+    /*
     float loss_ = .0;
     for (uint i=0; i < K; i++) {
       float diff = y[i] - potentials[i];
@@ -89,6 +103,18 @@ void update(uint ticks, uint b) {
     }
     loss_ = loss_ / (float) K;
     log_info("loss: %f", loss_);
+    */
+    /*
+    if (loss_function_id == CATEGORICAL_CROSSENTROPY) {
+      float denom = .0;
+      for (uint i=0; i < K; i++) {
+        denom += potentials[i];
+      }
+      for (uint i=0; i < K; i++) {
+        potentials[i] = potentials[i] / denom;
+      }
+    }
+    */
 
     float loss_i;
     for (uint i=0; i < K; i++) {
