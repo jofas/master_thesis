@@ -42,25 +42,24 @@ void receive(uint key, float payload) {
   // and backward partitions
   if (key < min_pre_key) {
     receive_softmax(payload);
-  } else
-#elif defined trainable
+    return;
+  }
+#endif
+
+#ifdef trainable
   // min_next_key will always be bigger than min_pre_key, because
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
     receive_backward(key, payload);
-  } else
-#endif
-  {
-    if (received_potentials_counter == 0) {
-      potential = .0;
-    }
-    receive_forward(key, payload);
-#ifndef softmax
-  //log_error("received shit from softmax: %f", payload);
-  //rt_error(RTE_SWERR);
-#endif
+    return;
   }
+#endif
+
+  if (received_potentials_counter == 0) {
+    potential = .0;
+  }
+  receive_forward(key, payload);
 }
 
 void update(uint ticks, uint b) {
@@ -94,11 +93,11 @@ void update(uint ticks, uint b) {
 
     if (BATCH_COMPLETE) {
       update_weights();
-      reset_batch();
       // TODO: get rid of this call (simulation_exit not possible so
       // get information from spiDNN side (epochs, epochs_len,...))
       sark_mem_cpy((void *)weights_sdram, (void *)weights,
         sizeof(float) * n_weights);
+      reset_batch();
     }
 
     send(backward_key, (void *)&neuron_error);

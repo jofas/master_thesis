@@ -68,7 +68,6 @@ void generate_neuron_error() {
 
     case SIGMOID:
       neuron_error = error * potential * (1 - potential);
-      //log_info("neuron_error: %f", neuron_error);
       break;
 
     case TANH:

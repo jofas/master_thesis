@@ -18,21 +18,19 @@ def test_training():
     y = np.array([[.0], [1.], [1.], [.0]])
 
     kmodel = Sequential()
-    #kmodel.add(KDense(16, activation="tanh", input_shape=(2,)))
-    #kmodel.add(KDense(16, activation="relu"))
-    kmodel.add(KDense(3, activation="tanh", input_shape=(2,)))
-    #kmodel.add(KDense(3, activation="sigmoid"))
+    kmodel.add(KDense(64, activation="relu", input_shape=(2,)))
+    kmodel.add(KDense(64, activation="tanh"))
+    kmodel.add(KDense(64, activation="softmax"))
     kmodel.add(KDense(1, activation="sigmoid"))
 
     kmodel.compile(loss="mean_squared_error", optimizer=SGD(
         learning_rate=LEARNING_RATE))
 
     model = Model().add(Input(2)) \
-                   .add(Dense(3, activation="tanh")) \
+                   .add(Dense(64, activation="relu")) \
+                   .add(Dense(64, activation="tanh")) \
+                   .add(Dense(64, activation="softmax")) \
                    .add(Dense(1, activation="sigmoid"))
-                   #.add(Dense(16, activation="tanh")) \
-                   #.add(Dense(16, activation="relu")) \
-                   #.add(Dense(3, activation="sigmoid")) \
 
     model.set_weights(kmodel.get_weights())
 
@@ -48,15 +46,13 @@ def test_training():
     error = [x - x_ for x, x_ in zip(w, w_)]
     update = [x - x_ for x, x_ in zip(w, unfitted_weights)]
 
-    #print(unfitted_weights)
-    #print(w)
-    #print(w_)
-    #print(error)
-
     for u in update:
         assert np.amax(np.absolute(u)) > 0.0
+
     for e in error:
-        assert np.amax(np.absolute(e)) < 0.075
+        e_max = np.amax(np.absolute(e))
+        print(e_max)
+        assert e_max < 0.1
 
     """
     p = model.predict(X)
