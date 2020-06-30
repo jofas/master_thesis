@@ -33,7 +33,7 @@ class PerceptronDataRegions(Enum):
     SYSTEM = 0
     BASE_PARAMS = 1
     WEIGHTS = 2
-    INSTANCE_PARAMS = 3
+    SOFTMAX_PARAMS = 3
     TRAINABLE_PARAMS = 4
     NEXT_LAYER_WEIGHTS = 5
 
@@ -43,15 +43,15 @@ class AbstractPerceptronBase(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    BASE_PARAMS_DATA_SIZE = 4 * BYTES_PER_WORD
+    BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
     def __init__(
             self, layer, id, weights, trainable, batch_size, learning_rate,
-            executable, instance_params_data_size):
+            executable, softmax_params_data_size = 0):
         self.layer = layer
         self.id = id
 
-        self.instance_params_data_size = instance_params_data_size
+        self.softmax_params_data_size = softmax_params_data_size
 
         self.weights = weights
         self.weight_container_size = len(self.weights) * BYTES_PER_WORD
@@ -100,16 +100,20 @@ class AbstractPerceptronBase(
             self, spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor):
 
-        self._generate_data_regions(spec, machine_time_step, time_scale_factor)
+        # Generate the system data region for simulation requirements
+        generate_system_data_region(
+            spec, PerceptronDataRegions.SYSTEM.value, self,
+            machine_time_step, time_scale_factor)
 
-        self._write_base_params(spec, placement, machine_graph, routing_info)
+        self._generate_and_write_base_params(
+            spec, placement, machine_graph, routing_info)
 
-        self._write_weights(spec)
+        self._generate_and_write_weights(spec)
 
         # needs to be implemented by the inheriting class
         #
         # TODO: in interface
-        self._write_instance_params(
+        self._generate_and_write_softmax_params(
             spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor)
 
@@ -119,31 +123,13 @@ class AbstractPerceptronBase(
 
         spec.end_specification()
 
-    def _generate_data_regions(self, spec, machine_time_step,
-                               time_scale_factor):
-
-        # Generate the system data region for simulation requirements
-        generate_system_data_region(
-            spec, PerceptronDataRegions.SYSTEM.value, self,
-            machine_time_step, time_scale_factor)
-
-        # reserve memory regions
+    def _generate_and_write_base_params(
+            self, spec, placement, machine_graph, routing_info):
         spec.reserve_memory_region(
             region=PerceptronDataRegions.BASE_PARAMS.value,
             size=self.BASE_PARAMS_DATA_SIZE,
             label="base_params")
 
-        spec.reserve_memory_region(
-            region=PerceptronDataRegions.WEIGHTS.value,
-            size=self.weight_container_size,
-            label="weights")
-
-        spec.reserve_memory_region(
-            region=PerceptronDataRegions.INSTANCE_PARAMS.value,
-            size=self.instance_params_data_size,
-            label="instance_params")
-
-    def _write_base_params(self, spec, placement, machine_graph, routing_info):
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.forward_partition))
@@ -160,8 +146,14 @@ class AbstractPerceptronBase(
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
         spec.write_value(len(self.weights))
+        spec.write_value(globals.activations[self.layer.activation])
 
-    def _write_weights(self, spec):
+    def _generate_and_write_weights(self, spec):
+        spec.reserve_memory_region(
+            region=PerceptronDataRegions.WEIGHTS.value,
+            size=self.weight_container_size,
+            label="weights")
+
         spec.switch_write_focus(
             region=PerceptronDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
@@ -235,7 +227,7 @@ class AbstractPerceptronBase(
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
                        + self.BASE_PARAMS_DATA_SIZE
                        + self.weight_container_size
-                       + self.instance_params_data_size
+                       + self.softmax_params_data_size
                        + self.trainable_params_data_size
                        + self.next_layer_weights_container_size)
 
@@ -257,52 +249,44 @@ class AbstractPerceptronBase(
 
         return result
 
+    def _generate_and_write_softmax_params(
+            self, spec, placement, machine_graph, routing_info, iptags,
+            reverse_iptags, machine_time_step, time_scale_factor):
+        return
+
     def __repr__(self):
         return self.label
 
 
 class Perceptron(AbstractPerceptronBase):
-    INSTANCE_PARAMS_DATA_SIZE = 1 * BYTES_PER_WORD
     EXECUTABLE = "perceptron.aplx"
 
     def __init__(
             self, layer, id, weights, trainable, batch_size, learning_rate):
         super(Perceptron, self).__init__(
             layer, id, weights, trainable, batch_size, learning_rate,
-            self.EXECUTABLE, self.INSTANCE_PARAMS_DATA_SIZE)
+            self.EXECUTABLE)
 
-        self._activation_function_id = globals.activations[layer.activation]
-
-    def _write_instance_params(
-            self, spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor):
-
-        # check got right number of keys and edges going into me
-        partitions = \
-            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
-
-        if not self.trainable and not len(partitions) == 1:
-            raise ConfigurationException(
-                "Can only handle forward partition.")
-
-        spec.switch_write_focus(
-            region=PerceptronDataRegions.INSTANCE_PARAMS.value)
-        spec.write_value(self._activation_function_id)
-
-
+# TODO: do everything in one big perceptron class
+#       remove min_layer_key (unused)
 class SoftmaxPerceptron(AbstractPerceptronBase):
-    INSTANCE_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
+    SOFTMAX_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
     EXECUTABLE = "softmax_perceptron.aplx"
 
     def __init__(
             self, layer, id, weights, trainable, batch_size, learning_rate):
         super(SoftmaxPerceptron, self).__init__(
             layer, id, weights, trainable, batch_size, learning_rate,
-            self.EXECUTABLE, self.INSTANCE_PARAMS_DATA_SIZE)
+            self.EXECUTABLE, self.SOFTMAX_PARAMS_DATA_SIZE)
 
-    def _write_instance_params(
+    def _generate_and_write_softmax_params(
             self, spec, placement, machine_graph, routing_info, iptags,
             reverse_iptags, machine_time_step, time_scale_factor):
+
+        spec.reserve_memory_region(
+            region=PerceptronDataRegions.SOFTMAX_PARAMS.value,
+            size=self.softmax_params_data_size,
+            label="softmax_params")
 
         # check got right number of keys and edges going into me
         partitions = \
@@ -323,7 +307,7 @@ class SoftmaxPerceptron(AbstractPerceptronBase):
             self, globals.softmax_partition)
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.INSTANCE_PARAMS.value)
+            region=PerceptronDataRegions.SOFTMAX_PARAMS.value)
         spec.write_value(softmax_key)
         spec.write_value(min_softmax_key)
         spec.write_value(self.layer.n_neurons)

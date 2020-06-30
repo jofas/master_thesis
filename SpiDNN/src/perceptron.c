@@ -1,14 +1,14 @@
 #ifdef trainable
 #include "trainable.h"
+#elif defined softmax
+#include "softmax.h"
 #else
 #include "perceptron.h"
 #endif
 
 void activate() {
   generate_potential();
-#ifdef softmax
-  potential = exp(potential);
-#else
+
   switch (activation_function_id) {
     case IDENTITY:
       break;
@@ -25,12 +25,15 @@ void activate() {
       potential = tanh(potential);
       break;
 
+    case SOFTMAX:
+      potential = exp(potential);
+      break;
+
     default:
       log_error("Unknown activation function %d - exiting!",
         activation_function_id);
       rt_error(RTE_SWERR);
   }
-#endif
 }
 
 void receive(uint key, float payload) {
@@ -108,9 +111,11 @@ void update(uint ticks, uint b) {
 void c_main(void) {
   base_init();
 
-  instance_init();
-
   weights_init();
+
+#ifdef softmax
+  softmax_init();
+#endif
 
 #ifdef trainable
   trainable_init();

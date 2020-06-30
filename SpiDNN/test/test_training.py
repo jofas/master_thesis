@@ -9,7 +9,7 @@ from keras.optimizers import SGD
 
 from copy import deepcopy
 
-EPOCHS = 100
+EPOCHS = 50
 BATCH_SIZE = 4
 LEARNING_RATE = 0.1
 

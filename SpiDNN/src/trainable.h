@@ -1,6 +1,21 @@
+#ifdef softmax
+#include "softmax.h"
+#else
 #include "perceptron.h"
+#endif
 
 #define BATCH_COMPLETE backward_passes == batch_size
+
+
+//! definitions of each element in the trainable_params region
+typedef struct trainable_params_region {
+  uint32_t batch_size;
+  uint32_t backward_key;
+  uint32_t min_next_key;
+  uint32_t n_errors;
+  uint32_t is_output_layer;
+  float learning_rate;
+} trainable_params_region_t;
 
 
 /* global variables */
@@ -54,9 +69,6 @@ bool backward_pass_complete() {
 }
 
 void generate_neuron_error() {
-#ifdef softmax
-  neuron_error = error * potential * (1 - potential);
-#else
   switch (activation_function_id) {
     case IDENTITY:
       neuron_error = error;
@@ -74,12 +86,15 @@ void generate_neuron_error() {
       neuron_error = error * (1 - potential * potential);
       break;
 
+    case SOFTMAX:
+      neuron_error = error * potential * (1 - potential);
+      break;
+
     default:
       log_error("Unknown activation function %d - exiting!",
         activation_function_id);
       rt_error(RTE_SWERR);
   }
-#endif
 }
 
 void update_gradients() {
