@@ -14,17 +14,17 @@ def test_inference():
     X = np.random.rand(500, N)
 
     kmodel = Sequential()
-    kmodel.add(KDense(150, activation="relu", input_shape=(N,)))
-    kmodel.add(KDense(150, activation="softmax"))
-    kmodel.add(KDense(150, activation="tanh"))
-    kmodel.add(KDense(150, activation="sigmoid"))
+    kmodel.add(KDense(100, activation="relu", input_shape=(N,)))
+    kmodel.add(KDense(100, activation="softmax"))
+    kmodel.add(KDense(300, activation="tanh"))
+    kmodel.add(KDense(100, activation="sigmoid"))
     kmodel.add(KDense(100, activation="softmax"))
 
     model = Model().add(Input(N)) \
-                   .add(Dense(150, activation="relu")) \
-                   .add(Dense(150, activation="softmax")) \
-                   .add(Dense(150, activation="tanh")) \
-                   .add(Dense(150, activation="sigmoid")) \
+                   .add(Dense(100, activation="relu")) \
+                   .add(Dense(100, activation="softmax")) \
+                   .add(Dense(300, activation="tanh")) \
+                   .add(Dense(100, activation="sigmoid")) \
                    .add(Dense(100, activation="softmax"))
 
     model.set_weights_from_keras(kmodel.weights)
