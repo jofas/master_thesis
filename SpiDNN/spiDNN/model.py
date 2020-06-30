@@ -109,6 +109,8 @@ class Model:
 
         gfe.run()
 
+        # race condition when writing weights back to sdram
+        time.sleep(5)
         self._extract_weights()
 
         gfe.stop()

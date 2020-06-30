@@ -24,7 +24,7 @@ typedef enum callback_priorities {
 
 const uint SYSTEM_REGION=0;
 
-static uint32_t time = UINT32_MAX;
+static uint32_t spiDNN_time;
 data_specification_metadata_t *data_spec_meta = NULL;
 
 // value for turning on and off interrupts
@@ -96,6 +96,8 @@ void base_init() {
   __init_base_params(&timer_offset, &n_potentials, &min_pre_key);
 
   potentials = (float *)malloc(sizeof(float) * n_potentials);
+
+  spiDNN_time = UINT32_MAX;
 
   spin1_set_timer_tick_and_phase(timer_period, timer_offset);
 }

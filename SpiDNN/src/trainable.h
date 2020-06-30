@@ -53,9 +53,40 @@ bool backward_pass_complete() {
   return false;
 }
 
-void update_gradients() {
-  // TODO: depending on activation function
+void generate_neuron_error() {
+#ifdef softmax
   neuron_error = error * potential * (1 - potential);
+#else
+  switch (activation_function_id) {
+    case IDENTITY:
+      neuron_error = error;
+      break;
+
+    case RELU:
+      neuron_error = potential > .0 ? error : .0;
+      break;
+
+    case SIGMOID:
+      neuron_error = error * potential * (1 - potential);
+      //log_info("neuron_error: %f", neuron_error);
+      break;
+
+    case TANH:
+      neuron_error = error * (1 - potential * potential);
+      break;
+
+    default:
+      log_error("Unknown activation function %d - exiting!",
+        activation_function_id);
+      rt_error(RTE_SWERR);
+  }
+#endif
+}
+
+void update_gradients() {
+  generate_neuron_error();
+  // TODO: depending on activation function
+  //neuron_error = error * potential * (1 - potential);
 
   // when all errors are received -> compute gradients for each
   // weight -> sum in *gradients

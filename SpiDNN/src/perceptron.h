@@ -75,6 +75,23 @@ float *weights_sdram;
 base_params_region_t *base_params_sdram;
 
 
+/* instance variables */
+#ifdef softmax
+  softmax_params_region_t *softmax_params_sdram;
+
+  uint softmax_key;
+  uint min_softmax_key;
+  uint softmax_layer_size;
+
+  float softmax_denominator;
+  uint received_softmax_counter = 0;
+#else
+  perceptron_params_region_t *perceptron_params_sdram;
+
+  uint activation_function_id;
+#endif
+
+
 /* functions */
 
 void generate_potential() {
@@ -82,6 +99,23 @@ void generate_potential() {
     potential += potentials[i] * weights[i];
   }
   potential += BIAS;
+}
+
+void instance_init() {
+#ifdef softmax
+  softmax_params_sdram =
+    data_specification_get_region(INSTANCE_PARAMS, data_spec_meta);
+
+  softmax_key = softmax_params_sdram->key;
+  min_softmax_key = softmax_params_sdram->min_layer_key;
+  softmax_layer_size = softmax_params_sdram->layer_size;
+#else
+  perceptron_params_sdram =
+    data_specification_get_region(INSTANCE_PARAMS, data_spec_meta);
+
+  activation_function_id =
+    perceptron_params_sdram->activation_function_id;
+#endif
 }
 
 void weights_init() {
@@ -92,6 +126,27 @@ void weights_init() {
   sark_mem_cpy((void *)weights, (void *)weights_sdram,
     sizeof(float) * n_weights);
 }
+
+
+/* additional softmax functions */
+#ifdef softmax
+void receive_softmax(float payload) {
+  if (received_softmax_counter == 0) {
+    softmax_denominator = .0;
+  }
+  softmax_denominator += payload;
+  received_softmax_counter++;
+}
+
+bool softmax_pass_complete() {
+  if (received_softmax_counter == softmax_layer_size) {
+    received_softmax_counter = 0;
+    return true;
+  }
+  return false;
+}
+#endif
+
 
 /* function which has to be implemented by a machine vertex including
  * spiDNN.h */

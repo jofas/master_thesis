@@ -18,16 +18,21 @@ def test_training():
     y = np.array([[.0], [1.], [1.], [.0]])
 
     kmodel = Sequential()
-    kmodel.add(KDense(16, activation="sigmoid", input_shape=(2,)))
-    kmodel.add(KDense(16, activation="sigmoid"))
+    #kmodel.add(KDense(16, activation="tanh", input_shape=(2,)))
+    #kmodel.add(KDense(16, activation="relu"))
+    kmodel.add(KDense(3, activation="tanh", input_shape=(2,)))
+    #kmodel.add(KDense(3, activation="sigmoid"))
     kmodel.add(KDense(1, activation="sigmoid"))
+
     kmodel.compile(loss="mean_squared_error", optimizer=SGD(
         learning_rate=LEARNING_RATE))
 
     model = Model().add(Input(2)) \
-                   .add(Dense(16, activation="sigmoid")) \
-                   .add(Dense(16, activation="sigmoid")) \
+                   .add(Dense(3, activation="tanh")) \
                    .add(Dense(1, activation="sigmoid"))
+                   #.add(Dense(16, activation="tanh")) \
+                   #.add(Dense(16, activation="relu")) \
+                   #.add(Dense(3, activation="sigmoid")) \
 
     model.set_weights(kmodel.get_weights())
 
@@ -48,10 +53,10 @@ def test_training():
     #print(w_)
     #print(error)
 
-    for e in error:
-        assert np.amax(np.absolute(e)) < 0.075
     for u in update:
         assert np.amax(np.absolute(u)) > 0.0
+    for e in error:
+        assert np.amax(np.absolute(e)) < 0.075
 
     """
     p = model.predict(X)

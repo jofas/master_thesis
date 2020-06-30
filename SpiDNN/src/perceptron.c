@@ -4,58 +4,6 @@
 #include "perceptron.h"
 #endif
 
-// instance variables
-#ifdef softmax
-  softmax_params_region_t *softmax_params_sdram;
-
-  uint softmax_key;
-  uint min_softmax_key;
-  uint softmax_layer_size;
-
-  float softmax_denominator;
-  uint received_softmax_counter = 0;
-#else
-  perceptron_params_region_t *perceptron_params_sdram;
-
-  uint activation_function_id;
-#endif
-
-// additional softmax functions
-#ifdef softmax
-void receive_softmax(float payload) {
-  if (received_softmax_counter == 0) {
-    softmax_denominator = .0;
-  }
-  softmax_denominator += payload;
-  received_softmax_counter++;
-}
-
-bool softmax_pass_complete() {
-  if (received_softmax_counter == softmax_layer_size) {
-    received_softmax_counter = 0;
-    return true;
-  }
-  return false;
-}
-#endif
-
-void instance_init() {
-#ifdef softmax
-  softmax_params_sdram =
-    data_specification_get_region(INSTANCE_PARAMS, data_spec_meta);
-
-  softmax_key = softmax_params_sdram->key;
-  min_softmax_key = softmax_params_sdram->min_layer_key;
-  softmax_layer_size = softmax_params_sdram->layer_size;
-#else
-  perceptron_params_sdram =
-    data_specification_get_region(INSTANCE_PARAMS, data_spec_meta);
-
-  activation_function_id =
-    perceptron_params_sdram->activation_function_id;
-#endif
-}
-
 void activate() {
   generate_potential();
 #ifdef softmax
@@ -108,6 +56,10 @@ void receive(uint key, float payload) {
       potential = .0;
     }
     receive_forward(key, payload);
+#ifndef softmax
+  //log_error("received shit from softmax: %f", payload);
+  //rt_error(RTE_SWERR);
+#endif
   }
 }
 
@@ -115,12 +67,14 @@ void update(uint ticks, uint b) {
   use(b);
   use(ticks);
 
-  time++;
+  spiDNN_time++;
 
 #ifdef softmax
   if (softmax_pass_complete()) {
     potential = potential / softmax_denominator;
     send(forward_key, (void *)&potential);
+    //log_error("sending shit: %f", potential);
+    //rt_error(RTE_SWERR);
   }
 #endif
 

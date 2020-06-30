@@ -33,21 +33,13 @@ uint *keys;
 
 float *y;
 
-uint received_y_counter;
+uint received_y_counter = 0;
 
 params_region_t *params_sdram;
 uint *keys_sdram;
 
 
 /* functions */
-
-bool y_pass_complete() {
-  if (received_y_counter == K) {
-    received_y_counter = 0;
-    return true;
-  }
-  return false;
-}
 
 void receive_y(uint key, float payload) {
   uint idx = key - min_y_key;
@@ -64,8 +56,12 @@ void receive(uint key, float payload) {
   // y partition by the toolchain.
   if (key >= min_y_key) {
     receive_y(key, payload);
+    log_error("received shit from y: %f", payload);
+    //rt_error(RTE_SWERR);
   } else {
     receive_forward(key, payload);
+    log_error("received forward: %d, %d", received_potentials_counter, K);
+    //rt_error(RTE_SWERR);
   }
 }
 
@@ -85,10 +81,25 @@ void update(uint ticks, uint b) {
   use(b);
   use(ticks);
 
-  time++;
+  spiDNN_time++;
+  log_error("hello from update %d", spiDNN_time);
+  /*
+  if (received_y_counter == K) {
+    log_error("received_potentials_counter: %d", received_potentials_counter);
+    rt_error(RTE_SWERR);
+  }
+  if (received_potentials_counter == K) {
+    log_error("received_y_counter: %d", received_y_counter);
+    rt_error(RTE_SWERR);
+  }
+  */
 
-  if (forward_pass_complete() && y_pass_complete()) {
-    /*
+  if ((received_potentials_counter == K) && (received_y_counter == K))
+  {
+
+    //log_error("came till backward pass in softmax");
+    //rt_error(RTE_SWERR);
+
     float loss_ = .0;
     for (uint i=0; i < K; i++) {
       float diff = y[i] - potentials[i];
@@ -96,13 +107,15 @@ void update(uint ticks, uint b) {
     }
     loss_ = loss_ / (float) K;
     log_info("loss: %f", loss_);
-    */
 
     float loss_i;
     for (uint i=0; i < K; i++) {
       loss_i = compute_loss(i);
       send(keys[i], (void *)&loss_i);
     }
+
+    received_y_counter = 0;
+    received_potentials_counter = 0;
   }
 }
 
