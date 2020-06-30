@@ -59,11 +59,11 @@ void update_gradients() {
 
   // when all errors are received -> compute gradients for each
   // weight -> sum in *gradients
-  for (uint i=0; i < N_POTENTIALS; i++) {
+  for (uint i=0; i < n_potentials; i++) {
     gradients[i] += neuron_error * potentials[i];
   }
   // special case: bias neuron has potential := 1
-  gradients[N_POTENTIALS] += neuron_error;
+  gradients[n_potentials] += neuron_error;
 }
 
 void update_weights() {

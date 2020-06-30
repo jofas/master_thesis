@@ -2,9 +2,7 @@
 
 #define BIAS weights[n_weights - 1]
 #define N_POTENTIALS n_weights - 1
-#define FORWARD_PASS_COMPLETE received_potentials_counter == N_POTENTIALS
-#define SOFTMAX_PASS_COMPLETE received_softmax_counter == softmax_layer_size
-#define FIRST_SOFTMAX_RECEIVE received_softmax_counter == 0
+
 
 /* structs and enums */
 
@@ -80,10 +78,9 @@ base_params_region_t *base_params_sdram;
 /* functions */
 
 void generate_potential() {
-  for (uint i = 0; i < N_POTENTIALS; i++) {
+  for (uint i = 0; i < n_potentials; i++) {
     potential += potentials[i] * weights[i];
   }
-
   potential += BIAS;
 }
 
@@ -107,6 +104,6 @@ void __init_base_params(
   n_weights = base_params_sdram->n_weights;
 
   *timer_offset = base_params_sdram->timer_offset;
-  *n_potentials = N_POTENTIALS;
+  *n_potentials = n_weights - 1;
   *min_pre_key = base_params_sdram->min_pre_key;
 }
