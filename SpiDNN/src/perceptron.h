@@ -4,7 +4,7 @@
 #define N_POTENTIALS n_weights - 1
 #define FORWARD_PASS_COMPLETE received_potentials_counter == N_POTENTIALS
 #define SOFTMAX_PASS_COMPLETE received_softmax_counter == softmax_layer_size
-
+#define FIRST_SOFTMAX_RECEIVE received_softmax_counter == 0
 
 /* structs and enums */
 
@@ -99,7 +99,7 @@ void weights_init() {
 /* function which has to be implemented by a machine vertex including
  * spiDNN.h */
 void __init_base_params(
-    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key)
+    uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key)
 {
   base_params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
 

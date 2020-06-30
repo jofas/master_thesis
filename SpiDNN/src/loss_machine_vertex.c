@@ -41,6 +41,14 @@ uint *keys_sdram;
 
 /* functions */
 
+bool y_pass_complete() {
+  if (received_y_counter == K) {
+    received_y_counter = 0;
+    return true;
+  }
+  return false;
+}
+
 void receive_y(uint key, float payload) {
   uint idx = key - min_y_key;
 
@@ -48,13 +56,8 @@ void receive_y(uint key, float payload) {
   received_y_counter++;
 }
 
-void reset() {
-  received_potentials_counter = 0;
-  received_y_counter = 0;
-}
-
 void receive(uint key, float payload) {
-  log_info("received potential from %d: %f", key, payload);
+  //log_info("received potential from %d: %f", key, payload);
 
   // This works because min_y_key is guaranteed to be bigger than
   // min_pre_key, because the forward partition is touched before the
@@ -62,7 +65,7 @@ void receive(uint key, float payload) {
   if (key >= min_y_key) {
     receive_y(key, payload);
   } else {
-    receive_potential_from_pre_layer(key, payload);
+    receive_forward(key, payload);
   }
 }
 
@@ -84,9 +87,8 @@ void update(uint ticks, uint b) {
 
   time++;
 
-  if ((received_potentials_counter == K) &&
-      (received_y_counter == K))
-  {
+  if (forward_pass_complete() && y_pass_complete()) {
+    /*
     float loss_ = .0;
     for (uint i=0; i < K; i++) {
       float diff = y[i] - potentials[i];
@@ -94,13 +96,13 @@ void update(uint ticks, uint b) {
     }
     loss_ = loss_ / (float) K;
     log_info("loss: %f", loss_);
+    */
 
     float loss_i;
     for (uint i=0; i < K; i++) {
       loss_i = compute_loss(i);
       send(keys[i], (void *)&loss_i);
     }
-    reset();
   }
 }
 
@@ -123,8 +125,6 @@ void c_main(void) {
   spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
   spin1_callback_on(TIMER_TICK, update, TIMER);
 
-  reset();
-
   log_info("\nStarting simulation\n");
   simulation_run();
 }
@@ -132,7 +132,7 @@ void c_main(void) {
 /* function which has to be implemented by a machine vertex including
  * spiDNN.h */
 void __init_base_params(
-    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key)
+    uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key)
 {
   params_sdram = data_specification_get_region(PARAMS, data_spec_meta);
 

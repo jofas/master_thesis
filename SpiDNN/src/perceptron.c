@@ -13,27 +13,31 @@
   uint softmax_layer_size;
 
   float softmax_denominator;
-  uint received_softmax_counter;
+  uint received_softmax_counter = 0;
 #else
   perceptron_params_region_t *perceptron_params_sdram;
 
   uint activation_function_id;
 #endif
 
-void reset() {
-  potential = .0;
-  received_potentials_counter = 0;
-
+// additional softmax functions
 #ifdef softmax
-  softmax_denominator = .0;
-  received_softmax_counter = 0;
-#endif
-
-#ifdef trainable
-  error = .0;
-  received_errors_counter = 0;
-#endif
+void receive_softmax(float payload) {
+  if (received_softmax_counter == 0) {
+    softmax_denominator = .0;
+  }
+  softmax_denominator += payload;
+  received_softmax_counter++;
 }
+
+bool softmax_pass_complete() {
+  if (received_softmax_counter == softmax_layer_size) {
+    received_softmax_counter = 0;
+    return true;
+  }
+  return false;
+}
+#endif
 
 void instance_init() {
 #ifdef softmax
@@ -89,25 +93,21 @@ void receive(uint key, float payload) {
   // softmax partitions are touched by the toolchain before forward
   // and backward partitions
   if (key < min_pre_key) {
-    softmax_denominator += payload;
-    received_softmax_counter++;
+    receive_softmax(payload);
   } else
 #elif defined trainable
   // min_next_key will always be bigger than min_pre_key, because
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
-    if (is_output_layer) {
-      error += payload;
-    } else {
-      error += payload * next_layer_weights[key - min_next_key];
-      next_layer_gradients[key - min_next_key] += payload * potential;
-    }
-    received_errors_counter++;
+    receive_backward(key, payload);
   } else
 #endif
   {
-    receive_potential_from_pre_layer(key, payload);
+    if (received_potentials_counter == 0) {
+      potential = .0;
+    }
+    receive_forward(key, payload);
   }
 }
 
@@ -118,44 +118,24 @@ void update(uint ticks, uint b) {
   time++;
 
 #ifdef softmax
-  if (SOFTMAX_PASS_COMPLETE) {
+  if (softmax_pass_complete()) {
     potential = potential / softmax_denominator;
     send(forward_key, (void *)&potential);
-#ifdef trainable
-    received_softmax_counter = 0;
-#else
-    reset();
-#endif
-    return;
   }
 #endif
 
-  if (FORWARD_PASS_COMPLETE) {
+  if (forward_pass_complete()) {
     activate();
 #ifdef softmax
     send(softmax_key, (void *)&potential);
-    // reset so data is not send twice for softmax (update being
-    // executed again before SOFTMAX_PASS_COMPLETE)
-    received_potentials_counter = 0;
-#elif !defined trainable
-    send(forward_key, (void *)&potential);
-    // only reset when a normal perceptron (not softmax) and not
-    // trainable
-    reset();
 #else
     send(forward_key, (void *)&potential);
-    // reset so data is not send twice during forward pass
-    received_potentials_counter = 0;
 #endif
-    return;
   }
 
 #ifdef trainable
-  if (BACKWARD_PASS_COMPLETE) {
-    log_info("backward_pass_complete. Error is: %f", error);
-
+  if (backward_pass_complete()) {
     backward_passes++;
-
     update_gradients();
 
     if (BATCH_COMPLETE) {
@@ -168,8 +148,6 @@ void update(uint ticks, uint b) {
     }
 
     send(backward_key, (void *)&neuron_error);
-
-    reset();
   }
 #endif
 }
@@ -189,8 +167,6 @@ void c_main(void) {
   // register callbacks
   spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
   spin1_callback_on(TIMER_TICK, update, TIMER);
-
-  reset();
 
   log_info("\nStarting simulation\n");
   simulation_run();

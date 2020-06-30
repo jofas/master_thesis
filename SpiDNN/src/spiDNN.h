@@ -10,7 +10,7 @@
 /* function which has to be implemented by a machine vertex including
  * spiDNN.h */
 void __init_base_params(
-    uint32_t *timer_offset, uint32_t *n_potentials, uint32_t *min_pre_key);
+    uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key);
 
 
 //! values for the priority for each callback
@@ -32,8 +32,10 @@ uint cpsr = 0;
 
 
 float *potentials;
-uint received_potentials_counter;
+uint received_potentials_counter = 0;
 uint min_pre_key;
+uint n_potentials;
+
 
 void send(uint key, void *payload) {
   uint send_bytes;
@@ -46,11 +48,19 @@ void send(uint key, void *payload) {
   }
 }
 
-void receive_potential_from_pre_layer(uint key, float payload) {
+void receive_forward(uint key, float payload) {
   uint idx = key - min_pre_key;
 
   potentials[idx] = payload;
   received_potentials_counter++;
+}
+
+bool forward_pass_complete() {
+  if (received_potentials_counter == n_potentials) {
+    received_potentials_counter = 0;
+    return true;
+  }
+  return false;
 }
 
 static bool init_simulation_and_data_spec(uint32_t *timer_period) {
@@ -76,7 +86,7 @@ static bool init_simulation_and_data_spec(uint32_t *timer_period) {
 }
 
 void base_init() {
-  uint32_t timer_period, timer_offset, n_potentials;
+  uint32_t timer_period, timer_offset;
 
   if (!init_simulation_and_data_spec(&timer_period)) {
     log_error("Error in initializing simulation - exiting!");

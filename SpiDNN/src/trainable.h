@@ -1,6 +1,5 @@
 #include "perceptron.h"
 
-#define BACKWARD_PASS_COMPLETE received_errors_counter == n_errors
 #define BATCH_COMPLETE backward_passes == batch_size
 
 
@@ -30,6 +29,29 @@ uint backward_passes;
 
 
 /* functions */
+
+void receive_backward(uint key, float payload) {
+  if (received_errors_counter == 0) {
+    error = .0;
+  }
+
+  if (is_output_layer) {
+    error += payload;
+  } else {
+    error += payload * next_layer_weights[key - min_next_key];
+    next_layer_gradients[key - min_next_key] += payload * potential;
+  }
+
+  received_errors_counter++;
+}
+
+bool backward_pass_complete() {
+  if (received_errors_counter == n_errors) {
+    received_errors_counter = 0;
+    return true;
+  }
+  return false;
+}
 
 void update_gradients() {
   // TODO: depending on activation function
