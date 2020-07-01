@@ -6,7 +6,7 @@
 
 #define BATCH_COMPLETE batch_counter == batch_size \
                        || (backward_passes_counter % epoch_size == 0)
-
+#define FIT_COMPLETE backward_passes_counter == epoch_size * epochs
 
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region {

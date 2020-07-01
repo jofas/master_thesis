@@ -98,10 +98,10 @@ void update(uint ticks, uint b) {
 
     if (BATCH_COMPLETE) {
       update_weights();
-      // TODO: get rid of this call (simulation_exit not possible so
-      // get information from spiDNN side (epochs, epochs_len,...))
-      sark_mem_cpy((void *)weights_sdram, (void *)weights,
-        sizeof(float) * n_weights);
+      if (FIT_COMPLETE) {
+        sark_mem_cpy((void *)weights_sdram, (void *)weights,
+          sizeof(float) * n_weights);
+      }
       reset_batch();
     }
 
