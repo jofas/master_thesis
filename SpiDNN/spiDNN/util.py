@@ -1,18 +1,13 @@
 from pacman.model.routing_info import BaseKeyAndMask
-
 from pacman.model.constraints.key_allocator_constraints import \
     FixedKeyAndMaskConstraint
-
+from data_specification.enums import DataType
 
 import spiDNN.globals as globals
 
-
 import os
-
 from threading import Lock
-
 import struct
-
 import math
 
 
@@ -45,11 +40,19 @@ def float_to_uint32t(flt):
 
 
 class TrainableParams:
+    n_elements = 4
+
     def __init__(self, epochs, epoch_size, batch_size, learning_rate):
         self.epochs = epochs
         self.epoch_size = epoch_size
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+
+    def write_to_spec(self, spec):
+        spec.write_value(self.epochs)
+        spec.write_value(self.epoch_size)
+        spec.write_value(self.batch_size)
+        spec.write_value(self.learning_rate, data_type=DataType.FLOAT_32)
 
 
 class Partition:

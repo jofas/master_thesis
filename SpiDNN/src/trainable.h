@@ -9,11 +9,13 @@
 
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region {
-  uint32_t batch_size;
   uint32_t backward_key;
   uint32_t min_next_key;
   uint32_t n_errors;
   uint32_t is_output_layer;
+  uint32_t epochs;
+  uint32_t epoch_size;
+  uint32_t batch_size;
   float learning_rate;
 } trainable_params_region_t;
 

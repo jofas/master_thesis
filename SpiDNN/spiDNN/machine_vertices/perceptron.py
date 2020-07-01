@@ -29,6 +29,7 @@ import struct
 
 import numpy as np
 
+
 class PerceptronDataRegions(Enum):
     SYSTEM = 0
     BASE_PARAMS = 1
@@ -63,7 +64,8 @@ class Perceptron(
             self.softmax_params_data_size = 0
 
         if self.trainable_params is not None:
-            self.trainable_params_data_size = 6 * BYTES_PER_WORD
+            self.trainable_params_data_size = \
+                (4 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -235,13 +237,13 @@ class Perceptron(
 
         spec.switch_write_focus(
             region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
-        spec.write_value(self.trainable_params.batch_size)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
-        spec.write_value(
-            self.trainable_params.learning_rate, data_type=DataType.FLOAT_32)
+
+        self.trainable_params.write_to_spec(spec)
+
 
     def get_edges_ending_at_vertex_where_partition_name_starts_with(
             self, machine_graph, starts_with_str):
