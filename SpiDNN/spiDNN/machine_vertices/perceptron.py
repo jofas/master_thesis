@@ -45,8 +45,7 @@ class Perceptron(
 
     BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
-    def __init__(
-            self, layer, id, weights, trainable, batch_size, learning_rate):
+    def __init__(self, layer, id, weights, trainable_params):
         executable = "perceptron.aplx"
 
         self.layer = layer
@@ -55,9 +54,7 @@ class Perceptron(
         self.weights = weights
         self.weight_container_size = len(self.weights) * BYTES_PER_WORD
 
-        self.trainable = trainable
-        self.batch_size = batch_size
-        self.learning_rate = learning_rate
+        self.trainable_params = trainable_params
 
         if self.layer.activation == "softmax":
             self.softmax_params_data_size = 2 * BYTES_PER_WORD
@@ -65,10 +62,7 @@ class Perceptron(
         else:
             self.softmax_params_data_size = 0
 
-        if self.trainable:
-            assert self.batch_size is not None
-            assert self.learning_rate is not None
-
+        if self.trainable_params is not None:
             self.trainable_params_data_size = 6 * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
@@ -130,7 +124,7 @@ class Perceptron(
         if self.layer.activation == "softmax":
             self._generate_and_write_softmax_params(spec, routing_info)
 
-        if self.trainable:
+        if self.trainable_params is not None:
             self._generate_and_write_trainable_regions(
                 spec, machine_graph, routing_info)
 
@@ -241,12 +235,13 @@ class Perceptron(
 
         spec.switch_write_focus(
             region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
-        spec.write_value(self.batch_size)
+        spec.write_value(self.trainable_params.batch_size)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
-        spec.write_value(self.learning_rate, data_type=DataType.FLOAT_32)
+        spec.write_value(
+            self.trainable_params.learning_rate, data_type=DataType.FLOAT_32)
 
     def get_edges_ending_at_vertex_where_partition_name_starts_with(
             self, machine_graph, starts_with_str):

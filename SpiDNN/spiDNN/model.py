@@ -76,6 +76,9 @@ class Model:
         if batch_size > len(X):
             batch_size = len(X)
 
+        trainable_params = util.TrainableParams(
+            epochs, len(X), batch_size, learning_rate)
+
         loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K, label="YInjector")
         pong = Extractor("pong")
@@ -86,8 +89,7 @@ class Model:
         loss_layer.init_neurons()
         y_injectors.init_neurons(neurons_next_layer=1)
         pong.init_neurons()
-        self._init_neurons(
-            trainable=True, batch_size=batch_size, learning_rate=learning_rate)
+        self._init_neurons(trainable_params=trainable_params)
 
         self._connect_layers_forward()
 
@@ -122,8 +124,7 @@ class Model:
         for layer in self._layers:
             layer.reset()
 
-    def _init_neurons(
-            self, trainable=False, batch_size=None, learning_rate=None):
+    def _init_neurons(self, trainable_params=None):
         """
         Initializes all Neurons (MachineVertices) in self._layers.
         """
@@ -142,9 +143,7 @@ class Model:
             layer.init_neurons(
                 weights=self.__weights[i],
                 biases=self.__weights[i+1],
-                trainable=trainable,
-                batch_size=batch_size,
-                learning_rate=learning_rate)
+                trainable_params=trainable_params)
             i += 2
 
     def _connect_layers_forward(self):

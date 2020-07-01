@@ -44,6 +44,14 @@ def float_to_uint32t(flt):
     return struct.unpack("I", bts)[0]
 
 
+class TrainableParams:
+    def __init__(self, epochs, epoch_size, batch_size, learning_rate):
+        self.epochs = epochs
+        self.epoch_size = epoch_size
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+
+
 class Partition:
     def __init__(self, identifier):
         self.identifier = identifier

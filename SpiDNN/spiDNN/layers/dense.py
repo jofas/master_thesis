@@ -27,9 +27,7 @@ class Dense(AbstractLayerBase):
     def init_neurons(self, **kwargs):
         weights = kwargs["weights"]
         biases = kwargs["biases"]
-        trainable = kwargs["trainable"]
-        batch_size = kwargs["batch_size"]
-        learning_rate = kwargs["learning_rate"]
+        trainable_params = kwargs["trainable_params"]
 
         assert weights.shape[1] == self.n_neurons
         assert biases.shape[0] == self.n_neurons
@@ -37,9 +35,7 @@ class Dense(AbstractLayerBase):
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
-            neuron = Perceptron(
-                self, i, weight_vector, trainable, batch_size,
-                learning_rate)
+            neuron = Perceptron(self, i, weight_vector, trainable_params)
 
             self.neurons.append(neuron)
 
