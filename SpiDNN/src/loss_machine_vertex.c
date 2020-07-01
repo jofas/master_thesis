@@ -41,6 +41,8 @@ float *y;
 
 uint received_y_counter = 0;
 
+float error;
+
 float loss;
 float overall_loss = .0;
 float average_loss;
@@ -72,16 +74,19 @@ void receive(uint key, float payload) {
   }
 }
 
-float compute_loss(uint i) {
+void compute_error(uint i) {
   switch (loss_function_id) {
     case MEAN_SQUARED_ERROR:
-      return potentials[i] - y[i];
+      error = potentials[i] - y[i];
+      break;
 
     case CATEGORICAL_CROSSENTROPY:
-      return - y[i] / potentials[i];
+      error = -y[i] / potentials[i];
+      break;
 
     case BINARY_CROSSENTROPY:
-      return - y[i] / potentials[i] + (1 - y[i]) / (1 - potentials[i]);
+      error = -y[i] / potentials[i] + (1 - y[i]) / (1 - potentials[i]);
+      break;
 
     default:
       log_error("Unknown loss function %d - exiting!",
@@ -111,10 +116,9 @@ void update(uint ticks, uint b) {
 
     send(extractor_key, (void *)&average_loss);
 
-    float loss_i;
     for (uint i=0; i < K; i++) {
-      loss_i = compute_loss(i);
-      send(keys[i], (void *)&loss_i);
+      compute_error(i);
+      send(keys[i], (void *)&error);
     }
 
     received_y_counter = 0;
