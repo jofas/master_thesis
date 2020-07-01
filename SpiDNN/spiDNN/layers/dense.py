@@ -1,16 +1,14 @@
 import numpy as np
 
 import spinnaker_graph_front_end as front_end
-
 from spinn_utilities.overrides import overrides
-
 
 from .abstract_layer_base import AbstractLayerBase
 from .layer_interface import LayerInterface
 
 import spiDNN.globals as globals
 import spiDNN.util as util
-from spiDNN.machine_vertices import Perceptron, SoftmaxPerceptron
+from spiDNN.machine_vertices import Perceptron
 
 
 class Dense(AbstractLayerBase):
@@ -39,14 +37,9 @@ class Dense(AbstractLayerBase):
         for i, weight_vector in enumerate(
                 np.concatenate((weights, biases.reshape(1, -1))).T):
 
-            if self.activation == "softmax":
-                neuron = SoftmaxPerceptron(
-                    self, i, weight_vector, trainable, batch_size,
-                    learning_rate)
-            else:
-                neuron = Perceptron(
-                    self, i, weight_vector, trainable, batch_size,
-                    learning_rate)
+            neuron = Perceptron(
+                self, i, weight_vector, trainable, batch_size,
+                learning_rate)
 
             self.neurons.append(neuron)
 

@@ -38,7 +38,7 @@ class PerceptronDataRegions(Enum):
     NEXT_LAYER_WEIGHTS = 5
 
 
-class AbstractPerceptronBase(
+class Perceptron(
         AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
@@ -46,12 +46,11 @@ class AbstractPerceptronBase(
     BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
     def __init__(
-            self, layer, id, weights, trainable, batch_size, learning_rate,
-            executable, softmax_params_data_size = 0):
+            self, layer, id, weights, trainable, batch_size, learning_rate):
+        executable = "perceptron.aplx"
+
         self.layer = layer
         self.id = id
-
-        self.softmax_params_data_size = softmax_params_data_size
 
         self.weights = weights
         self.weight_container_size = len(self.weights) * BYTES_PER_WORD
@@ -59,6 +58,12 @@ class AbstractPerceptronBase(
         self.trainable = trainable
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+
+        if self.layer.activation == "softmax":
+            self.softmax_params_data_size = 3 * BYTES_PER_WORD
+            executable = "softmax_{}".format(executable)
+        else:
+            self.softmax_params_data_size = 0
 
         if self.trainable:
             assert self.batch_size is not None
@@ -73,7 +78,7 @@ class AbstractPerceptronBase(
         # graph to collect the weights
         self.next_layer_weights_container_size = 0
 
-        super(AbstractPerceptronBase, self).__init__(
+        super(Perceptron, self).__init__(
             "{}_{}".format(layer.label, self.id), executable)
 
     def extract_weights(self):
@@ -110,12 +115,10 @@ class AbstractPerceptronBase(
 
         self._generate_and_write_weights(spec)
 
-        # needs to be implemented by the inheriting class
-        #
-        # TODO: in interface
-        self._generate_and_write_softmax_params(
-            spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor)
+        if self.layer.activation == "softmax":
+            self._generate_and_write_softmax_params(
+                spec, placement, machine_graph, routing_info, iptags,
+                reverse_iptags, machine_time_step, time_scale_factor)
 
         if self.trainable:
             self._generate_and_write_trainable_regions(
@@ -157,6 +160,39 @@ class AbstractPerceptronBase(
         spec.switch_write_focus(
             region=PerceptronDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
+
+    def _generate_and_write_softmax_params(
+            self, spec, placement, machine_graph, routing_info, iptags,
+            reverse_iptags, machine_time_step, time_scale_factor):
+
+        spec.reserve_memory_region(
+            region=PerceptronDataRegions.SOFTMAX_PARAMS.value,
+            size=self.softmax_params_data_size,
+            label="softmax_params")
+
+        # check got right number of keys and edges going into me
+        partitions = \
+            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
+
+        if not self.trainable and not len(partitions) == 2:
+            raise ConfigurationException(
+                "Can only handle forward and softmax partition.")
+
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, globals.softmax_partition))
+
+        min_softmax_key = min([routing_info.get_first_key_from_pre_vertex(
+            edge.pre_vertex, globals.softmax_partition) for edge in edges])
+
+        softmax_key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.softmax_partition)
+
+        spec.switch_write_focus(
+            region=PerceptronDataRegions.SOFTMAX_PARAMS.value)
+        spec.write_value(softmax_key)
+        spec.write_value(min_softmax_key)
+        spec.write_value(self.layer.n_neurons)
 
     def _generate_and_write_trainable_regions(
             self, spec, machine_graph, routing_info):
@@ -249,65 +285,5 @@ class AbstractPerceptronBase(
 
         return result
 
-    def _generate_and_write_softmax_params(
-            self, spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor):
-        return
-
     def __repr__(self):
         return self.label
-
-
-class Perceptron(AbstractPerceptronBase):
-    EXECUTABLE = "perceptron.aplx"
-
-    def __init__(
-            self, layer, id, weights, trainable, batch_size, learning_rate):
-        super(Perceptron, self).__init__(
-            layer, id, weights, trainable, batch_size, learning_rate,
-            self.EXECUTABLE)
-
-# TODO: do everything in one big perceptron class
-#       remove min_layer_key (unused)
-class SoftmaxPerceptron(AbstractPerceptronBase):
-    SOFTMAX_PARAMS_DATA_SIZE = 3 * BYTES_PER_WORD
-    EXECUTABLE = "softmax_perceptron.aplx"
-
-    def __init__(
-            self, layer, id, weights, trainable, batch_size, learning_rate):
-        super(SoftmaxPerceptron, self).__init__(
-            layer, id, weights, trainable, batch_size, learning_rate,
-            self.EXECUTABLE, self.SOFTMAX_PARAMS_DATA_SIZE)
-
-    def _generate_and_write_softmax_params(
-            self, spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor):
-
-        spec.reserve_memory_region(
-            region=PerceptronDataRegions.SOFTMAX_PARAMS.value,
-            size=self.softmax_params_data_size,
-            label="softmax_params")
-
-        # check got right number of keys and edges going into me
-        partitions = \
-            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
-
-        if not self.trainable and not len(partitions) == 2:
-            raise ConfigurationException(
-                "Can only handle forward and softmax partition.")
-
-        edges = list(
-            machine_graph.get_edges_ending_at_vertex_with_partition_name(
-                self, globals.softmax_partition))
-
-        min_softmax_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, globals.softmax_partition) for edge in edges])
-
-        softmax_key = routing_info.get_first_key_from_pre_vertex(
-            self, globals.softmax_partition)
-
-        spec.switch_write_focus(
-            region=PerceptronDataRegions.SOFTMAX_PARAMS.value)
-        spec.write_value(softmax_key)
-        spec.write_value(min_softmax_key)
-        spec.write_value(self.layer.n_neurons)
