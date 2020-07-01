@@ -91,7 +91,9 @@ void update(uint ticks, uint b) {
 
 #ifdef trainable
   if (backward_pass_complete()) {
-    backward_passes++;
+    backward_passes_counter++;
+    batch_counter++;
+
     update_gradients();
 
     if (BATCH_COMPLETE) {

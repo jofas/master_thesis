@@ -4,7 +4,8 @@
 #include "perceptron.h"
 #endif
 
-#define BATCH_COMPLETE backward_passes == batch_size
+#define BATCH_COMPLETE batch_counter == batch_size \
+                       || (backward_passes_counter % epoch_size == 0)
 
 
 //! definitions of each element in the trainable_params region
@@ -25,12 +26,14 @@ typedef struct trainable_params_region {
 trainable_params_region_t *trainable_params_sdram;
 float *next_layer_weights_sdram;
 
-uint batch_size;
 uint backward_key;
 uint min_next_key;
 uint n_errors;
 uint is_output_layer;
 
+uint epochs;
+uint epoch_size;
+uint batch_size;
 float learning_rate;
 
 float *next_layer_weights;
@@ -41,9 +44,9 @@ float *next_layer_gradients;
 float error;
 float neuron_error;
 
-uint received_errors_counter;
-uint backward_passes;
-
+uint received_errors_counter = 0;
+uint backward_passes_counter = 0;
+uint batch_counter;
 
 /* functions */
 
@@ -101,11 +104,7 @@ void generate_neuron_error() {
 
 void update_gradients() {
   generate_neuron_error();
-  // TODO: depending on activation function
-  //neuron_error = error * potential * (1 - potential);
 
-  // when all errors are received -> compute gradients for each
-  // weight -> sum in *gradients
   for (uint i=0; i < n_potentials; i++) {
     gradients[i] += neuron_error * potentials[i];
   }
@@ -126,7 +125,7 @@ void update_weights() {
 }
 
 void reset_batch() {
-  backward_passes = 0;
+  batch_counter = 0;
 
   for (uint i=0; i < n_weights; i++) {
     gradients[i] = .0;
@@ -143,11 +142,13 @@ void trainable_init() {
   trainable_params_sdram =
     data_specification_get_region(TRAINABLE_PARAMS, data_spec_meta);
 
-  batch_size = trainable_params_sdram->batch_size;
   backward_key = trainable_params_sdram->backward_key;
   min_next_key = trainable_params_sdram->min_next_key;
   n_errors = trainable_params_sdram->n_errors;
   is_output_layer = trainable_params_sdram->is_output_layer;
+  epochs = trainable_params_sdram->epochs;
+  epoch_size = trainable_params_sdram->epoch_size;
+  batch_size = trainable_params_sdram->batch_size;
   learning_rate = trainable_params_sdram->learning_rate;
 
   gradients = (float *)malloc(sizeof(float) * n_weights);
