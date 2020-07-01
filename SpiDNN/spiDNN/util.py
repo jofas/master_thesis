@@ -6,6 +6,7 @@ from data_specification.enums import DataType
 import spiDNN.globals as globals
 
 import os
+import sys
 from threading import Lock
 import struct
 import math
@@ -149,8 +150,35 @@ class PartitionManager:
         return new_partition
 
 
+class LossExtractionManager:
+    def __init__(self, epochs, epoch_size):
+        self.epochs = epochs
+        self.epoch_size = epoch_size
+
+        self.epoch_counter = 1
+        self.receive_counter = 0
+
+    def receive(self, loss):
+        loss = uint32t_to_float(loss)
+
+        if self.receive_counter % self.epoch_size == 0:
+            print("Epoch: {}/{}".format(self.epoch_counter, self.epochs))
+            self.epoch_counter += 1
+
+        self.receive_counter += 1
+
+        if self.receive_counter % self.epoch_size == 0:
+            print("{}/{} loss: {}".format(
+                self.epoch_size, self.epoch_size, loss))
+        else:
+            sys.stdout.write("{}/{} loss: {}\r".format(
+                self.receive_counter % self.epoch_size,
+                self.epoch_size, loss))
+            sys.stdout.flush()
+
+
 class PingPongExtractionManager:
-    def __init__(self, epochs, epoch_size,  n_receive):
+    def __init__(self, epochs, epoch_size, n_receive):
         self.epochs = epochs
         self.epoch_size = epoch_size
         self.n_receive = n_receive

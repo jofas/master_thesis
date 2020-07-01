@@ -86,28 +86,31 @@ class Model:
         n_cores = self._all_neurons() + y_injectors.n_neurons + 2
         gfe.setup(n_cores)
 
+        # init neurons
         loss_layer.init_neurons()
         y_injectors.init_neurons(neurons_next_layer=1)
         pong.init_neurons()
         self._init_neurons(trainable_params=trainable_params)
 
+        # forward pass
         self._connect_layers_forward()
-
         loss_layer.connect_incoming(
             self._layers[-1], globals.forward_partition)
 
+        # connections for streaming true labels onto board for computing
+        # the loss
         loss_layer.connect_incoming(y_injectors, globals.y_partition)
 
+        # backward pass
         self._connect_layers_backward()
-
         self._layers[-1].connect_incoming_unique(
             loss_layer, base_name=globals.backward_partition)
-
         pong.connect_incoming(
             self._layers[1], globals.backward_partition)
+        pong.connect_incoming(loss_layer, globals.backward_partition)
 
         conn = self._setup_fit_live_event_connection(
-            pong, y_injectors, X, y, epochs)
+            pong, loss_layer, y_injectors, X, y, epochs)
 
         gfe.run()
 
@@ -240,21 +243,25 @@ class Model:
         return injector_callback
 
     def _setup_fit_live_event_connection(
-            self, extractor, y_injectors, X, y, epochs):
-        send_labels = self._layers[0].labels + y_injectors.labels
-        receive_labels = self._layers[1].labels
+            self, extractor, loss_layer, y_injectors, X, y, epochs):
 
         conn = LiveEventConnection(
             extractor.labels[0],
-            receive_labels=receive_labels,
-            send_labels=send_labels,
+            receive_labels=self._layers[1].labels + loss_layer.labels,
+            send_labels=self._layers[0].labels + y_injectors.labels,
             machine_vertices=True
         )
 
         barrier = Condition()
 
+        loss_extraction_manager = util.LossExtractionManager(
+            epochs, len(X))
+
+        def extractor_loss_callback(label, _, loss):
+            loss_extraction_manager.receive(loss)
+
         extractor_callback = self._generate_fit_extractor_callback(
-            receive_labels, X, barrier, epochs)
+            self._layers[1].labels, X, barrier, epochs)
 
         y_injector_callback = self._generate_fit_injector_callback(
             y_injectors.labels, y, barrier, epochs)
@@ -262,7 +269,10 @@ class Model:
         X_injector_callback = self._generate_fit_injector_callback(
             self._layers[0].labels, X, barrier, epochs)
 
-        for label in receive_labels:
+        for label in loss_layer.labels:
+            conn.add_receive_callback(label, extractor_loss_callback)
+
+        for label in self._layers[1].labels:
             conn.add_receive_callback(label, extractor_callback)
 
         for label in y_injectors.labels:
@@ -299,14 +309,11 @@ class Model:
             barrier.acquire()
             for epoch in range(0, epochs):
                 for m in M:
-                    #print("sending value: {} to label: {}".format(
-                    #    m[send_label_to_pos[label]], label))
                     conn.send_event_with_payload(
                         label,
                         0,
                         util.float_to_uint32t(m[send_label_to_pos[label]]))
                     barrier.wait()
-                print("epoch done: {}".format(epoch))
             barrier.release()
 
         return injector_callback

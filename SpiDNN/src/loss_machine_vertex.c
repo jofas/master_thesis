@@ -16,14 +16,18 @@ typedef enum loss_functions_e {
 
 //! definitions of each element in the params region
 typedef struct params_region {
-    uint32_t loss_function_id;
-    uint32_t K;
-    uint32_t min_pre_key;
-    uint32_t min_y_key;
-    uint32_t timer_offset;
+  uint32_t extractor_key;
+  uint32_t loss_function_id;
+  uint32_t K;
+  uint32_t min_pre_key;
+  uint32_t min_y_key;
+  uint32_t timer_offset;
 } params_region_t;
 
+
 /* global variables */
+
+uint extractor_key;
 
 uint min_y_key;
 
@@ -36,6 +40,11 @@ uint *keys;
 float *y;
 
 uint received_y_counter = 0;
+
+float loss;
+float overall_loss = .0;
+float average_loss;
+uint N = 0;
 
 params_region_t *params_sdram;
 uint *keys_sdram;
@@ -69,12 +78,6 @@ float compute_loss(uint i) {
       return potentials[i] - y[i];
 
     case CATEGORICAL_CROSSENTROPY:
-      /*
-      if (potentials[i] == .0) {
-        log_error("lol wtf what now?");
-        rt_error(RTE_SWERR);
-      }
-      */
       return - y[i] / potentials[i];
 
     case BINARY_CROSSENTROPY:
@@ -95,26 +98,18 @@ void update(uint ticks, uint b) {
 
   if ((received_potentials_counter == K) && (received_y_counter == K))
   {
-    /*
-    float loss_ = .0;
+    N++;
+
+    loss = .0;
     for (uint i=0; i < K; i++) {
-      float diff = y[i] - potentials[i];
-      loss_ += diff * diff;
+      loss += (y[i] - potentials[i]) * (y[i] - potentials[i]);
     }
-    loss_ = loss_ / (float) K;
-    log_info("loss: %f", loss_);
-    */
-    /*
-    if (loss_function_id == CATEGORICAL_CROSSENTROPY) {
-      float denom = .0;
-      for (uint i=0; i < K; i++) {
-        denom += potentials[i];
-      }
-      for (uint i=0; i < K; i++) {
-        potentials[i] = potentials[i] / denom;
-      }
-    }
-    */
+    loss = loss / (float) K;
+
+    overall_loss += loss;
+    average_loss = overall_loss / (float) N;
+
+    send(extractor_key, (void *)&average_loss);
 
     float loss_i;
     for (uint i=0; i < K; i++) {
@@ -157,6 +152,7 @@ void __init_base_params(
 {
   params_sdram = data_specification_get_region(PARAMS, data_spec_meta);
 
+  extractor_key = params_sdram->extractor_key;
   loss_function_id = params_sdram->loss_function_id;
   K = params_sdram->K;
   min_y_key = params_sdram->min_y_key;

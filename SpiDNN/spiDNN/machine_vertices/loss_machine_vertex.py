@@ -50,16 +50,18 @@ import struct
 import numpy as np
 
 
+class LossMachineVertexDataRegions(Enum):
+    SYSTEM = 0
+    PARAMS = 1
+    KEYS = 2
+
+
 class LossMachineVertex(
         AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
-
-    DATA_REGIONS = Enum(
-        value="DATA_REGIONS",
-        names=[("SYSTEM", 0), ("PARAMS", 1), ("KEYS", 2)])
+    PARAMS_DATA_SIZE = 6 * BYTES_PER_WORD
 
     def __init__(self, layer):
         super(LossMachineVertex, self).__init__(
@@ -75,18 +77,18 @@ class LossMachineVertex(
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
-            spec, self.DATA_REGIONS.SYSTEM.value, self,
+            spec, LossMachineVertexDataRegions.SYSTEM.value, self,
             machine_time_step, time_scale_factor
         )
 
         spec.reserve_memory_region(
-            region=self.DATA_REGIONS.PARAMS.value,
+            region=LossMachineVertexDataRegions.PARAMS.value,
             size=self.PARAMS_DATA_SIZE,
             label="params"
         )
 
         spec.reserve_memory_region(
-            region=self.DATA_REGIONS.KEYS.value,
+            region=LossMachineVertexDataRegions.KEYS.value,
             size=self.K * BYTES_PER_WORD,
             label="keys"
         )
@@ -112,11 +114,16 @@ class LossMachineVertex(
 
         keys = []
         for partition in partitions:
-            keys.append(routing_info.get_first_key_from_pre_vertex(
-                self, partition.identifier))
+            if partition.identifier != globals.backward_partition:
+                keys.append(routing_info.get_first_key_from_pre_vertex(
+                    self, partition.identifier))
+
+        extractor_key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.backward_partition)
 
         spec.switch_write_focus(
-            region=self.DATA_REGIONS.PARAMS.value)
+            region=LossMachineVertexDataRegions.PARAMS.value)
+        spec.write_value(extractor_key)
         spec.write_value(self.loss_function_id)
         spec.write_value(self.K)
         spec.write_value(min_pre_key)
@@ -124,7 +131,7 @@ class LossMachineVertex(
         spec.write_value(generate_offset(placement.p))
 
         spec.switch_write_focus(
-            region=self.DATA_REGIONS.KEYS.value)
+            region=LossMachineVertexDataRegions.KEYS.value)
         spec.write_array(keys)
 
         spec.end_specification()
