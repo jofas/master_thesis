@@ -44,7 +44,7 @@ class LossMachineVertex(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 6 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
 
     def __init__(self, layer, trainable_params):
         super(LossMachineVertex, self).__init__(
@@ -112,6 +112,7 @@ class LossMachineVertex(
         spec.write_value(min_pre_key)
         spec.write_value(min_y_key)
         spec.write_value(generate_offset(placement.p))
+        spec.write_value(self.trainable_params.epoch_size)
 
         spec.switch_write_focus(
             region=LossMachineVertexDataRegions.KEYS.value)

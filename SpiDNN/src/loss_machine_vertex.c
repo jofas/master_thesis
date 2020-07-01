@@ -22,6 +22,7 @@ typedef struct params_region {
   uint32_t min_pre_key;
   uint32_t min_y_key;
   uint32_t timer_offset;
+  uint32_t epoch_size;
 } params_region_t;
 
 
@@ -34,6 +35,8 @@ uint min_y_key;
 uint loss_function_id;
 
 uint K;
+
+uint epoch_size;
 
 uint *keys;
 
@@ -162,6 +165,11 @@ void update(uint ticks, uint b) {
       send(keys[i], (void *)&error);
     }
 
+    if (N == epoch_size) {
+      N = 0;
+      overall_loss = .0;
+    }
+
     received_y_counter = 0;
     received_potentials_counter = 0;
   }
@@ -201,6 +209,7 @@ void __init_base_params(
   loss_function_id = params_sdram->loss_function_id;
   K = params_sdram->K;
   min_y_key = params_sdram->min_y_key;
+  epoch_size = params_sdram->epoch_size;
 
   *timer_offset = params_sdram->timer_offset;
   *n_potentials = K;
