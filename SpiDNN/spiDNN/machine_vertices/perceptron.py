@@ -60,7 +60,7 @@ class Perceptron(
         self.learning_rate = learning_rate
 
         if self.layer.activation == "softmax":
-            self.softmax_params_data_size = 3 * BYTES_PER_WORD
+            self.softmax_params_data_size = 2 * BYTES_PER_WORD
             executable = "softmax_{}".format(executable)
         else:
             self.softmax_params_data_size = 0
@@ -100,6 +100,18 @@ class Perceptron(
 
         return self.weights
 
+    @property
+    @overrides(MachineVertex.resources_required)
+    def resources_required(self):
+        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
+                       + self.BASE_PARAMS_DATA_SIZE
+                       + self.weight_container_size
+                       + self.softmax_params_data_size
+                       + self.trainable_params_data_size
+                       + self.next_layer_weights_container_size)
+
+        return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
+
     @overrides(MachineDataSpecableVertex.generate_machine_data_specification)
     def generate_machine_data_specification(
             self, spec, placement, machine_graph, routing_info, iptags,
@@ -116,9 +128,7 @@ class Perceptron(
         self._generate_and_write_weights(spec)
 
         if self.layer.activation == "softmax":
-            self._generate_and_write_softmax_params(
-                spec, placement, machine_graph, routing_info, iptags,
-                reverse_iptags, machine_time_step, time_scale_factor)
+            self._generate_and_write_softmax_params(spec, routing_info)
 
         if self.trainable:
             self._generate_and_write_trainable_regions(
@@ -161,29 +171,11 @@ class Perceptron(
             region=PerceptronDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
-    def _generate_and_write_softmax_params(
-            self, spec, placement, machine_graph, routing_info, iptags,
-            reverse_iptags, machine_time_step, time_scale_factor):
-
+    def _generate_and_write_softmax_params(self, spec, routing_info):
         spec.reserve_memory_region(
             region=PerceptronDataRegions.SOFTMAX_PARAMS.value,
             size=self.softmax_params_data_size,
             label="softmax_params")
-
-        # check got right number of keys and edges going into me
-        partitions = \
-            machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
-
-        if not self.trainable and not len(partitions) == 2:
-            raise ConfigurationException(
-                "Can only handle forward and softmax partition.")
-
-        edges = list(
-            machine_graph.get_edges_ending_at_vertex_with_partition_name(
-                self, globals.softmax_partition))
-
-        min_softmax_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, globals.softmax_partition) for edge in edges])
 
         softmax_key = routing_info.get_first_key_from_pre_vertex(
             self, globals.softmax_partition)
@@ -191,7 +183,6 @@ class Perceptron(
         spec.switch_write_focus(
             region=PerceptronDataRegions.SOFTMAX_PARAMS.value)
         spec.write_value(softmax_key)
-        spec.write_value(min_softmax_key)
         spec.write_value(self.layer.n_neurons)
 
     def _generate_and_write_trainable_regions(
@@ -256,18 +247,6 @@ class Perceptron(
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
         spec.write_value(self.learning_rate, data_type=DataType.FLOAT_32)
-
-    @property
-    @overrides(MachineVertex.resources_required)
-    def resources_required(self):
-        fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
-                       + self.BASE_PARAMS_DATA_SIZE
-                       + self.weight_container_size
-                       + self.softmax_params_data_size
-                       + self.trainable_params_data_size
-                       + self.next_layer_weights_container_size)
-
-        return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
 
     def get_edges_ending_at_vertex_where_partition_name_starts_with(
             self, machine_graph, starts_with_str):
