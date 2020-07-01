@@ -87,7 +87,7 @@ class Model:
         gfe.setup(n_cores)
 
         # init neurons
-        loss_layer.init_neurons()
+        loss_layer.init_neurons(trainable_params=trainable_params)
         y_injectors.init_neurons(neurons_next_layer=1)
         pong.init_neurons()
         self._init_neurons(trainable_params=trainable_params)

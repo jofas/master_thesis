@@ -1,49 +1,32 @@
 from spinn_utilities.overrides import overrides
-
 from pacman.model.graphs.machine import MachineVertex
-
-from pacman.model.resources import ResourceContainer, VariableSDRAM
-
+from pacman.model.resources import ResourceContainer, ConstantSDRAM
 from pacman.model.constraints.key_allocator_constraints import \
     FixedKeyAndMaskConstraint
-
 from spinn_front_end_common.utilities.constants import (
     SYSTEM_BYTES_REQUIREMENT, BYTES_PER_WORD)
-
 from spinn_front_end_common.utilities.exceptions import ConfigurationException
-
 from spinn_front_end_common.utilities.helpful_functions import (
     locate_memory_region_for_placement)
-
 from spinn_front_end_common.abstract_models import \
     AbstractProvidesOutgoingPartitionConstraints
-
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
-
 from spinnaker_graph_front_end.utilities import SimulatorVertex
 
 from spinnaker_graph_front_end.utilities.data_utils import (
     generate_system_data_region)
-
 from data_specification.enums import DataType
 
-
 from spiDNN.util import generate_offset
-
 import spiDNN.globals as globals
-
 
 from .abstract_partition_managed_machine_vertex import \
     AbstractPartitionManagedMachineVertex
 
-
 import sys
-
 import math
-
 from enum import Enum
-
 import struct
 
 
@@ -63,12 +46,12 @@ class LossMachineVertex(
 
     PARAMS_DATA_SIZE = 6 * BYTES_PER_WORD
 
-    def __init__(self, layer):
+    def __init__(self, layer, trainable_params):
         super(LossMachineVertex, self).__init__(
             layer.label, "loss_machine_vertex.aplx")
 
-        self.loss_function_id = globals.losses[layer.loss_fn]
-        self.K = layer.K
+        self.layer = layer
+        self.trainable_params = trainable_params
 
     @overrides(MachineDataSpecableVertex.generate_machine_data_specification)
     def generate_machine_data_specification(
@@ -89,7 +72,7 @@ class LossMachineVertex(
 
         spec.reserve_memory_region(
             region=LossMachineVertexDataRegions.KEYS.value,
-            size=self.K * BYTES_PER_WORD,
+            size=self.layer.K * BYTES_PER_WORD,
             label="keys"
         )
 
@@ -124,8 +107,8 @@ class LossMachineVertex(
         spec.switch_write_focus(
             region=LossMachineVertexDataRegions.PARAMS.value)
         spec.write_value(extractor_key)
-        spec.write_value(self.loss_function_id)
-        spec.write_value(self.K)
+        spec.write_value(globals.losses[self.layer.loss])
+        spec.write_value(self.layer.K)
         spec.write_value(min_pre_key)
         spec.write_value(min_y_key)
         spec.write_value(generate_offset(placement.p))
@@ -141,12 +124,9 @@ class LossMachineVertex(
     def resources_required(self):
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
                        + self.PARAMS_DATA_SIZE
-                       + self.K * BYTES_PER_WORD)
+                       + self.layer.K * BYTES_PER_WORD)
 
-        per_timestep_sdram = 0
-
-        return ResourceContainer(
-            sdram=VariableSDRAM(fixed_sdram, per_timestep_sdram))
+        return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
 
     def __repr__(self):
         return self.label
