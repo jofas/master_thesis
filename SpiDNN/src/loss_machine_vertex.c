@@ -95,6 +95,55 @@ void compute_error(uint i) {
   }
 }
 
+void compute_mse() {
+    loss = .0;
+    for (uint i=0; i < K; i++) {
+      loss += (y[i] - potentials[i]) * (y[i] - potentials[i]);
+    }
+    loss = loss / (float) K;
+
+    overall_loss += loss;
+    average_loss = overall_loss / (float) N;
+}
+
+void compute_categorical_crossentropy() {
+  loss = .0;
+  for (uint i=0; i < K; i++) {
+    loss -= y[i] * log(potentials[i]);
+  }
+
+  overall_loss += loss;
+  average_loss = overall_loss / (float) N;
+}
+
+void compute_binary_crossentropy() {
+  loss = -y[0] * log(potentials[0]) + (1 - y[0]) * log(1 - potentials[0]);
+
+  overall_loss += loss;
+  average_loss = overall_loss / (float) N;
+}
+
+void compute_loss() {
+  switch (loss_function_id) {
+    case MEAN_SQUARED_ERROR:
+      compute_mse();
+      break;
+
+    case CATEGORICAL_CROSSENTROPY:
+      compute_categorical_crossentropy();
+      break;
+
+    case BINARY_CROSSENTROPY:
+      compute_binary_crossentropy();
+      break;
+
+    default:
+      log_error("Unknown loss function %d - exiting!",
+        loss_function_id);
+      rt_error(RTE_SWERR);
+  }
+}
+
 void update(uint ticks, uint b) {
   use(b);
   use(ticks);
@@ -105,15 +154,7 @@ void update(uint ticks, uint b) {
   {
     N++;
 
-    loss = .0;
-    for (uint i=0; i < K; i++) {
-      loss += (y[i] - potentials[i]) * (y[i] - potentials[i]);
-    }
-    loss = loss / (float) K;
-
-    overall_loss += loss;
-    average_loss = overall_loss / (float) N;
-
+    compute_loss();
     send(extractor_key, (void *)&average_loss);
 
     for (uint i=0; i < K; i++) {
