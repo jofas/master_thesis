@@ -61,9 +61,7 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         # TODO: set self.n_neurons depending on source_layer and
         #       self.padding
 
-        # TODO: channel interface in input
-        #self.n_channels = source_layer.n_channels
-        self.n_channels = 1
+        self.n_channels = source_layer.n_channels
 
         weights = np.array(np.random.rand(
             *self.kernel_shape, self.n_channels, self.n_filters),

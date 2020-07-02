@@ -1,4 +1,4 @@
-from spiDNN.layers import Conv1D
+from spiDNN.layers import Conv1D, Input
 
 from keras.layers import Conv1D as KConv1D
 
@@ -20,7 +20,7 @@ def test_weight_generation():
     # generate weights
     kconv(X)
     keras_weights_and_biases = kconv.get_weights()
-    weights, biases = conv.generate_weights(None)
+    weights, biases = conv.generate_weights(Input(5))
 
     assert keras_weights_and_biases[0].shape == weights.shape
     assert keras_weights_and_biases[1].shape == biases.shape
