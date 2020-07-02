@@ -67,6 +67,10 @@ Optimizations and features
 
 * progress interface with epoch loss (loss computed by host?)
 
+* validation interface and more metrics, which could be a nice way for
+  early stopping (then definetly loss computed
+  on host (error still on the board) (see previous bullet point))
+
 * monitor/sync core for each layer (simplifying interface)
 
 * enable multiple successive sessions (currently LiveEventConnection
