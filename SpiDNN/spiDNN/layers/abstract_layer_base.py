@@ -43,6 +43,10 @@ class AbstractLayerBase(LayerInterface):
     def n_neurons(self):
         return self._n_neurons
 
+    @n_neurons.setter
+    def n_neurons(self, n_neurons):
+        self._n_neurons = n_neurons
+
     @property
     @overrides(LayerInterface.neurons)
     def neurons(self):
