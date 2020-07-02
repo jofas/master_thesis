@@ -244,7 +244,6 @@ class Perceptron(
 
         self.trainable_params.write_to_spec(spec)
 
-
     def get_edges_ending_at_vertex_where_partition_name_starts_with(
             self, machine_graph, starts_with_str):
 
