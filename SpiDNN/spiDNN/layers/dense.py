@@ -1,6 +1,5 @@
 import numpy as np
 
-import spinnaker_graph_front_end as front_end
 from spinn_utilities.overrides import overrides
 
 from .abstract_layer_base import AbstractLayerBase
@@ -8,7 +7,6 @@ from .layer_interface import LayerInterface
 from .weights_interface import WeightsInterface
 
 import spiDNN.globals as globals
-import spiDNN.util as util
 from spiDNN.machine_vertices import Perceptron
 
 
