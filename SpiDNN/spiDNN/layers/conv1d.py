@@ -58,8 +58,11 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
-        # TODO: set self.n_neurons depending on source_layer and
-        #       self.padding
+        if self.padding == "valid":
+            self.n_neurons = \
+                source_layer.n_neurons - self.kernel_shape[0] + 1
+        else:
+            self.n_neurons = source_layer.n_neurons
 
         self.n_channels = source_layer.n_channels
 
