@@ -5,13 +5,14 @@ from spinn_utilities.overrides import overrides
 
 from .abstract_layer_base import AbstractLayerBase
 from .layer_interface import LayerInterface
+from .weights_interface import WeightsInterface
 
 import spiDNN.globals as globals
 import spiDNN.util as util
 from spiDNN.machine_vertices import Perceptron
 
 
-class Dense(AbstractLayerBase):
+class Dense(AbstractLayerBase, WeightsInterface):
     def __init__(self, n_neurons, activation, bias=True):
         super(Dense, self).__init__("unnamed", n_neurons, [])
 
@@ -44,11 +45,8 @@ class Dense(AbstractLayerBase):
         if self.activation == "softmax":
             self.connect_incoming(self, globals.softmax_partition)
 
+    @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
-        # This is just weights representation. The weights are re-
-        # injected to the neuron right before starting the simulation.
-        # Called in Model.add().
-        #
         source_neurons = source_layer.n_neurons
 
         weights = np.array(
@@ -61,6 +59,7 @@ class Dense(AbstractLayerBase):
 
         return weights, biases
 
+    @overrides(WeightsInterface.extract_weights)
     def extract_weights(self):
         weights = np.empty(
             (self.neurons[0].weights.shape[0] - 1, self.n_neurons),

@@ -79,6 +79,9 @@ Optimizations and features
 * export/import weights to/from file (fancy HDF5 or json which is less
   sexy)
 
+* nicer injection of weights into machine_vertices (different interface
+  than just using init_neurons)
+
 
 Links
 -----

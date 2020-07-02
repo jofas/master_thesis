@@ -4,9 +4,6 @@ from spinn_utilities.abstract_base import AbstractBase, abstractproperty, \
     abstractmethod
 
 
-import spiDNN.globals as globals
-
-
 @add_metaclass(AbstractBase)
 class LayerInterface(object):
 
