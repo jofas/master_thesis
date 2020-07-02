@@ -48,8 +48,8 @@ class Model:
 
         extractor.init_neurons()
         self._init_neurons()
-        self._connect_layers_forward()
 
+        self._connect_layers_forward()
         # connect extractor to the output layer
         extractor.connect_incoming(self._layers[-1], globals.forward_partition)
 
@@ -119,7 +119,6 @@ class Model:
         self._extract_weights()
 
         gfe.stop()
-
         conn.close()
         self._reset_layers()
 

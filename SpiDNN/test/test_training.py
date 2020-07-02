@@ -8,6 +8,7 @@ from keras.models import Sequential
 from keras.optimizers import SGD
 
 from copy import deepcopy
+import time
 
 EPOCHS = 50
 BATCH_SIZE = 4
@@ -53,6 +54,15 @@ def compare_against_keras(X, y, loss):
         print(e_max)
         assert e_max < 0.1
 
+    """
+    p = model.predict(X)
+    p_ = kmodel.predict(X)
+
+    e_max = np.amax(np.absolute(p - p_))
+    print(e_max)
+    assert e_max < 0.1
+    """
+
 
 def test_binary_xor():
     loss = "binary_crossentropy"
@@ -74,5 +84,6 @@ def test_categorical_xor():
 
 
 if __name__ == "__main__":
+    test_binary_xor()
     test_categorical_xor()
     print("SUCCESS.")
