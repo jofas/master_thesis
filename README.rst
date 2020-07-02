@@ -52,7 +52,8 @@ Optimizations and features
 
 * custom injectors which support partitions
 
-* pong receive without payload
+* pong receive without payload (less network traffic, more complexity
+  in neurons)
 
 * split neurons (bigger layers)
 
@@ -68,8 +69,11 @@ Optimizations and features
 
 * monitor/sync core for each layer (simplifying interface)
 
-* weight extraction (dtcm -> sdram) only when training is finished,
-  not after each batch (speed)
+* enable multiple successive sessions (currently LiveEventConnection
+  does some weird stuff)
+
+* export/import weights to/from file (fancy HDF5 or json which is less
+  sexy)
 
 
 Links
