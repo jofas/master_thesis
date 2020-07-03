@@ -64,7 +64,7 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         else:
             self.n_neurons = source_layer.n_neurons
 
-        self.n_channels = source_layer.n_channels
+        self.n_channels = source_layer.n_filters
 
         weights = np.array(np.random.rand(
             *self.kernel_shape, self.n_channels, self.n_filters),
