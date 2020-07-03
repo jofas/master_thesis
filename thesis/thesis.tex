@@ -398,8 +398,20 @@ prototype.
 
 % }}}
 
+% }}}
+
 \section{Deep Learning on SpiNNaker}
 \label{sec:SpiDNN}
+
+\begin{itemize}
+  \item ping-pong
+  \item graph structure (especially focused on edge and host--SpiNN
+    communication)
+  \item interpreting neurons as domain decomposition over linear algebra
+    compute graph
+  \item backward pass: gradients computed two times so comm fabric is
+    not overly used by unique partitions
+\end{itemize}
 
 \section{Benchmark}
 \label{sec:benchmark}
@@ -407,11 +419,30 @@ prototype.
 \section{Discussion}
 \label{sec:discussion}
 
+\begin{itemize}
+  \item space used inefficiently (cores and memory) $\rightarrow$ better
+    domain decomposition
+\end{itemize}
+
 \section{Conclusion}
 \label{sec:conclusion}
 
 \section{Next Steps}
 \label{sec:next_steps}
+
+\begin{itemize}
+  \item multiple copies of the same network on the same machine
+    $\rightarrow$ use all resources available
+  \item better domain decomposition (SpiNNaker application graph or
+    custom solution (application graph not helpful for neurons which
+    become too big))
+  \item smart algorithms vs.\ integrating with state-of-the-art libraries
+    (investing time in stuff like SLIDE and the one paper by the austrian
+    guys about sparse connections explicitly mentioning SpiNNaker and
+    neuromorphic chips or rather work on a trans-/compiler
+    that efficiently translates linear algebra operations (like TF,
+    PyTorch,\dots) onto SpiNNaker)
+\end{itemize}
 
 \bibliography{library.bib}
 \addcontentsline{toc}{section}{References}
