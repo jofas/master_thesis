@@ -7,7 +7,8 @@ from .layer_interface import LayerInterface
 from .weights_interface import WeightsInterface
 
 import spiDNN.globals as globals
-from spiDNN.machine_vertices import Perceptron
+import spiDNN.gfe as gfe
+from spiDNN.machine_vertices import Conv1DNeuron, Conv1DMeta
 
 
 class Conv1D(AbstractLayerBase, WeightsInterface):
@@ -22,6 +23,8 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         # TODO: support "same" as well
         self.padding = "valid"
 
+        self.meta_vertex = None
+
         super(Conv1D, self).__init__("unnamed", None, [])
 
         if activation in globals.activations:
@@ -34,27 +37,29 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
     @overrides(LayerInterface.init_neurons)
     def init_neurons(self, **kwargs):
-        pass
-        """
         weights = kwargs["weights"]
-        biases = kwargs["biases"]
+        biases = kwargs["weights"]
         trainable_params = kwargs["trainable_params"]
 
-        assert weights.shape[1] == self.n_neurons
-        assert biases.shape[0] == self.n_neurons
+        # TODO: flatten weights
+        weight_vector = None
+        self.meta_vertex = Conv1DMeta(weight_vector, trainable_params)
 
-        for i, weight_vector in enumerate(
-                np.concatenate((weights, biases.reshape(1, -1))).T):
-
-            neuron = Perceptron(self, i, weight_vector, trainable_params)
-
+        for i in range(0, self.n_neurons):
+            neuron = Conv1DNeuron(self, i, weight_vector)
             self.neurons.append(neuron)
 
-        super(Dense, self).init_neurons()
+        super(Conv1D, self).init_neurons()
+
+        # meta conn
+        for neuron in self.neurons:
+            gfe.add_machine_edge_instance(
+                self.meta_vertex, neuron, globals.meta_partition)
+            gfe.add_machine_edge_instance(
+                neuron, self.meta_vertex, globals.meta_partition)
 
         if self.activation == "softmax":
             self.connect_incoming(self, globals.softmax_partition)
-        """
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
