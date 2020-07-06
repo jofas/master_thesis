@@ -69,7 +69,7 @@ def test_convolution():
     input_shape = (1, kernel_size, n_channels)
 
     # rows are channels, columns are the input vectors
-    input = np.array([[[1., 0., 0.],
+    input = np.array([[[1., 0., 1.],
                        [0., 1., 0.],
                        [0., 0., 1.]]], dtype=np.float32)
 
@@ -81,9 +81,11 @@ def test_convolution():
     layer.set_weights([weights, biases])
     y = layer(input).numpy()
 
-    assert (y[0, 0, :] == np.array([1.2 + biases[0],
-                                    4.2 + biases[1],
-                                    7.2 + biases[2]], dtype=np.float32)).all()
+    correct_result = np.array([1.2 + 0.2 + biases[0],
+                               4.2 + 1.2 + biases[1],
+                               7.2 + 2.2 + biases[2]], dtype=np.float32)
+
+    assert np.amax(np.absolute(y[0,0,:] - correct_result)) < 1e-6
 
 
 if __name__ == "__main__":

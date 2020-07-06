@@ -41,8 +41,16 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         biases = kwargs["weights"]
         trainable_params = kwargs["trainable_params"]
 
-        # TODO: flatten weights
-        weight_vector = None
+        weight_vector = np.empty((
+            self.kernel_shape[0] * self.n_channels + 1, self.n_filters))
+
+        for i in range(0, n_filters):
+            filter = weights[:, :, i]
+            filter = np.append(filter.flatten(), biases[i])
+            weight_vector[:, i] = filter
+
+        weight_vector = weight_vector.flatten(order="F")
+
         self.meta_vertex = Conv1DMeta(weight_vector, trainable_params)
 
         for i in range(0, self.n_neurons):
