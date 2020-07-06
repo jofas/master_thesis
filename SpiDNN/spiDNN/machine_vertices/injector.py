@@ -9,6 +9,11 @@ class Injector(
         AbstractPartitionManagedMachineVertex,
         ReverseIPTagMulticastSourceMachineVertex):
 
-    def __init__(self, n_keys, label):
+    def __init__(self, layer, id, n_keys):
+        self.layer = layer
+        self.id = id
+
+        label = "{}_{}".format(self.layer.label, self.id)
+
         ReverseIPTagMulticastSourceMachineVertex.__init__(
             self, n_keys=n_keys, label=label, enable_injection=True)

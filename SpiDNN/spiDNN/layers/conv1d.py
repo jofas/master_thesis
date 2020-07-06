@@ -44,14 +44,16 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         weight_vector = np.empty((
             self.kernel_shape[0] * self.n_channels + 1, self.n_filters))
 
-        for i in range(0, n_filters):
+        for i in range(0, self.n_filters):
             filter = weights[:, :, i]
             filter = np.append(filter.flatten(), biases[i])
             weight_vector[:, i] = filter
 
         weight_vector = weight_vector.flatten(order="F")
 
-        self.meta_vertex = Conv1DMeta(weight_vector, trainable_params)
+        self.meta_vertex = Conv1DMeta(
+            self, weight_vector, trainable_params)
+        gfe.add_machine_vertex_instance(self.meta_vertex)
 
         for i in range(0, self.n_neurons):
             neuron = Conv1DNeuron(self, i, weight_vector)
@@ -67,7 +69,18 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
                 neuron, self.meta_vertex, globals.meta_partition)
 
         if self.activation == "softmax":
-            self.connect_incoming(self, globals.softmax_partition)
+            super(Conv1D, self).connect_incoming(
+                self, globals.softmax_partition)
+
+    @overrides(LayerInterface.connect_incoming)
+    def connect_incoming(self, source_layer, partition):
+        if self.padding == "valid":
+            for i, neuron in enumerate(self.neurons):
+                for j in range(0, self.kernel_shape[0]):
+                    gfe.add_machine_edge_instance(
+                        source_layer.neurons[i + j], neuron, partition)
+        else:
+            raise Exception("Unimplemented")
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):

@@ -1,4 +1,7 @@
+import spinnaker_graph_front_end as front_end
+
 from spiDNN.layers import Conv1D, Input
+import spiDNN.gfe as gfe
 
 import tensorflow as tf
 
@@ -88,7 +91,52 @@ def test_convolution():
     assert np.amax(np.absolute(y[0,0,:] - correct_result)) < 1e-6
 
 
+def test_connection():
+    input_layer = Input(5)
+    input_layer.label = "Input"
+
+    conv1d_layer = Conv1D((3,), "identity")
+    conv1d_layer.label = "Conv1D"
+
+    weights, biases = conv1d_layer.generate_weights(input_layer)
+
+    gfe.setup(input_layer.n_neurons + conv1d_layer.n_neurons)
+
+    input_layer.init_neurons(neurons_next_layer=conv1d_layer.n_neurons)
+
+    conv1d_layer.init_neurons(
+        weights=weights, biases=biases, trainable_params=None)
+
+    conv1d_layer.connect_incoming(input_layer, "some_partition")
+
+    try:
+        gfe.run(1)
+    except:
+        pass
+
+    assert conv1d_layer.n_neurons == 3
+
+    for neuron in conv1d_layer.neurons:
+        edges = list(filter(
+            lambda x: x.post_vertex == neuron
+            and x.label.startswith("some_partition"),
+            front_end.machine_graph().edges))
+
+        assert len(edges) == conv1d_layer.kernel_shape[0]
+
+        for j in range(0, conv1d_layer.kernel_shape[0]):
+            edge = list(filter(
+                lambda x: x.pre_vertex.id == neuron.id + j, edges))
+            assert len(edge) == 1
+
+    try:
+        gfe.stop()
+    except:
+        pass
+
+
 if __name__ == "__main__":
     test_conv_flatten()
     test_convolution()
+    test_connection()
     print("SUCCESS.")

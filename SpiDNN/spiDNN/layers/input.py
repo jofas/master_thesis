@@ -20,8 +20,6 @@ class Input(AbstractLayerBase):
         neurons_next_layer = kwargs["neurons_next_layer"]
 
         for i in range(0, self.n_neurons):
-            neuron = Injector(
-                n_keys=neurons_next_layer,
-                label="{}_{}".format(self.label, i))
+            neuron = Injector(self, i, neurons_next_layer)
             self.neurons.append(neuron)
             gfe.add_machine_vertex_instance(neuron)
