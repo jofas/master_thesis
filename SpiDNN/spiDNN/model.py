@@ -326,6 +326,3 @@ class Model:
     def set_weights(self, weights):
         # TODO: make sure no bullshit is going on
         self.__weights = weights
-
-    def set_weights_from_keras(self, weights):
-        self.set_weights([w.read_value().numpy() for w in weights])

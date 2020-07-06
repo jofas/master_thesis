@@ -27,7 +27,7 @@ def test_inference():
                    .add(Dense(100, activation="sigmoid")) \
                    .add(Dense(100, activation="softmax"))
 
-    model.set_weights_from_keras(kmodel.weights)
+    model.set_weights(kmodel.get_weights())
 
     p = model.predict(X)
     p_ = kmodel.predict(X)

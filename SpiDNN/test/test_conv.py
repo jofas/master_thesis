@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 
 
-#column -> one filter
+# column -> one filter
 weights = np.array([[[0.0, 1.0, 2.0],
                      [0.1, 1.1, 2.1],
                      [0.2, 1.2, 2.2]],
@@ -24,10 +24,10 @@ n_filters = 3
 
 
 def test_conv_flatten():
-    assert (weights[:,:,0] == np.array([[0.0, 0.1, 0.2],
-                                        [0.3, 0.4, 0.5],
-                                        [0.6, 0.7, 0.8]],
-                                       dtype=np.float32)).all()
+    assert (weights[:, :, 0] == np.array([[0.0, 0.1, 0.2],
+                                          [0.3, 0.4, 0.5],
+                                          [0.6, 0.7, 0.8]],
+                                         dtype=np.float32)).all()
 
     conv1d = Conv1D((kernel_size,), "identity")
     conv1d.n_filters = n_filters
@@ -44,7 +44,7 @@ def test_conv_flatten():
         kernel_size * n_channels + 1, n_filters))
 
     for i in range(0, n_filters):
-        filter = weights[:,:,i]
+        filter = weights[:, :, i]
         filter = np.append(filter.flatten(), biases[i])
         flattened_weights[:, i] = filter
 
@@ -57,9 +57,9 @@ def test_conv_flatten():
     extracted_biases = np.empty((n_filters,))
 
     for i in range(0, n_filters):
-        extracted_weights[:,:,i] = flattened_weights[:-1,i].reshape(
+        extracted_weights[:, :, i] = flattened_weights[:-1, i].reshape(
             kernel_size, n_channels)
-        extracted_biases[i] = flattened_weights[-1,i]
+        extracted_biases[i] = flattened_weights[-1, i]
 
     assert (extracted_biases == biases).all()
     assert (extracted_weights == weights).all()
@@ -69,7 +69,7 @@ def test_convolution():
     input_shape = (1, kernel_size, n_channels)
 
     # rows are channels, columns are the input vectors
-    input = np.array([[[1., 0., 0.],
+    input = np.array([[[1., 0., 1.],
                        [0., 1., 0.],
                        [0., 0., 1.]]], dtype=np.float32)
 
@@ -81,9 +81,11 @@ def test_convolution():
     layer.set_weights([weights, biases])
     y = layer(input).numpy()
 
-    assert (y[0,0,:] == np.array([1.2 + biases[0],
-                                  4.2 + biases[1],
-                                  7.2 + biases[2]], dtype=np.float32)).all()
+    correct_result = np.array([1.2 + 0.2 + biases[0],
+                               4.2 + 1.2 + biases[1],
+                               7.2 + 2.2 + biases[2]], dtype=np.float32)
+
+    assert np.amax(np.absolute(y[0,0,:] - correct_result)) < 1e-6
 
 
 if __name__ == "__main__":
