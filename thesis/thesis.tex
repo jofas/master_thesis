@@ -439,11 +439,15 @@ prototype.
     custom solution (application graph not helpful for neurons which
     become too big))
   \item smart algorithms vs.\ integrating with state-of-the-art libraries
-    (investing time in stuff like SLIDE and the one paper by the austrian
+    (investing time in stuff like SLIDE and the one paper by the Austrian
     guys about sparse connections explicitly mentioning SpiNNaker and
     neuromorphic chips or rather work on a trans-/compiler
     that efficiently translates linear algebra operations (like TF,
     PyTorch,\dots) onto SpiNNaker)
+  \item integrate into compiler projects like Apache-TVM, XLA, Glow,
+   nGraph, etc.
+  \item implementing ONNX spec to make it easy for developers to use
+    SpiNNaker (develop in PyTorch $\rightarrow$ run on SpiNNaker)
 \end{itemize}
 
 \bibliography{library.bib}
