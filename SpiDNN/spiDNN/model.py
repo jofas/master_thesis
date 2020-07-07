@@ -235,7 +235,7 @@ class Model:
                 conn.send_event_with_payload(
                     label,
                     0,
-                    util.float_to_uint32t(x[send_label_to_pos[label]]))
+                    util.float_to_uint32t(x[send_label_to_pos[label],0]))
                 barrier.wait()
             barrier.release()
 
@@ -325,4 +325,7 @@ class Model:
 
     def set_weights(self, weights):
         # TODO: make sure no bullshit is going on
+        for i, weight in enumerate(weights):
+            assert self.__weights[i].shape == weight.shape
+
         self.__weights = weights

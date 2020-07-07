@@ -1,13 +1,13 @@
 from spiDNN import Model
-from spiDNN.layers import Input, Dense
+from spiDNN.layers import Input, Dense, Conv1D
 
 import numpy as np
 
-from keras.layers import Dense as KDense
+from keras.layers import Dense as KDense, Conv1D as KConv1D
 from keras.models import Sequential
 
 
-N = 100
+N = 5
 
 
 def test_inference():
@@ -35,7 +35,39 @@ def test_inference():
     error = np.absolute(p - p_)
     assert np.amax(error) < 0.0001
 
+# TODO: 1. find out why keras different
+#       2. make it work with more layers
+#       3. then more channels
+#       4. then more filters, etc.
+#
+# channel counter -> array, makes it more secure/independent from
+#                    other neurons
+def test_inference_conv1d():
+    X = np.random.rand(1, N, 1)
+
+    kmodel = Sequential()
+    kmodel.add(KConv1D(1, 3, input_shape=(N, 1)))
+    #kmodel.add(KDense(5, activation="softmax"))
+
+    model = Model().add(Input(N)) \
+                   .add(Conv1D((3,), "identity"))
+                   #.add(Dense(5, activation="softmax"))
+
+    model.set_weights(kmodel.get_weights())
+
+    p = model.predict(X)
+    p_ = kmodel.predict(X)
+
+    print(kmodel.get_weights())
+    print(p)
+    print(p_)
+
+    error = np.absolute(p - p_)
+    assert np.amax(error) < 0.0001
+
+
 
 if __name__ == "__main__":
-    test_inference()
+    #test_inference()
+    test_inference_conv1d()
     print("SUCCESS.")

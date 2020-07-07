@@ -88,7 +88,7 @@ class Conv1DNeuron(
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
-            spec, PerceptronDataRegions.SYSTEM.value, self,
+            spec, Conv1DDataRegions.SYSTEM.value, self,
             machine_time_step, time_scale_factor)
 
         self._generate_and_write_base_params(
@@ -101,7 +101,7 @@ class Conv1DNeuron(
     def _generate_and_write_base_params(
             self, spec, placement, machine_graph, routing_info):
         spec.reserve_memory_region(
-            region=PerceptronDataRegions.BASE_PARAMS.value,
+            region=Conv1DDataRegions.BASE_PARAMS.value,
             size=self.BASE_PARAMS_DATA_SIZE,
             label="base_params")
 
@@ -116,24 +116,23 @@ class Conv1DNeuron(
             self, globals.forward_partition)
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.BASE_PARAMS.value)
+            region=Conv1DDataRegions.BASE_PARAMS.value)
         spec.write_value(key)
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
         spec.write_value(self.layer.kernel_shape[0])
         spec.write_value(self.layer.n_channels)
         spec.write_value(self.layer.n_filters)
-        spec.write_value(len(self.weights))
         spec.write_value(globals.activations[self.layer.activation])
 
     def _generate_and_write_weights(self, spec):
         spec.reserve_memory_region(
-            region=PerceptronDataRegions.WEIGHTS.value,
+            region=Conv1DDataRegions.WEIGHTS.value,
             size=self.weight_container_size,
             label="weights")
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.WEIGHTS.value)
+            region=Conv1DDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
     def __repr__(self):

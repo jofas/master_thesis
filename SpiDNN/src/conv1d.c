@@ -48,7 +48,7 @@ uint activation_function_id;
 
 float *weights;
 
-float potential;
+float *filter_results;
 
 float *weights_sdram;
 base_params_region_t *base_params_sdram;
@@ -56,34 +56,37 @@ base_params_region_t *base_params_sdram;
 
 /* functions */
 
-void generate_potential() {
+void generate_potential(uint filter) {
   for (uint i = 0; i < n_potentials; i++) {
-    potential += potentials[i] * weights[i];
+    filter_results[filter] += potentials[i]
+      * weights[(n_potentials + 1) * filter + i];
   }
-  potential += BIAS;
+  filter_results[filter] += weights[
+    (n_potentials + 1) * filter + n_potentials];
 }
 
-void activate() {
-  generate_potential();
+void activate(uint filter) {
+  generate_potential(filter);
 
   switch (activation_function_id) {
     case IDENTITY:
       break;
 
     case RELU:
-      potential = potential > .0 ? potential : .0;
+      filter_results[filter] = filter_results[filter] > .0 ?
+        filter_results[filter] : .0;
       break;
 
     case SIGMOID:
-      potential = 1. / (1. + exp(-potential));
+      filter_results[filter] = 1. / (1. + exp(-filter_results[filter]));
       break;
 
     case TANH:
-      potential = tanh(potential);
+      filter_results[filter] = tanh(filter_results[filter]);
       break;
 
     case SOFTMAX:
-      potential = exp(potential);
+      filter_results[filter] = exp(filter_results[filter]);
       break;
 
     default:
@@ -102,14 +105,23 @@ void weights_init() {
     sizeof(float) * N_WEIGHTS);
 }
 
-void receive(uint key, float payload) {
-  //log_info("received potential from %d: %f", key, payload);
-
-  if (spiDNN_received_potentials_counter == 0) {
-    potential = .0;
+void reset_filter_results() {
+  for (uint i = 0; i < n_filters; i++) {
+    filter_results[i] = .0;
   }
-  receive_forward(key, payload);
 }
+
+void receive(uint key, float payload) {
+  log_error("received potential from %d: %f", key, payload);
+  log_error("I have %d many channels and %d many filters", n_channels, n_filters);
+
+  if (spiDNN_received_potentials_counter == 0)
+    reset_filter_results();
+
+  receive_forward_with_channel(key, payload, kernel_size);
+}
+
+//uint completed = 0;
 
 void update(uint ticks, uint b) {
   use(b);
@@ -117,49 +129,30 @@ void update(uint ticks, uint b) {
 
   spiDNN_time++;
 
-#ifdef softmax
-  if (softmax_pass_complete()) {
-    potential = potential / softmax_denominator;
-    send(forward_key, (void *)&potential);
-    //log_error("sending shit: %f", potential);
-    //rt_error(RTE_SWERR);
-  }
-#endif
-
   if (forward_pass_complete()) {
-    activate();
-#ifdef softmax
-    send(softmax_key, (void *)&potential);
-#else
-    send(forward_key, (void *)&potential);
-#endif
-  }
+    for (uint i = 0; i < n_filters; i++) {
+      activate(i);
+      send(forward_key, (void *)&filter_results[i]);
 
-#ifdef trainable
-  if (backward_pass_complete()) {
-    backward_passes_counter++;
-    batch_counter++;
+      /*
+      completed++;
 
-    update_gradients();
-
-    if (BATCH_COMPLETE) {
-      update_weights();
-      if (FIT_COMPLETE) {
-        sark_mem_cpy((void *)weights_sdram, (void *)weights,
-          sizeof(float) * n_weights);
+      if (completed > 1) {
+        log_error("sent result: %f at time: %d", filter_results[i],
+            spiDNN_time);
+        rt_error(RTE_SWERR);
       }
-      reset_batch();
+      */
     }
-
-    send(backward_key, (void *)&neuron_error);
   }
-#endif
 }
 
 void c_main(void) {
   base_init();
 
   weights_init();
+
+  filter_results = (float *)malloc(sizeof(float) * n_filters);
 
   // register callbacks
   spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
