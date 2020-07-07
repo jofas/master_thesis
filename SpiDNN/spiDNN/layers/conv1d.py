@@ -51,22 +51,27 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         weight_vector = weight_vector.flatten(order="F")
 
+        """
         self.meta_vertex = Conv1DMeta(
             self, weight_vector, trainable_params)
         gfe.add_machine_vertex_instance(self.meta_vertex)
+        """
 
         for i in range(0, self.n_neurons):
-            neuron = Conv1DNeuron(self, i, weight_vector)
+            neuron = Conv1DNeuron(
+                self, i, weight_vector, trainable_params)
             self.neurons.append(neuron)
 
         super(Conv1D, self).init_neurons()
 
+        """
         # meta conn
         for neuron in self.neurons:
             gfe.add_machine_edge_instance(
                 self.meta_vertex, neuron, globals.meta_partition)
             gfe.add_machine_edge_instance(
                 neuron, self.meta_vertex, globals.meta_partition)
+        """
 
         if self.activation == "softmax":
             super(Conv1D, self).connect_incoming(
