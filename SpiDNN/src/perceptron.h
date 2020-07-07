@@ -63,6 +63,36 @@ void generate_potential() {
   potential += BIAS;
 }
 
+void activate() {
+  generate_potential();
+
+  switch (activation_function_id) {
+    case IDENTITY:
+      break;
+
+    case RELU:
+      potential = potential > .0 ? potential : .0;
+      break;
+
+    case SIGMOID:
+      potential = 1. / (1. + exp(-potential));
+      break;
+
+    case TANH:
+      potential = tanh(potential);
+      break;
+
+    case SOFTMAX:
+      potential = exp(potential);
+      break;
+
+    default:
+      log_error("Unknown activation function %d - exiting!",
+        activation_function_id);
+      rt_error(RTE_SWERR);
+  }
+}
+
 void weights_init() {
   weights_sdram = data_specification_get_region(WEIGHTS, data_spec_meta);
 
