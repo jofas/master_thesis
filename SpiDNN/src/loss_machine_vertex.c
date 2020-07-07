@@ -153,7 +153,7 @@ void update(uint ticks, uint b) {
 
   spiDNN_time++;
 
-  if ((received_potentials_counter == K) && (received_y_counter == K))
+  if ((spiDNN_received_potentials_counter == K) && (received_y_counter == K))
   {
     N++;
 
@@ -171,7 +171,7 @@ void update(uint ticks, uint b) {
     }
 
     received_y_counter = 0;
-    received_potentials_counter = 0;
+    spiDNN_received_potentials_counter = 0;
   }
 }
 

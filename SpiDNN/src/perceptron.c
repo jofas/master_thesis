@@ -29,7 +29,7 @@ void receive(uint key, float payload) {
   }
 #endif
 
-  if (received_potentials_counter == 0) {
+  if (spiDNN_received_potentials_counter == 0) {
     potential = .0;
   }
   receive_forward(key, payload);

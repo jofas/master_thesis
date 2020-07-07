@@ -1,7 +1,6 @@
 #include "spiDNN.h"
 
-#define BIAS weights[n_weights - 1]
-#define N_POTENTIALS n_weights - 1
+#define N_WEIGHTS (kernel_size + 1) * n_filters
 
 
 /* structs and enums */
@@ -13,7 +12,6 @@ typedef enum regions_e {
     WEIGHTS,
     SOFTMAX_PARAMS,
     TRAINABLE_PARAMS,
-    NEXT_LAYER_WEIGHTS,
 } regions_e;
 
 //! human readable definitions of the activation functions (except
@@ -31,7 +29,9 @@ typedef struct base_params_region {
   uint32_t forward_key;
   uint32_t min_pre_key;
   uint32_t timer_offset;
-  uint32_t n_weights;
+  uint32_t kernel_size;
+  uint32_t n_channels;
+  uint32_t n_filters;
   uint32_t activation_function_id;
 } base_params_region_t;
 
@@ -40,7 +40,9 @@ typedef struct base_params_region {
 
 uint forward_key;
 
-uint n_weights;
+uint kernel_size;
+uint n_channels;
+uint n_filters;
 
 uint activation_function_id;
 
@@ -94,10 +96,77 @@ void activate() {
 void weights_init() {
   weights_sdram = data_specification_get_region(WEIGHTS, data_spec_meta);
 
-  weights = (float *)malloc(sizeof(float) * n_weights);
+  weights = (float *)malloc(sizeof(float) * N_WEIGHTS);
 
   sark_mem_cpy((void *)weights, (void *)weights_sdram,
-    sizeof(float) * n_weights);
+    sizeof(float) * N_WEIGHTS);
+}
+
+void receive(uint key, float payload) {
+  //log_info("received potential from %d: %f", key, payload);
+
+  if (spiDNN_received_potentials_counter == 0) {
+    potential = .0;
+  }
+  receive_forward(key, payload);
+}
+
+void update(uint ticks, uint b) {
+  use(b);
+  use(ticks);
+
+  spiDNN_time++;
+
+#ifdef softmax
+  if (softmax_pass_complete()) {
+    potential = potential / softmax_denominator;
+    send(forward_key, (void *)&potential);
+    //log_error("sending shit: %f", potential);
+    //rt_error(RTE_SWERR);
+  }
+#endif
+
+  if (forward_pass_complete()) {
+    activate();
+#ifdef softmax
+    send(softmax_key, (void *)&potential);
+#else
+    send(forward_key, (void *)&potential);
+#endif
+  }
+
+#ifdef trainable
+  if (backward_pass_complete()) {
+    backward_passes_counter++;
+    batch_counter++;
+
+    update_gradients();
+
+    if (BATCH_COMPLETE) {
+      update_weights();
+      if (FIT_COMPLETE) {
+        sark_mem_cpy((void *)weights_sdram, (void *)weights,
+          sizeof(float) * n_weights);
+      }
+      reset_batch();
+    }
+
+    send(backward_key, (void *)&neuron_error);
+  }
+#endif
+}
+
+void c_main(void) {
+  base_init();
+
+  weights_init();
+
+  // register callbacks
+  spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);
+  spin1_callback_on(TIMER_TICK, update, TIMER);
+
+  log_info("\nStarting simulation\n");
+  simulation_run();
 }
 
 
@@ -109,10 +178,12 @@ void __init_base_params(
   base_params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
   forward_key = base_params_sdram->forward_key;
-  n_weights = base_params_sdram->n_weights;
+  kernel_size = base_params_sdram->kernel_size;
+  n_channels = base_params_sdram->n_channels;
+  n_filters = base_params_sdram->n_filters;
   activation_function_id = base_params_sdram->activation_function_id;
 
   *timer_offset = base_params_sdram->timer_offset;
-  *n_potentials = n_weights - 1;
+  *n_potentials = kernel_size * n_channels;
   *min_pre_key = base_params_sdram->min_pre_key;
 }

@@ -32,10 +32,12 @@ uint cpsr = 0;
 
 
 float *potentials;
-uint received_potentials_counter = 0;
+uint spiDNN_received_potentials_counter = 0;
 uint min_pre_key;
 uint n_potentials;
 
+
+/* functions */
 
 void send(uint key, void *payload) {
   uint send_bytes;
@@ -52,12 +54,19 @@ void receive_forward(uint key, float payload) {
   uint idx = key - min_pre_key;
 
   potentials[idx] = payload;
-  received_potentials_counter++;
+  spiDNN_received_potentials_counter++;
+}
+
+void receive_forward_with_channel(uint key, float payload, uint channel) {
+  uint idx = key - min_pre_key;
+
+  potentials[idx + channel] = payload;
+  spiDNN_received_potentials_counter++;
 }
 
 bool forward_pass_complete() {
-  if (received_potentials_counter == n_potentials) {
-    received_potentials_counter = 0;
+  if (spiDNN_received_potentials_counter == n_potentials) {
+    spiDNN_received_potentials_counter = 0;
     return true;
   }
   return false;
