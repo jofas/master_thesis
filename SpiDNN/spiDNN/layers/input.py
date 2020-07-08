@@ -12,7 +12,12 @@ from spiDNN.machine_vertices import Injector
 class Input(AbstractLayerBase):
     def __init__(self, *input_shape, label="unnamed"):
         n_neurons = input_shape[0]
-        self.n_filters = 1  # actually the amount of channels
+
+        if len(input_shape) == 1:
+            self.n_filters = 1  # actually the amount of channels
+        else:
+            self.n_filters = input_shape[-1] # channel_last
+
         super(Input, self).__init__(label, n_neurons, [])
 
     @overrides(LayerInterface.init_neurons)
