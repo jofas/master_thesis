@@ -44,6 +44,8 @@ class Model:
 
         extractor = Extractor("extract_predictions")
 
+        self._reset_layers()
+
         gfe.setup(self._all_neurons() + 1)
 
         extractor.init_neurons()
@@ -58,8 +60,6 @@ class Model:
         gfe.run()
         gfe.stop()
         conn.close()
-        self._reset_layers()
-
         return result
 
     def fit(self, X, y, loss_fn, epochs, batch_size, learning_rate):
@@ -82,6 +82,8 @@ class Model:
         loss_layer = Loss("loss_unit", loss_fn, K)
         y_injectors = Input(K, label="YInjector")
         pong = Extractor("pong")
+
+        self._reset_layers()
 
         n_cores = self._all_neurons() + y_injectors.n_neurons + 2
         gfe.setup(n_cores)
@@ -120,7 +122,6 @@ class Model:
 
         gfe.stop()
         conn.close()
-        self._reset_layers()
 
     def _reset_layers(self):
         for layer in self._layers:
