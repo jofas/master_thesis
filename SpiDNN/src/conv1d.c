@@ -1,7 +1,7 @@
 #include "spiDNN.h"
 
-#define N_WEIGHTS (kernel_size + 1) * n_filters
 #define N_KERNEL_ELEMENTS kernel_size * n_channels
+#define N_WEIGHTS (N_KERNEL_ELEMENTS + 1) * n_filters
 
 /* structs and enums */
 
@@ -67,8 +67,8 @@ void generate_potential(uint filter) {
   // should be (N_KERNEL_ELEMENTS + 1) * filter + 1 (I think ...
   // future Jonas will handle that once we are at multiple filters)
   for (uint i = 0; i < n_potentials; i++) {
-    filter_results[filter] += potentials[i]
-      * weights[(N_KERNEL_ELEMENTS + 1) * filter + i + lower_padding];
+    filter_results[filter] += potentials[i] * weights[
+      (N_KERNEL_ELEMENTS + 1) * filter + i + lower_padding * n_channels];
   }
 
   filter_results[filter] += weights[
@@ -106,7 +106,7 @@ void activate(uint filter) {
   }
 }
 
-void weights_init() {
+void weights_init(void) {
   weights_sdram = data_specification_get_region(WEIGHTS, data_spec_meta);
 
   weights = (float *)malloc(sizeof(float) * N_WEIGHTS);
@@ -115,7 +115,7 @@ void weights_init() {
     sizeof(float) * N_WEIGHTS);
 }
 
-void reset_forward_pass() {
+void reset_forward_pass(void) {
   for (uint i = 0; i < n_filters; i++) {
     filter_results[i] = .0;
   }
@@ -129,7 +129,7 @@ void receive(uint key, float payload) {
     reset_forward_pass();
 
   receive_forward_with_channel(
-    key, payload, channel_counters, kernel_size);
+    key, payload, channel_counters, n_channels);
 }
 
 void update(uint ticks, uint b) {
@@ -183,4 +183,7 @@ void __init_base_params(
   *n_potentials =
     (kernel_size - lower_padding - upper_padding) * n_channels;
   *min_pre_key = base_params_sdram->min_pre_key;
+
+  log_error("kernel_size: %d, n_channels: %d, n_potentials: %d",
+      kernel_size, n_channels, *n_potentials);
 }

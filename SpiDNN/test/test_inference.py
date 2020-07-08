@@ -9,8 +9,9 @@ from keras.models import Sequential
 
 
 N = 100
-n_channels = 1
+n_channels = 4
 kernel_size = 8
+
 
 def test_inference():
     X = np.random.rand(500, N)
@@ -37,22 +38,18 @@ def test_inference():
     error = np.absolute(p - p_)
     assert np.amax(error) < 0.0001
 
-# TODO:
-#       3. then more channels (must be implemented into off-board io
-#       4. then more filters, etc.
-#
-# channel counter -> array, makes it more secure/independent from
-#                    other neurons
+
 def test_inference_conv1d():
-    X = np.random.rand(500, N, n_channels)
+    input_shape = (N, n_channels)
+    X = np.random.rand(500, *input_shape)
 
     kmodel = Sequential()
     kmodel.add(KConv1D(
-        1, kernel_size, input_shape=(N, n_channels), padding="same"))
+        1, kernel_size, input_shape=input_shape, padding="same"))
     kmodel.add(KFlatten())
     kmodel.add(KDense(1, activation=None))
 
-    model = Model().add(Input(N, 1)) \
+    model = Model().add(Input(*input_shape)) \
                    .add(Conv1D(
                        (kernel_size,), "identity", padding="same")) \
                    .add(Dense(1, activation="identity"))
@@ -63,7 +60,7 @@ def test_inference_conv1d():
     p_ = kmodel.predict(X)
 
     error = np.absolute(p - p_)
-    assert np.amax(error) < 0.0001
+    assert np.amax(error) < 1e-4
 
 
 if __name__ == "__main__":

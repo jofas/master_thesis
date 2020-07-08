@@ -58,12 +58,12 @@ void receive_forward(uint key, float payload) {
 }
 
 void receive_forward_with_channel(
-    uint key, float payload, uint *channel_counters, uint kernel_size)
+    uint key, float payload, uint *channel_counters, uint n_channels)
 {
   uint idx = key - min_pre_key;
   uint channel = channel_counters[idx];
 
-  potentials[channel * kernel_size + idx] = payload;
+  potentials[channel + n_channels * idx] = payload;
 
   spiDNN_received_potentials_counter++;
   channel_counters[idx]++;
