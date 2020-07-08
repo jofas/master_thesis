@@ -115,6 +115,41 @@ class Conv1DNeuron(
         key = routing_info.get_first_key_from_pre_vertex(
             self, globals.forward_partition)
 
+        # TODO: i need to know offsets (lower and upper) when I use
+        #       zero-padding (same)
+        #
+        #       conv1d.c:
+        #
+        #       that would mean instead of decreasing min_pre_key
+        #       I'd have an offset variable and I'd index like
+        #       weights[i + offset]
+        #
+        #       but I'd need to decrease n_potentials
+        #       (n_potentials := (kernel_size - offset) * n_channels)
+        #
+        #       I could have that offset 0 for everyone else (except
+        #       upper padded neurons)
+        #
+        #       what's for upper bounded ones???
+        #       I'd need to index like weights[i]...
+        #       I could tell neuron is_upper_bounded... but how?
+        #
+        #       all I know is "oh, I've less connections than
+        #       kernel_size", I don't know where they are missing...
+        #       especially interesting is the case where one neuron
+        #       is missing connections atop and below
+        #
+        #       so I need to handle both independently
+        #       and offset := missing atop and below
+        #       and below missing indexing = weights[i + missing_below]
+        #
+        #
+        #       ... can i do something with the id???
+        #
+        #       growing_down and growing up can be computed here
+        #       somehow I should know about the id how much above
+        #       and below is missing
+
         spec.switch_write_focus(
             region=Conv1DDataRegions.BASE_PARAMS.value)
         spec.write_value(key)

@@ -12,16 +12,22 @@ from spiDNN.machine_vertices import Conv1DNeuron, Conv1DMeta
 
 
 class Conv1D(AbstractLayerBase, WeightsInterface):
-    def __init__(self, kernel_shape, activation, bias=True):
+    def __init__(self, kernel_shape, activation, bias=True, padding="valid"):
         assert len(kernel_shape) == 1
+        # 0 and negative kernel shape is illegal
+        assert kernel_shape[0] > 0
 
         self.kernel_shape = kernel_shape
 
         # TODO: support n filters
         self.n_filters = 1
         self.n_channels = None
-        # TODO: support "same" as well
-        self.padding = "valid"
+
+        if padding in globals.paddings:
+            self.padding = padding
+        else:
+            raise KeyError(
+                "Unexpected padding: {}".format(padding))
 
         self.meta_vertex = None
 
@@ -71,21 +77,28 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
                 self.meta_vertex, neuron, globals.meta_partition)
             gfe.add_machine_edge_instance(
                 neuron, self.meta_vertex, globals.meta_partition)
-        """
 
         if self.activation == "softmax":
             super(Conv1D, self).connect_incoming(
                 self, globals.softmax_partition)
+        """
 
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
         if self.padding == "valid":
-            for i, neuron in enumerate(self.neurons):
-                for j in range(0, self.kernel_shape[0]):
-                    gfe.add_machine_edge_instance(
-                        source_layer.neurons[i + j], neuron, partition)
+            growing_down = 0
+        elif self.padding == "same":
+            growing_down = ( int(self.kernel_shape[0] / 2)
+                           - (self.kernel_shape[0] % 2 == 0))
         else:
-            raise Exception("Unimplemented")
+            raise KeyError(
+                "Unexpected padding: {}".format(padding))
+
+        for i, neuron in enumerate(self.neurons, start=-growing_down):
+            for j in range(i, i + self.kernel_shape[0]):
+                if j >= 0 and j < source_layer.n_neurons:
+                    gfe.add_machine_edge_instance(
+                        source_layer.neurons[j], neuron, partition)
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):

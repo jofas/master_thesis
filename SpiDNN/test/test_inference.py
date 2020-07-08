@@ -9,7 +9,8 @@ from keras.models import Sequential
 
 
 N = 100
-
+n_channels = 1
+kernel_size = 2
 
 def test_inference():
     X = np.random.rand(500, N)
@@ -37,22 +38,21 @@ def test_inference():
     assert np.amax(error) < 0.0001
 
 # TODO:
-#       2. make it work with more layers
 #       3. then more channels (must be implemented into off-board io
 #       4. then more filters, etc.
 #
 # channel counter -> array, makes it more secure/independent from
 #                    other neurons
 def test_inference_conv1d():
-    X = np.random.rand(500, N, 1)
+    X = np.random.rand(500, N, n_channels)
 
     kmodel = Sequential()
-    kmodel.add(KConv1D(1, 3, input_shape=(N, 1)))
+    kmodel.add(KConv1D(1, kernel_size, input_shape=(N, n_channels)))
     kmodel.add(KFlatten())
     kmodel.add(KDense(5, activation="softmax"))
 
     model = Model().add(Input(N)) \
-                   .add(Conv1D((3,), "identity")) \
+                   .add(Conv1D((kernel_size,), "identity")) \
                    .add(Dense(5, activation="softmax"))
 
     model.set_weights(kmodel.get_weights())

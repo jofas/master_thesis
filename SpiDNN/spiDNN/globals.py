@@ -27,3 +27,7 @@ activations = {fn_name: i for i, fn_name in enumerate([
 losses = {fn_name: i for i, fn_name in enumerate([
     "mean_squared_error", "categorical_crossentropy", "binary_crossentropy"
 ])}
+
+paddings = {padding: i for i, padding in enumerate([
+    "valid", "same"
+])}
