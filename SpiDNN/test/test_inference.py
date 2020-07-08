@@ -67,6 +67,6 @@ def test_inference_conv1d():
 
 
 if __name__ == "__main__":
-    #test_inference()
+    test_inference()
     test_inference_conv1d()
     print("SUCCESS.")
