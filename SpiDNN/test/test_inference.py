@@ -52,7 +52,7 @@ def test_inference_conv1d():
     kmodel.add(KFlatten())
     kmodel.add(KDense(1, activation=None))
 
-    model = Model().add(Input(N)) \
+    model = Model().add(Input(N, 1)) \
                    .add(Conv1D(
                        (kernel_size,), "identity", padding="same")) \
                    .add(Dense(1, activation="identity"))
@@ -67,6 +67,6 @@ def test_inference_conv1d():
 
 
 if __name__ == "__main__":
-    #test_inference()
+    test_inference()
     test_inference_conv1d()
     print("SUCCESS.")

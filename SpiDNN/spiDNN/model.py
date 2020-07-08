@@ -230,13 +230,18 @@ class Model:
         send_label_to_pos = {
             label: i for i, label in enumerate(send_labels)}
 
+        # TODO: how will this look with 2D input?
+        if len(X.shape) == 2:
+            X = X.reshape(*X.shape, 1)
+
         def injector_callback(label, conn):
             barrier.acquire()
             for x in X:
-                conn.send_event_with_payload(
+                conn.send_events_with_payloads(
                     label,
-                    0,
-                    util.float_to_uint32t(x[send_label_to_pos[label],0]))
+                    [(0, util.float_to_uint32t(
+                        x[send_label_to_pos[label],i]))
+                        for i in range(0, X.shape[-1])])
                 barrier.wait()
             barrier.release()
 
@@ -305,14 +310,19 @@ class Model:
         send_label_to_pos = {
             label: i for i, label in enumerate(send_labels)}
 
+        # TODO: how will this look with 2D input?
+        if len(M.shape) == 2:
+            M = M.reshape(*M.shape, 1)
+
         def injector_callback(label, conn):
             barrier.acquire()
             for epoch in range(0, epochs):
                 for m in M:
-                    conn.send_event_with_payload(
+                    conn.send_events_with_payloads(
                         label,
-                        0,
-                        util.float_to_uint32t(m[send_label_to_pos[label]]))
+                        [(0, util.float_to_uint32t(
+                            m[send_label_to_pos[label],i]))
+                            for i in range(0, M.shape[-1])])
                     barrier.wait()
             barrier.release()
 

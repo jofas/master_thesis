@@ -53,6 +53,7 @@ uint activation_function_id;
 
 float *weights;
 
+uint *channel_counters;
 float *filter_results;
 
 float *weights_sdram;
@@ -114,17 +115,21 @@ void weights_init() {
     sizeof(float) * N_WEIGHTS);
 }
 
-void reset_filter_results() {
+void reset_forward_pass() {
   for (uint i = 0; i < n_filters; i++) {
     filter_results[i] = .0;
+  }
+  for (uint i = 0; i < n_potentials; i++) {
+    channel_counters[i] = 0;
   }
 }
 
 void receive(uint key, float payload) {
   if (spiDNN_received_potentials_counter == 0)
-    reset_filter_results();
+    reset_forward_pass();
 
-  receive_forward_with_channel(key, payload, kernel_size);
+  receive_forward_with_channel(
+    key, payload, channel_counters, kernel_size);
 }
 
 void update(uint ticks, uint b) {
@@ -146,6 +151,7 @@ void c_main(void) {
 
   weights_init();
 
+  channel_counters = (uint *)malloc(sizeof(uint) * n_potentials);
   filter_results = (float *)malloc(sizeof(float) * n_filters);
 
   // register callbacks
