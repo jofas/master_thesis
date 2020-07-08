@@ -1,6 +1,7 @@
 import spinnaker_graph_front_end as front_end
 
-from spiDNN.layers import Conv1D, Input
+from spiDNN import Model
+from spiDNN.layers import Conv1D, Input, Dense
 import spiDNN.gfe as gfe
 
 import tensorflow as tf
@@ -135,8 +136,39 @@ def test_connection():
         pass
 
 
+def test_same_padding():
+    model = Model().add(Input(5)) \
+                   .add(Conv1D((8,), "identity", padding="same")) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 5, 1)
+
+    model.predict(X)
+
+    lower, upper = \
+        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
+    assert lower == 3 and upper == 0
+
+    lower, upper = \
+        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
+    assert lower == 2 and upper == 1
+
+    lower, upper = \
+        model._layers[1].neurons[2]._generate_lower_and_upper_padding()
+    assert lower == 1 and upper == 2
+
+    lower, upper = \
+        model._layers[1].neurons[3]._generate_lower_and_upper_padding()
+    assert lower == 0 and upper == 3
+
+    lower, upper = \
+        model._layers[1].neurons[4]._generate_lower_and_upper_padding()
+    assert lower == 0 and upper == 4
+
+
 if __name__ == "__main__":
-    test_conv_flatten()
-    test_convolution()
-    test_connection()
+    #test_conv_flatten()
+    #test_convolution()
+    #test_connection()
+    test_same_padding()
     print("SUCCESS.")

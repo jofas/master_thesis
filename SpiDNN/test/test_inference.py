@@ -10,7 +10,7 @@ from keras.models import Sequential
 
 N = 100
 n_channels = 1
-kernel_size = 2
+kernel_size = 8
 
 def test_inference():
     X = np.random.rand(500, N)
@@ -47,13 +47,15 @@ def test_inference_conv1d():
     X = np.random.rand(500, N, n_channels)
 
     kmodel = Sequential()
-    kmodel.add(KConv1D(1, kernel_size, input_shape=(N, n_channels)))
+    kmodel.add(KConv1D(
+        1, kernel_size, input_shape=(N, n_channels), padding="same"))
     kmodel.add(KFlatten())
-    kmodel.add(KDense(5, activation="softmax"))
+    kmodel.add(KDense(1, activation=None))
 
     model = Model().add(Input(N)) \
-                   .add(Conv1D((kernel_size,), "identity")) \
-                   .add(Dense(5, activation="softmax"))
+                   .add(Conv1D(
+                       (kernel_size,), "identity", padding="same")) \
+                   .add(Dense(1, activation="identity"))
 
     model.set_weights(kmodel.get_weights())
 

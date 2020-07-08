@@ -1,7 +1,7 @@
 #include "spiDNN.h"
 
 #define N_WEIGHTS (kernel_size + 1) * n_filters
-
+#define N_KERNEL_ELEMENTS kernel_size * n_channels
 
 /* structs and enums */
 
@@ -32,6 +32,8 @@ typedef struct base_params_region {
   uint32_t kernel_size;
   uint32_t n_channels;
   uint32_t n_filters;
+  uint32_t lower_padding;
+  uint32_t upper_padding;
   uint32_t activation_function_id;
 } base_params_region_t;
 
@@ -43,6 +45,9 @@ uint forward_key;
 uint kernel_size;
 uint n_channels;
 uint n_filters;
+
+uint lower_padding;
+uint upper_padding;
 
 uint activation_function_id;
 
@@ -57,12 +62,16 @@ base_params_region_t *base_params_sdram;
 /* functions */
 
 void generate_potential(uint filter) {
+  // (N_KERNEL_ELEMENTS + 1) * filter is definetly wrong.
+  // should be (N_KERNEL_ELEMENTS + 1) * filter + 1 (I think ...
+  // future Jonas will handle that once we are at multiple filters)
   for (uint i = 0; i < n_potentials; i++) {
     filter_results[filter] += potentials[i]
-      * weights[(n_potentials + 1) * filter + i];
+      * weights[(N_KERNEL_ELEMENTS + 1) * filter + i + lower_padding];
   }
+
   filter_results[filter] += weights[
-    (n_potentials + 1) * filter + n_potentials];
+    (N_KERNEL_ELEMENTS + 1) * filter + N_KERNEL_ELEMENTS];
 }
 
 void activate(uint filter) {
@@ -153,15 +162,19 @@ void c_main(void) {
 void __init_base_params(
     uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key)
 {
-  base_params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
+  base_params_sdram =
+    data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
   forward_key = base_params_sdram->forward_key;
   kernel_size = base_params_sdram->kernel_size;
   n_channels = base_params_sdram->n_channels;
   n_filters = base_params_sdram->n_filters;
+  lower_padding = base_params_sdram->lower_padding;
+  upper_padding = base_params_sdram->upper_padding;
   activation_function_id = base_params_sdram->activation_function_id;
 
   *timer_offset = base_params_sdram->timer_offset;
-  *n_potentials = kernel_size * n_channels;
+  *n_potentials =
+    (kernel_size - lower_padding - upper_padding) * n_channels;
   *min_pre_key = base_params_sdram->min_pre_key;
 }

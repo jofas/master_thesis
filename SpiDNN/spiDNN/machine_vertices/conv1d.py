@@ -44,7 +44,7 @@ class Conv1DNeuron(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    BASE_PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
+    BASE_PARAMS_DATA_SIZE = 9 * BYTES_PER_WORD
 
     def __init__(self, layer, id, weights, trainable_params):
         executable = "conv1d.aplx"
@@ -115,40 +115,8 @@ class Conv1DNeuron(
         key = routing_info.get_first_key_from_pre_vertex(
             self, globals.forward_partition)
 
-        # TODO: i need to know offsets (lower and upper) when I use
-        #       zero-padding (same)
-        #
-        #       conv1d.c:
-        #
-        #       that would mean instead of decreasing min_pre_key
-        #       I'd have an offset variable and I'd index like
-        #       weights[i + offset]
-        #
-        #       but I'd need to decrease n_potentials
-        #       (n_potentials := (kernel_size - offset) * n_channels)
-        #
-        #       I could have that offset 0 for everyone else (except
-        #       upper padded neurons)
-        #
-        #       what's for upper bounded ones???
-        #       I'd need to index like weights[i]...
-        #       I could tell neuron is_upper_bounded... but how?
-        #
-        #       all I know is "oh, I've less connections than
-        #       kernel_size", I don't know where they are missing...
-        #       especially interesting is the case where one neuron
-        #       is missing connections atop and below
-        #
-        #       so I need to handle both independently
-        #       and offset := missing atop and below
-        #       and below missing indexing = weights[i + missing_below]
-        #
-        #
-        #       ... can i do something with the id???
-        #
-        #       growing_down and growing up can be computed here
-        #       somehow I should know about the id how much above
-        #       and below is missing
+        lower_padding, upper_padding = \
+            self._generate_lower_and_upper_padding()
 
         spec.switch_write_focus(
             region=Conv1DDataRegions.BASE_PARAMS.value)
@@ -158,6 +126,8 @@ class Conv1DNeuron(
         spec.write_value(self.layer.kernel_shape[0])
         spec.write_value(self.layer.n_channels)
         spec.write_value(self.layer.n_filters)
+        spec.write_value(lower_padding)
+        spec.write_value(upper_padding)
         spec.write_value(globals.activations[self.layer.activation])
 
     def _generate_and_write_weights(self, spec):
@@ -169,6 +139,25 @@ class Conv1DNeuron(
         spec.switch_write_focus(
             region=Conv1DDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
+
+    def _generate_lower_and_upper_padding(self):
+        if self.layer.padding == "valid":
+            return 0, 0
+
+        elif self.layer.padding == "same":
+            growing_up = int(self.layer.kernel_shape[0] / 2)
+            growing_down = \
+                growing_up - (self.layer.kernel_shape[0] % 2 == 0)
+
+            lower_padding = max(growing_down - self.id, 0)
+            upper_padding = max(
+                growing_up - self.layer.n_neurons + self.id + 1, 0)
+
+            return lower_padding, upper_padding
+
+        else:
+            raise KeyError(
+                "Unexpected padding: {}".format(padding))
 
     def __repr__(self):
         return self.label
