@@ -69,7 +69,7 @@ void receive_forward_with_channel(
   channel_counters[idx]++;
 }
 
-bool forward_pass_complete() {
+bool forward_pass_complete(void) {
   if (spiDNN_received_potentials_counter == n_potentials) {
     spiDNN_received_potentials_counter = 0;
     return true;
@@ -99,7 +99,7 @@ static bool init_simulation_and_data_spec(uint32_t *timer_period) {
   return true;
 }
 
-void base_init() {
+void base_init(void) {
   uint32_t timer_period, timer_offset;
 
   if (!init_simulation_and_data_spec(&timer_period)) {

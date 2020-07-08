@@ -54,14 +54,14 @@ base_params_region_t *base_params_sdram;
 
 /* functions */
 
-void generate_potential() {
+void generate_potential(void) {
   for (uint i = 0; i < n_potentials; i++) {
     potential += potentials[i] * weights[i];
   }
   potential += BIAS;
 }
 
-void activate() {
+void activate(void) {
   generate_potential();
 
   switch (activation_function_id) {
@@ -91,7 +91,7 @@ void activate() {
   }
 }
 
-void weights_init() {
+void weights_init(void) {
   weights_sdram = data_specification_get_region(WEIGHTS, data_spec_meta);
 
   weights = (float *)malloc(sizeof(float) * n_weights);
