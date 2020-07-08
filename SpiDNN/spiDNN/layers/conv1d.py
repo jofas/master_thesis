@@ -38,7 +38,7 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
     @overrides(LayerInterface.init_neurons)
     def init_neurons(self, **kwargs):
         weights = kwargs["weights"]
-        biases = kwargs["weights"]
+        biases = kwargs["biases"]
         trainable_params = kwargs["trainable_params"]
 
         weight_vector = np.empty((

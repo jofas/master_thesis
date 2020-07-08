@@ -112,16 +112,11 @@ void reset_filter_results() {
 }
 
 void receive(uint key, float payload) {
-  log_error("received potential from %d: %f", key, payload);
-  log_error("I have %d many channels and %d many filters", n_channels, n_filters);
-
   if (spiDNN_received_potentials_counter == 0)
     reset_filter_results();
 
   receive_forward_with_channel(key, payload, kernel_size);
 }
-
-//uint completed = 0;
 
 void update(uint ticks, uint b) {
   use(b);
@@ -133,16 +128,6 @@ void update(uint ticks, uint b) {
     for (uint i = 0; i < n_filters; i++) {
       activate(i);
       send(forward_key, (void *)&filter_results[i]);
-
-      /*
-      completed++;
-
-      if (completed > 1) {
-        log_error("sent result: %f at time: %d", filter_results[i],
-            spiDNN_time);
-        rt_error(RTE_SWERR);
-      }
-      */
     }
   }
 }
