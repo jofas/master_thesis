@@ -16,4 +16,4 @@ class Injector(
         label = "{}_{}".format(self.layer.label, self.id)
 
         ReverseIPTagMulticastSourceMachineVertex.__init__(
-            self, n_keys=n_keys, label=label, enable_injection=True)
+            self, label, n_keys=n_keys)
