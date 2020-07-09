@@ -7,7 +7,7 @@ from spinn_front_end_common.utilities.exceptions import ConfigurationException
 from spinn_front_end_common.utilities.helpful_functions import (
     locate_memory_region_for_placement)
 from spinn_front_end_common.abstract_models import \
-    AbstractProvidesOutgoingPartitionConstraints
+    AbstractProvidesNKeysForPartition
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
 from spinnaker_graph_front_end.utilities import SimulatorVertex
@@ -70,6 +70,16 @@ class Conv1DNeuron(
         super(Conv1DNeuron, self).__init__(
             "{}_{}".format(layer.label, self.id), executable)
 
+    @overrides(AbstractProvidesNKeysForPartition
+               .get_n_keys_for_partition)
+    def get_n_keys_for_partition(self, partition):
+        if not isinstance(partition, str):
+            partition = partition.identifier
+
+        if partition == globals.forward_partition and self.layer.flatten:
+            return self.layer.n_filters
+        return 1
+
     @property
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
@@ -117,6 +127,20 @@ class Conv1DNeuron(
 
         lower_padding, upper_padding = \
             self._generate_lower_and_upper_padding()
+
+        # TODO: no key but keys if flattened... just put n_filter
+        #       keys on the board regardless of wether flattened or
+        #       not... fuck memory
+
+        print(dir(routing_info))
+        print(dir(routing_info.get_routing_info_from_pre_vertex(
+            self, globals.forward_partition)))
+        print(routing_info.get_routing_info_from_pre_vertex(
+            self, globals.forward_partition).get_keys())
+        print(routing_info.get_routing_info_from_pre_vertex(
+            self, globals.forward_partition).partition)
+        raise Exception("meh")
+
 
         spec.switch_write_focus(
             region=Conv1DDataRegions.BASE_PARAMS.value)

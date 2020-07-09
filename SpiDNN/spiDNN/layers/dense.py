@@ -5,6 +5,7 @@ from spinn_utilities.overrides import overrides
 from .abstract_layer_base import AbstractLayerBase
 from .layer_interface import LayerInterface
 from .weights_interface import WeightsInterface
+from .conv1d import Conv1D
 
 import spiDNN.globals as globals
 from spiDNN.machine_vertices import Perceptron
@@ -45,7 +46,14 @@ class Dense(AbstractLayerBase, WeightsInterface):
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
-        source_neurons = source_layer.n_neurons
+        # TODO: bad, bad, not good. Think of some sort of better
+        #       solution (maybe whole interface with flatten and all)
+        # or flatten layer or n_neurons != len(self.neurons)
+        if isinstance(source_layer, Conv1D):
+            source_neurons = \
+                source_layer.n_neurons * source_layer.n_filters
+        else:
+            source_neurons = source_layer.n_neurons
 
         weights = np.array(
             np.random.rand(source_neurons, self.n_neurons), dtype=np.float32)

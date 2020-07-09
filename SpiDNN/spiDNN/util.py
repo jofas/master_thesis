@@ -127,9 +127,16 @@ class PartitionManager:
         n_keys = machine_vertex.get_n_keys_for_partition(
             partition_identifier)
 
-        return [
-            FixedKeyAndMaskConstraint([BaseKeyAndMask(key, globals.mask)])
+        keys_and_masks = [BaseKeyAndMask(key, globals.mask)
             for key in range(base_key, base_key + n_keys)]
+
+        #assert len(keys_and_masks) == n_keys
+
+        #print(machine_vertex)
+        #for km in keys_and_masks:
+        #    print(km.get_keys(n_keys=n_keys, offset=1))
+
+        return [FixedKeyAndMaskConstraint(keys_and_masks)]
 
     def _get_partition(self, partition_identifier):
         if partition_identifier in self.partitions_lookup:

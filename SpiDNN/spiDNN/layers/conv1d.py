@@ -14,7 +14,7 @@ from spiDNN.machine_vertices import Conv1DNeuron, Conv1DMeta
 class Conv1D(AbstractLayerBase, WeightsInterface):
     def __init__(
             self, n_filters, kernel_shape, activation="identity",
-            bias=True, padding="valid"):
+            bias=True, padding="valid", flatten=False):
 
         assert len(kernel_shape) == 1
         # 0 and negative kernel shape is illegal
@@ -24,6 +24,11 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         self.n_filters = n_filters
         self.n_channels = None # set during generate_weights
+
+        self.bias = bias
+        self.flatten = flatten
+
+        self.meta_vertex = None
 
         if padding in globals.paddings:
             self.padding = padding
@@ -36,10 +41,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         else:
             raise KeyError(
                 "Unexpected activation function: {}".format(activation))
-
-        self.bias = bias
-
-        self.meta_vertex = None
 
         super(Conv1D, self).__init__("unnamed", None, [])
 
