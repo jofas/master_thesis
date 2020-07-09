@@ -3,6 +3,9 @@
 #define N_KERNEL_ELEMENTS kernel_size * n_channels
 #define N_WEIGHTS (N_KERNEL_ELEMENTS + 1) * n_filters
 
+#define PADDING_OFFSET lower_padding * n_channels
+#define FILTER_OFFSET (N_KERNEL_ELEMENTS + 1) * filter
+
 /* structs and enums */
 
 //! human readable definitions of each region in SDRAM
@@ -65,11 +68,11 @@ base_params_region_t *base_params_sdram;
 void generate_potential(uint filter) {
   for (uint i = 0; i < n_potentials; i++) {
     filter_results[filter] += potentials[i] * weights[
-      (N_KERNEL_ELEMENTS + 1) * filter + i + lower_padding * n_channels];
+      FILTER_OFFSET + PADDING_OFFSET + i];
   }
 
-  filter_results[filter] += weights[
-    (N_KERNEL_ELEMENTS + 1) * filter + N_KERNEL_ELEMENTS];
+  // bias
+  filter_results[filter] += weights[FILTER_OFFSET + N_KERNEL_ELEMENTS];
 }
 
 void activate(uint filter) {
