@@ -60,9 +60,9 @@ class Partition:
     def __init__(self, identifier):
         self.identifier = identifier
         self.first_key = 0
+        self.size = 0
 
         self.machine_vertices = {}
-        self.constraints_generated = []
 
     def add(self, machine_vertex):
         """
@@ -73,30 +73,25 @@ class Partition:
         otherwise False is returned.
         """
         if machine_vertex.label not in self.machine_vertices:
-            self.machine_vertices[machine_vertex.label] = \
-                len(self.machine_vertices)
-            self.constraints_generated.append(False)
+            self.machine_vertices[machine_vertex.label] = self.size
+
+            self.size += machine_vertex.get_n_keys_for_partition(
+                self.identifier)
             return True
         return False
 
-    def get_key(self, machine_vertex):
+    def get_first_key(self, machine_vertex):
         if machine_vertex.label not in self.machine_vertices:
             raise KeyError("""Partition {} has never seen MachineVertex
                 {} as the source of an edge.""".format(
                 self.identifier, machine_vertex.label))
 
-        index = self.machine_vertices[machine_vertex.label]
+        vertex_first_key = self.machine_vertices[machine_vertex.label]
 
-        if self.constraints_generated[index]:
-            raise KeyError(""""Partition {} has already generated the
-                constraint for MachineVertex {}.""".format(
-                self.identifier, machine_vertex.label))
-
-        self.constraints_generated[index] = True
-        return self.first_key + index
+        return self.first_key + vertex_first_key
 
     def __len__(self):
-        return len(self.machine_vertices)
+        return self.size
 
 
 class PartitionManager:
@@ -128,7 +123,7 @@ class PartitionManager:
             raise KeyError("I've never heard of parition: {}".format(
                 partition_identifier))
 
-        base_key = partition.get_key(machine_vertex)
+        base_key = partition.get_first_key(machine_vertex)
         n_keys = machine_vertex.get_n_keys_for_partition(
             partition_identifier)
 
