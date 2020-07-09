@@ -33,7 +33,7 @@ def test_conv_flatten():
                                           [0.6, 0.7, 0.8]],
                                          dtype=np.float32)).all()
 
-    conv1d = Conv1D((kernel_size,), "identity")
+    conv1d = Conv1D(1, (kernel_size,))
     conv1d.n_filters = n_filters
 
     input = Input(2)
@@ -96,7 +96,7 @@ def test_connection():
     input_layer = Input(5)
     input_layer.label = "Input"
 
-    conv1d_layer = Conv1D((3,), "identity")
+    conv1d_layer = Conv1D(1, (3,))
     conv1d_layer.label = "Conv1D"
 
     weights, biases = conv1d_layer.generate_weights(input_layer)
@@ -138,7 +138,7 @@ def test_connection():
 
 def test_same_padding():
     model = Model().add(Input(5)) \
-                   .add(Conv1D((8,), "identity", padding="same")) \
+                   .add(Conv1D(1, (8,), padding="same")) \
                    .add(Dense(1, activation="identity"))
 
     X = np.random.rand(1, 5, 1)
