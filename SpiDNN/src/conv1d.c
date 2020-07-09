@@ -63,9 +63,6 @@ base_params_region_t *base_params_sdram;
 /* functions */
 
 void generate_potential(uint filter) {
-  // (N_KERNEL_ELEMENTS + 1) * filter is definetly wrong.
-  // should be (N_KERNEL_ELEMENTS + 1) * filter + 1 (I think ...
-  // future Jonas will handle that once we are at multiple filters)
   for (uint i = 0; i < n_potentials; i++) {
     filter_results[filter] += potentials[i] * weights[
       (N_KERNEL_ELEMENTS + 1) * filter + i + lower_padding * n_channels];

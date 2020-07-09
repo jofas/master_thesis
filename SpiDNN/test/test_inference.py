@@ -45,13 +45,15 @@ def test_inference_conv1d():
 
     kmodel = Sequential()
     kmodel.add(KConv1D(
-        1, kernel_size * 2, input_shape=input_shape, padding="same"))
+        8, kernel_size * 4, input_shape=input_shape, padding="same"))
+    kmodel.add(KConv1D(16, kernel_size * 2, padding="same"))
     kmodel.add(KConv1D(1, kernel_size, padding="same"))
     kmodel.add(KFlatten())
     kmodel.add(KDense(1, activation=None))
 
     model = Model().add(Input(*input_shape)) \
-                   .add(Conv1D(1, (kernel_size * 2,), padding="same")) \
+                   .add(Conv1D(8, (kernel_size * 4,), padding="same")) \
+                   .add(Conv1D(16, (kernel_size * 2,), padding="same")) \
                    .add(Conv1D(1, (kernel_size,), padding="same")) \
                    .add(Dense(1, activation="identity"))
 
