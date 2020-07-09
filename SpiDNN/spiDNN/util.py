@@ -118,7 +118,7 @@ class PartitionManager:
                 for partition in self.partitions[index + 1:]:
                     partition.first_key += 1
 
-    def generate_constraint(self, machine_vertex, partition_identifier):
+    def generate_constraints(self, machine_vertex, partition_identifier):
         partition = self._get_partition(partition_identifier)
 
         if partition is None:
@@ -127,8 +127,8 @@ class PartitionManager:
 
         key = partition.get_key(machine_vertex)
 
-        return FixedKeyAndMaskConstraint([BaseKeyAndMask(
-            key, globals.mask)])
+        return [FixedKeyAndMaskConstraint([BaseKeyAndMask(
+            key, globals.mask)])]
 
     def _get_partition(self, partition_identifier):
         if partition_identifier in self.partitions_lookup:
