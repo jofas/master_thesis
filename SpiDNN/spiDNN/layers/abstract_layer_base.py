@@ -7,10 +7,13 @@ import spiDNN.util as util
 
 
 class AbstractLayerBase(LayerInterface):
-    def __init__(self, label, n_neurons, neurons):
+    def __init__(self, label, n_neurons, neurons, n_filters=1):
         self._label = label
         self._n_neurons = n_neurons
         self._neurons = neurons
+
+        self._n_filters = n_filters
+        self._flatten = False
 
     @overrides(LayerInterface.init_neurons)
     def init_neurons(self, **kwargs):
@@ -37,6 +40,20 @@ class AbstractLayerBase(LayerInterface):
     @overrides(LayerInterface.reset)
     def reset(self):
         self._neurons = []
+
+    @property
+    @overrides(LayerInterface.n_filters)
+    def n_filters(self):
+        return self._n_filters
+
+    @property
+    @overrides(LayerInterface.flatten)
+    def flatten(self):
+        return self._flatten
+
+    @flatten.setter
+    def flatten(self, flatten):
+        self._flatten = flatten
 
     @property
     @overrides(LayerInterface.n_neurons)

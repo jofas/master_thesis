@@ -8,9 +8,9 @@ from keras.layers import Dense as KDense, Conv1D as KConv1D, \
 from keras.models import Sequential
 
 
-N = 1
-n_channels = 1
-kernel_size = 2
+N = 100
+n_channels = 4
+kernel_size = 8
 
 
 def test_inference():
@@ -36,7 +36,7 @@ def test_inference():
     p_ = kmodel.predict(X)
 
     error = np.absolute(p - p_)
-    assert np.amax(error) < 0.0001
+    assert np.amax(error) < 1e-4
 
 
 def test_inference_conv1d():
@@ -44,19 +44,17 @@ def test_inference_conv1d():
     X = np.random.rand(500, *input_shape)
 
     kmodel = Sequential()
-    #kmodel.add(KConv1D(
-    #    1, kernel_size * 4, input_shape=input_shape, padding="same"))
-    #kmodel.add(KConv1D(16, kernel_size * 2, padding="same"))
-    kmodel.add(KConv1D(5, kernel_size, input_shape=input_shape, padding="same"))
+    kmodel.add(KConv1D(1, kernel_size * 4, input_shape=input_shape))
+    kmodel.add(KConv1D(16, kernel_size * 2, padding="same"))
+    kmodel.add(KConv1D(5, kernel_size, padding="same"))
     kmodel.add(KFlatten())
     kmodel.add(KDense(1, activation=None))
 
     model = Model().add(Input(*input_shape)) \
-                   .add(Conv1D(
-                       5, (kernel_size,), padding="same", flatten=True)) \
+                   .add(Conv1D(1, (kernel_size * 4,))) \
+                   .add(Conv1D(16, (kernel_size * 2,), padding="same")) \
+                   .add(Conv1D(5, (kernel_size,), padding="same")) \
                    .add(Dense(1, activation="identity"))
-                   #.add(Conv1D(1, (kernel_size * 4,), padding="same")) \
-                   #.add(Conv1D(16, (kernel_size * 2,), padding="same")) \
 
     model.set_weights(kmodel.get_weights())
 
@@ -68,6 +66,6 @@ def test_inference_conv1d():
 
 
 if __name__ == "__main__":
-    #test_inference()
+    # test_inference()
     test_inference_conv1d()
     print("SUCCESS.")

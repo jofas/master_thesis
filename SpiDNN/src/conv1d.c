@@ -12,6 +12,7 @@
 typedef enum regions_e {
     __SYSTEM_REGION,
     BASE_PARAMS,
+    KEYS,
     WEIGHTS,
     SOFTMAX_PARAMS,
     TRAINABLE_PARAMS,
@@ -29,7 +30,6 @@ typedef enum activations_e {
 
 //! definitions of each element in the base_params region
 typedef struct base_params_region {
-  uint32_t forward_key;
   uint32_t min_pre_key;
   uint32_t timer_offset;
   uint32_t kernel_size;
@@ -43,7 +43,7 @@ typedef struct base_params_region {
 
 /* global variables */
 
-uint forward_key;
+uint *forward_keys;
 
 uint kernel_size;
 uint n_channels;
@@ -59,8 +59,9 @@ float *weights;
 uint *channel_counters;
 float *filter_results;
 
-float *weights_sdram;
 base_params_region_t *base_params_sdram;
+uint32_t *forward_keys_sdram;
+float *weights_sdram;
 
 
 /* functions */
@@ -115,6 +116,15 @@ void weights_init(void) {
     sizeof(float) * N_WEIGHTS);
 }
 
+void keys_init(void) {
+  forward_keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
+
+  forward_keys = (uint32_t *)malloc(sizeof(uint32_t) * n_filters);
+
+  sark_mem_cpy((void *)forward_keys, (void *)forward_keys_sdram,
+    sizeof(uint32_t) * n_filters);
+}
+
 void reset_forward_pass(void) {
   for (uint i = 0; i < n_filters; i++) {
     filter_results[i] = .0;
@@ -141,7 +151,7 @@ void update(uint ticks, uint b) {
   if (forward_pass_complete()) {
     for (uint i = 0; i < n_filters; i++) {
       activate(i);
-      send(forward_key, (void *)&filter_results[i]);
+      send(forward_keys[i], (void *)&filter_results[i]);
     }
   }
 }
@@ -150,6 +160,7 @@ void c_main(void) {
   base_init();
 
   weights_init();
+  keys_init();
 
   channel_counters = (uint *)malloc(sizeof(uint) * n_potentials);
   filter_results = (float *)malloc(sizeof(float) * n_filters);
@@ -171,7 +182,6 @@ void __init_base_params(
   base_params_sdram =
     data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
-  forward_key = base_params_sdram->forward_key;
   kernel_size = base_params_sdram->kernel_size;
   n_channels = base_params_sdram->n_channels;
   n_filters = base_params_sdram->n_filters;
@@ -183,7 +193,4 @@ void __init_base_params(
   *n_potentials =
     (kernel_size - lower_padding - upper_padding) * n_channels;
   *min_pre_key = base_params_sdram->min_pre_key;
-
-  log_error("kernel_size: %d, n_channels: %d, n_potentials: %d",
-      kernel_size, n_channels, *n_potentials);
 }

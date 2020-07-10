@@ -14,11 +14,12 @@ class Input(AbstractLayerBase):
         n_neurons = input_shape[0]
 
         if len(input_shape) == 1:
-            self.n_filters = 1  # actually the amount of channels
+            n_filters = 1  # actually the amount of channels
         else:
-            self.n_filters = input_shape[-1] # channel_last
+            n_filters = input_shape[-1] # channel_last
 
-        super(Input, self).__init__(label, n_neurons, [])
+        super(Input, self).__init__(
+            label, n_neurons, [], n_filters=n_filters)
 
     @overrides(LayerInterface.init_neurons)
     def init_neurons(self, **kwargs):

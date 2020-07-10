@@ -46,14 +46,9 @@ class Dense(AbstractLayerBase, WeightsInterface):
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
-        # TODO: bad, bad, not good. Think of some sort of better
-        #       solution (maybe whole interface with flatten and all)
-        # or flatten layer or n_neurons != len(self.neurons)
-        if isinstance(source_layer, Conv1D):
-            source_neurons = \
-                source_layer.n_neurons * source_layer.n_filters
-        else:
-            source_neurons = source_layer.n_neurons
+        source_neurons = source_layer.n_neurons * source_layer.n_filters
+        # dense layer only supports flattened input
+        source_layer.flatten = source_layer.n_filters > 1
 
         weights = np.array(
             np.random.rand(source_neurons, self.n_neurons), dtype=np.float32)

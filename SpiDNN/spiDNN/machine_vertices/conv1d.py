@@ -33,9 +33,10 @@ import numpy as np
 class Conv1DDataRegions(Enum):
     SYSTEM = 0
     BASE_PARAMS = 1
-    WEIGHTS = 2
-    SOFTMAX_PARAMS = 3
-    TRAINABLE_PARAMS = 4
+    KEYS = 2
+    WEIGHTS = 3
+    SOFTMAX_PARAMS = 4
+    TRAINABLE_PARAMS = 5
     #NEXT_LAYER_WEIGHTS = 5
 
 
@@ -44,7 +45,7 @@ class Conv1DNeuron(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    BASE_PARAMS_DATA_SIZE = 9 * BYTES_PER_WORD
+    BASE_PARAMS_DATA_SIZE = 8 * BYTES_PER_WORD
 
     def __init__(self, layer, id, weights, trainable_params):
         executable = "conv1d.aplx"
@@ -54,6 +55,8 @@ class Conv1DNeuron(
 
         self.weights = weights
         self.weight_container_size = len(self.weights) * BYTES_PER_WORD
+
+        self.key_container_size = self.layer.n_filters * BYTES_PER_WORD
 
         self.trainable_params = trainable_params
 
@@ -85,6 +88,7 @@ class Conv1DNeuron(
     def resources_required(self):
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
                        + self.BASE_PARAMS_DATA_SIZE
+                       + self.key_container_size
                        + self.weight_container_size
                        + self.softmax_params_data_size
                        + self.trainable_params_data_size)
@@ -104,6 +108,8 @@ class Conv1DNeuron(
         self._generate_and_write_base_params(
             spec, placement, machine_graph, routing_info)
 
+        self._generate_and_write_keys(spec, routing_info)
+
         self._generate_and_write_weights(spec)
 
         spec.end_specification()
@@ -122,29 +128,11 @@ class Conv1DNeuron(
         min_pre_key = min([routing_info.get_first_key_from_pre_vertex(
             edge.pre_vertex, globals.forward_partition) for edge in edges])
 
-        key = routing_info.get_first_key_from_pre_vertex(
-            self, globals.forward_partition)
-
         lower_padding, upper_padding = \
             self._generate_lower_and_upper_padding()
 
-        # TODO: no key but keys if flattened... just put n_filter
-        #       keys on the board regardless of wether flattened or
-        #       not... fuck memory
-
-        print(dir(routing_info))
-        print(dir(routing_info.get_routing_info_from_pre_vertex(
-            self, globals.forward_partition)))
-        print(routing_info.get_routing_info_from_pre_vertex(
-            self, globals.forward_partition).get_keys())
-        print(routing_info.get_routing_info_from_pre_vertex(
-            self, globals.forward_partition).partition)
-        raise Exception("meh")
-
-
         spec.switch_write_focus(
             region=Conv1DDataRegions.BASE_PARAMS.value)
-        spec.write_value(key)
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
         spec.write_value(self.layer.kernel_shape[0])
@@ -153,6 +141,24 @@ class Conv1DNeuron(
         spec.write_value(lower_padding)
         spec.write_value(upper_padding)
         spec.write_value(globals.activations[self.layer.activation])
+
+    def _generate_and_write_keys(self, spec, routing_info):
+        spec.reserve_memory_region(
+            region=Conv1DDataRegions.KEYS.value,
+            size=self.key_container_size,
+            label="keys")
+
+        keys = routing_info.get_routing_info_from_pre_vertex(
+            self, globals.forward_partition).get_keys()
+
+        if len(keys) == 1:
+            keys = [keys[0] for _ in range(0, self.layer.n_filters)]
+
+        assert len(keys) == self.layer.n_filters
+
+        spec.switch_write_focus(
+            region=Conv1DDataRegions.KEYS.value)
+        spec.write_array(keys)
 
     def _generate_and_write_weights(self, spec):
         spec.reserve_memory_region(
