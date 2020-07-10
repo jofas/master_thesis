@@ -166,9 +166,89 @@ def test_same_padding():
     assert lower == 0 and upper == 4
 
 
+def test_same_padding_with_stride1():
+    model = Model().add(Input(5)) \
+                   .add(Conv1D(1, (9,), padding="same", stride=2)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 5, 1)
+
+    model.predict(X)
+
+    lower, upper = \
+        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
+    assert lower == 4 and upper == 0
+
+    lower, upper = \
+        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
+    assert lower == 2 and upper == 2
+
+    lower, upper = \
+        model._layers[1].neurons[2]._generate_lower_and_upper_padding()
+    assert lower == 0 and upper == 4
+
+
+def test_same_padding_with_stride2():
+    model = Model().add(Input(5)) \
+                   .add(Conv1D(1, (4,), padding="same", stride=3)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 5, 1)
+
+    model.predict(X)
+
+    lower, upper = \
+        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
+    assert lower == 1 and upper == 0
+
+    lower, upper = \
+        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
+    assert lower == 0 and upper == 1
+
+
+def test_same_padding_with_stride3():
+    model = Model().add(Input(4)) \
+                   .add(Conv1D(1, (4,), padding="same", stride=2)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 4, 1)
+
+    model.predict(X)
+
+    lower, upper = \
+        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
+    assert lower == 1 and upper == 0
+
+    lower, upper = \
+        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
+    assert lower == 0 and upper == 1
+
+
+def test_same_padding_with_stride4():
+    model = Model().add(Input(6)) \
+                   .add(Conv1D(1, (4,), padding="same", stride=3)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 6, 1)
+
+    model.predict(X)
+
+    lower, upper = \
+        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
+    assert lower == 1 and upper == 0
+
+    lower, upper = \
+        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
+    assert lower == 0 and upper == 0
+
+
 if __name__ == "__main__":
-    #test_conv_flatten()
-    #test_convolution()
-    #test_connection()
-    test_same_padding()
+    # test_conv_flatten()
+    # test_convolution()
+    # test_connection()
+    # test_same_padding()
+    # test_same_padding_with_stride1()
+    # test_same_padding_with_stride2()
+    # test_same_padding_with_stride3()
+    test_same_padding_with_stride4()
     print("SUCCESS.")

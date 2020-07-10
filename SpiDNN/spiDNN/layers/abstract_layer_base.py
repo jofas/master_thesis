@@ -82,3 +82,6 @@ class AbstractLayerBase(LayerInterface):
     @overrides(LayerInterface.labels)
     def labels(self):
         return [neuron.label for neuron in self._neurons]
+
+    def __repr__(self):
+        return self.label

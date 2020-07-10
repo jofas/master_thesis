@@ -176,14 +176,22 @@ class Conv1DNeuron(
 
         elif self.layer.padding == "same":
             growing_up = int(self.layer.kernel_shape[0] / 2)
-            growing_down = \
-                growing_up - (self.layer.kernel_shape[0] % 2 == 0)
+            growing_down = growing_up - (self.layer.kernel_shape[0] % 2 == 0)
 
-            lower_padding = max(growing_down - self.id, 0)
-            upper_padding = max(
-                growing_up - self.layer.n_neurons + self.id + 1, 0)
+            inverse_id = self.layer.n_neurons - self.id - 1
 
-            return lower_padding, upper_padding
+            # substract one from upper_padding if layer conains an
+            # even amount of neurons
+            layer_offset = self.layer.n_neurons % 2 == 0
+
+            lower_padding = growing_down - self.id * self.layer.stride
+            upper_padding = (growing_up
+                            - inverse_id * self.layer.stride
+                            - layer_offset)
+
+            print(self.id, lower_padding, upper_padding)
+
+            return max(lower_padding, 0), max(upper_padding, 0)
 
         else:
             raise KeyError(

@@ -1,5 +1,7 @@
 import numpy as np
 
+import math
+
 from spinn_utilities.overrides import overrides
 
 from .abstract_layer_base import AbstractLayerBase
@@ -14,11 +16,15 @@ from spiDNN.machine_vertices import Conv1DNeuron, Conv1DMeta
 class Conv1D(AbstractLayerBase, WeightsInterface):
     def __init__(
             self, n_filters, kernel_shape, activation="identity",
-            bias=True, padding="valid"):
+            bias=True, padding="valid", stride=1):
 
         assert len(kernel_shape) == 1
         # 0 and negative kernel shape is illegal
         assert kernel_shape[0] > 0
+
+        if stride >= kernel_shape[0]:
+            raise Exception("""Currently the stride can't equal or
+                exceed the kernel_shape""")
 
         self.kernel_shape = kernel_shape
 
@@ -26,6 +32,7 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         self.meta_vertex = None
 
         self.bias = bias
+        self.stride = stride
 
         if padding in globals.paddings:
             self.padding = padding
@@ -95,19 +102,18 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
             raise KeyError(
                 "Unexpected padding: {}".format(padding))
 
-        for i, neuron in enumerate(self.neurons, start=-growing_down):
+        # some shit going on
+        i = -growing_down
+        for neuron in self.neurons:
             for j in range(i, i + self.kernel_shape[0]):
                 if j >= 0 and j < source_layer.n_neurons:
                     gfe.add_machine_edge_instance(
                         source_layer.neurons[j], neuron, partition)
+            i += self.stride
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
-        if self.padding == "valid":
-            self.n_neurons = \
-                source_layer.n_neurons - self.kernel_shape[0] + 1
-        else:
-            self.n_neurons = source_layer.n_neurons
+        self._set_n_neurons(source_layer)
 
         self.n_channels = source_layer.n_filters
 
@@ -140,3 +146,12 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         return weights, biases
         """
+
+    def _set_n_neurons(self, source_layer):
+        if self.padding == "valid":
+            self.n_neurons = int(
+                (source_layer.n_neurons - self.kernel_shape[0])
+                / self.stride + 1)
+        else:
+            self.n_neurons = \
+                int(math.ceil(source_layer.n_neurons / self.stride))
