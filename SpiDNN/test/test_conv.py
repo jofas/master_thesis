@@ -145,25 +145,17 @@ def test_same_padding():
 
     model.predict(X)
 
-    lower, upper = \
-        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
-    assert lower == 3 and upper == 0
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+    neuron2 = model._layers[1].neurons[2]
+    neuron3 = model._layers[1].neurons[3]
+    neuron4 = model._layers[1].neurons[4]
 
-    lower, upper = \
-        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
-    assert lower == 2 and upper == 1
-
-    lower, upper = \
-        model._layers[1].neurons[2]._generate_lower_and_upper_padding()
-    assert lower == 1 and upper == 2
-
-    lower, upper = \
-        model._layers[1].neurons[3]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 3
-
-    lower, upper = \
-        model._layers[1].neurons[4]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 4
+    assert neuron0.lower_padding == 3 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 2 and neuron1.upper_padding == 1
+    assert neuron2.lower_padding == 1 and neuron2.upper_padding == 2
+    assert neuron3.lower_padding == 0 and neuron3.upper_padding == 3
+    assert neuron4.lower_padding == 0 and neuron4.upper_padding == 4
 
 
 def test_same_padding_with_stride1():
@@ -175,17 +167,13 @@ def test_same_padding_with_stride1():
 
     model.predict(X)
 
-    lower, upper = \
-        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
-    assert lower == 4 and upper == 0
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+    neuron2 = model._layers[1].neurons[2]
 
-    lower, upper = \
-        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
-    assert lower == 2 and upper == 2
-
-    lower, upper = \
-        model._layers[1].neurons[2]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 4
+    assert neuron0.lower_padding == 4 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 2 and neuron1.upper_padding == 2
+    assert neuron2.lower_padding == 0 and neuron2.upper_padding == 4
 
 
 def test_same_padding_with_stride2():
@@ -197,13 +185,11 @@ def test_same_padding_with_stride2():
 
     model.predict(X)
 
-    lower, upper = \
-        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
-    assert lower == 1 and upper == 0
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
 
-    lower, upper = \
-        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 1
+    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 1
 
 
 def test_same_padding_with_stride3():
@@ -215,13 +201,11 @@ def test_same_padding_with_stride3():
 
     model.predict(X)
 
-    lower, upper = \
-        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
-    assert lower == 1 and upper == 0
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
 
-    lower, upper = \
-        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 1
+    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 1
 
 
 def test_same_padding_with_stride4():
@@ -233,13 +217,11 @@ def test_same_padding_with_stride4():
 
     model.predict(X)
 
-    lower, upper = \
-        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
-    assert lower == 1 and upper == 0
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
 
-    lower, upper = \
-        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 0
+    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 0
 
 
 if __name__ == "__main__":

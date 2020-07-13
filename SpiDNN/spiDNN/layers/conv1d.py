@@ -96,19 +96,30 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         if self.padding == "valid":
             growing_down = 0
         elif self.padding == "same":
-            growing_down = ( int(self.kernel_shape[0] / 2)
-                           - (self.kernel_shape[0] % 2 == 0))
+            size = (self.n_neurons - 1) * self.stride + 1
+
+            padding = self.kernel_shape[0] - 1
+            padding -= source_layer.n_neurons - size
+
+            growing_down = int(padding / 2)
         else:
             raise KeyError(
                 "Unexpected padding: {}".format(padding))
 
-        # some shit going on
         i = -growing_down
         for neuron in self.neurons:
-            for j in range(i, i + self.kernel_shape[0]):
-                if j >= 0 and j < source_layer.n_neurons:
-                    gfe.add_machine_edge_instance(
-                        source_layer.neurons[j], neuron, partition)
+            if i < 0:
+                neuron.lower_padding = abs(i)
+
+            if i + self.kernel_shape[0] >= source_layer.n_neurons:
+                neuron.upper_padding = \
+                    i + self.kernel_shape[0] - source_layer.n_neurons
+
+            for j in range(
+                    i + neuron.lower_padding,
+                    i + self.kernel_shape[0] - neuron.upper_padding):
+                gfe.add_machine_edge_instance(
+                    source_layer.neurons[j], neuron, partition)
             i += self.stride
 
     @overrides(WeightsInterface.generate_weights)

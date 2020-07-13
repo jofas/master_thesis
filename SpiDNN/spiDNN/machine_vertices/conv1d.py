@@ -60,6 +60,9 @@ class Conv1DNeuron(
 
         self.trainable_params = trainable_params
 
+        self.lower_padding = 0
+        self.upper_padding = 0
+
         if self.layer.activation == "softmax":
             raise Exception("Unimplemented")
         else:
@@ -128,9 +131,6 @@ class Conv1DNeuron(
         min_pre_key = min([routing_info.get_first_key_from_pre_vertex(
             edge.pre_vertex, globals.forward_partition) for edge in edges])
 
-        lower_padding, upper_padding = \
-            self._generate_lower_and_upper_padding()
-
         spec.switch_write_focus(
             region=Conv1DDataRegions.BASE_PARAMS.value)
         spec.write_value(min_pre_key)
@@ -138,8 +138,8 @@ class Conv1DNeuron(
         spec.write_value(self.layer.kernel_shape[0])
         spec.write_value(self.layer.n_channels)
         spec.write_value(self.layer.n_filters)
-        spec.write_value(lower_padding)
-        spec.write_value(upper_padding)
+        spec.write_value(self.lower_padding)
+        spec.write_value(self.upper_padding)
         spec.write_value(globals.activations[self.layer.activation])
 
     def _generate_and_write_keys(self, spec, routing_info):
@@ -169,33 +169,6 @@ class Conv1DNeuron(
         spec.switch_write_focus(
             region=Conv1DDataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
-
-    def _generate_lower_and_upper_padding(self):
-        if self.layer.padding == "valid":
-            return 0, 0
-
-        elif self.layer.padding == "same":
-            growing_up = int(self.layer.kernel_shape[0] / 2)
-            growing_down = growing_up - (self.layer.kernel_shape[0] % 2 == 0)
-
-            inverse_id = self.layer.n_neurons - self.id - 1
-
-            # substract one from upper_padding if layer conains an
-            # even amount of neurons
-            layer_offset = self.layer.n_neurons % 2 == 0
-
-            lower_padding = growing_down - self.id * self.layer.stride
-            upper_padding = (growing_up
-                            - inverse_id * self.layer.stride
-                            - layer_offset)
-
-            print(self.id, lower_padding, upper_padding)
-
-            return max(lower_padding, 0), max(upper_padding, 0)
-
-        else:
-            raise KeyError(
-                "Unexpected padding: {}".format(padding))
 
     def __repr__(self):
         return self.label
