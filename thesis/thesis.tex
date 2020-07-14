@@ -404,7 +404,7 @@ prototype.
 \label{sec:SpiDNN}
 
 \begin{itemize}
-  \item concepts (layers, neurons, meta-neurons, \dots)
+  \item concepts (layers, neurons, \dots)
   \item communication structure (partitions and global partition manager)
   \item ping-pong
   \item graph structure (especially focused on edge and host--SpiNN
@@ -413,6 +413,8 @@ prototype.
     compute graph
   \item backward pass: gradients computed two times so comm fabric is
     not overly used by unique partitions
+  \item How I crushed $n$d-kernels into a single blog of weights (same
+    for 2D convolutions even though less interesting)
 \end{itemize}
 
 \section{Benchmark}
