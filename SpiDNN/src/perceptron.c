@@ -14,7 +14,7 @@ void receive(uint key, float payload) {
   // softmax partitions are touched by the toolchain before forward
   // and backward partitions
   if (key < min_pre_key) {
-    receive_softmax(payload);
+    receive_softmax(key, payload);
     return;
   }
 #endif
@@ -29,9 +29,9 @@ void receive(uint key, float payload) {
   }
 #endif
 
-  if (spiDNN_received_potentials_counter == 0) {
+  if (spiDNN_received_potentials_counter == 0)
     potential = .0;
-  }
+
   receive_forward(key, payload);
 }
 
@@ -43,10 +43,8 @@ void update(uint ticks, uint b) {
 
 #ifdef softmax
   if (softmax_pass_complete()) {
-    potential = potential / softmax_denominator;
+    potential = potential / softmax_denominators[0];
     send(forward_key, (void *)&potential);
-    //log_error("sending shit: %f", potential);
-    //rt_error(RTE_SWERR);
   }
 #endif
 
