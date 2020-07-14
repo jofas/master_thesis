@@ -16,7 +16,7 @@ void receive(uint key, float payload) {
   // softmax partitions are touched by the toolchain before forward
   // and backward partitions
   if (key < min_pre_key) {
-    receive_softmax(key, payload);
+    receive_softmax(payload);
     return;
   }
 #endif
@@ -45,7 +45,7 @@ void update(uint ticks, uint b) {
 
 #ifdef softmax
   if (softmax_pass_complete()) {
-    potential = potential / softmax_denominators[0];
+    potential = potential / softmax_denominator;
     send(forward_key, (void *)&potential);
   }
 #endif

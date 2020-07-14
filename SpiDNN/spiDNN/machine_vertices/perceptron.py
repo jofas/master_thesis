@@ -49,7 +49,7 @@ class Perceptron(
         self.trainable_params = trainable_params
 
         if self.layer.activation == "softmax":
-            self.softmax_params_data_size = 4 * BYTES_PER_WORD
+            self.softmax_params_data_size = 2 * BYTES_PER_WORD
             executable = "softmax_{}".format(executable)
         else:
             self.softmax_params_data_size = 0
@@ -115,8 +115,7 @@ class Perceptron(
         self._generate_and_write_weights(spec)
 
         if self.layer.activation == "softmax":
-            self._generate_and_write_softmax_params(
-                spec, machine_graph, routing_info)
+            self._generate_and_write_softmax_params(spec, routing_info)
 
         if self.trainable_params is not None:
             self._generate_and_write_trainable_regions(
@@ -159,8 +158,7 @@ class Perceptron(
             region=DataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
-    def _generate_and_write_softmax_params(
-            self, spec, machine_graph, routing_info):
+    def _generate_and_write_softmax_params(self, spec, routing_info):
         spec.reserve_memory_region(
             region=DataRegions.SOFTMAX_PARAMS.value,
             size=self.softmax_params_data_size,
@@ -169,19 +167,10 @@ class Perceptron(
         softmax_key = routing_info.get_first_key_from_pre_vertex(
             self, globals.softmax_partition)
 
-        edges = list(
-            machine_graph.get_edges_ending_at_vertex_with_partition_name(
-                self, globals.softmax_partition))
-
-        min_layer_key = min([routing_info.get_first_key_from_pre_vertex(
-            edge.pre_vertex, globals.softmax_partition) for edge in edges])
-
         spec.switch_write_focus(
             region=DataRegions.SOFTMAX_PARAMS.value)
         spec.write_value(softmax_key)
-        spec.write_value(min_layer_key)
         spec.write_value(self.layer.n_neurons)
-        spec.write_value(self.layer.n_filters)
 
     def _generate_and_write_trainable_regions(
             self, spec, machine_graph, routing_info):
