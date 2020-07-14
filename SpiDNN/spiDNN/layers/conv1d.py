@@ -10,7 +10,7 @@ from .weights_interface import WeightsInterface
 
 import spiDNN.globals as globals
 import spiDNN.gfe as gfe
-from spiDNN.machine_vertices import Conv1DNeuron, Conv1DMeta
+from spiDNN.machine_vertices import Conv1DNeuron
 
 
 class Conv1D(AbstractLayerBase, WeightsInterface):
@@ -65,12 +65,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         weight_vector = weight_vector.flatten(order="F")
 
-        """
-        self.meta_vertex = Conv1DMeta(
-            self, weight_vector, trainable_params)
-        gfe.add_machine_vertex_instance(self.meta_vertex)
-        """
-
         for i in range(0, self.n_neurons):
             neuron = Conv1DNeuron(
                 self, i, weight_vector, trainable_params)
@@ -79,13 +73,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         super(Conv1D, self).init_neurons()
 
         """
-        # meta conn
-        for neuron in self.neurons:
-            gfe.add_machine_edge_instance(
-                self.meta_vertex, neuron, globals.meta_partition)
-            gfe.add_machine_edge_instance(
-                neuron, self.meta_vertex, globals.meta_partition)
-
         if self.activation == "softmax":
             super(Conv1D, self).connect_incoming(
                 self, globals.softmax_partition)
