@@ -23,20 +23,13 @@ import spiDNN.globals as globals
 
 from .abstract_partition_managed_machine_vertex import \
     AbstractPartitionManagedMachineVertex
+from .data_regions import DataRegions
 
 import sys
 import math
-from enum import Enum
 import struct
 
-
 import numpy as np
-
-
-class LossMachineVertexDataRegions(Enum):
-    SYSTEM = 0
-    PARAMS = 1
-    KEYS = 2
 
 
 class LossMachineVertex(
@@ -60,18 +53,18 @@ class LossMachineVertex(
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
-            spec, LossMachineVertexDataRegions.SYSTEM.value, self,
+            spec, DataRegions.SYSTEM.value, self,
             machine_time_step, time_scale_factor
         )
 
         spec.reserve_memory_region(
-            region=LossMachineVertexDataRegions.PARAMS.value,
+            region=DataRegions.BASE_PARAMS.value,
             size=self.PARAMS_DATA_SIZE,
             label="params"
         )
 
         spec.reserve_memory_region(
-            region=LossMachineVertexDataRegions.KEYS.value,
+            region=DataRegions.KEYS.value,
             size=self.layer.K * BYTES_PER_WORD,
             label="keys"
         )
@@ -105,7 +98,7 @@ class LossMachineVertex(
             self, globals.backward_partition)
 
         spec.switch_write_focus(
-            region=LossMachineVertexDataRegions.PARAMS.value)
+            region=DataRegions.BASE_PARAMS.value)
         spec.write_value(extractor_key)
         spec.write_value(globals.losses[self.layer.loss])
         spec.write_value(self.layer.K)
@@ -115,7 +108,7 @@ class LossMachineVertex(
         spec.write_value(self.trainable_params.epoch_size)
 
         spec.switch_write_focus(
-            region=LossMachineVertexDataRegions.KEYS.value)
+            region=DataRegions.KEYS.value)
         spec.write_array(keys)
 
         spec.end_specification()

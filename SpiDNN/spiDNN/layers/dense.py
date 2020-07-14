@@ -5,13 +5,14 @@ from spinn_utilities.overrides import overrides
 from .abstract_layer_base import AbstractLayerBase
 from .layer_interface import LayerInterface
 from .weights_interface import WeightsInterface
+from .conv1d import Conv1D
 
 import spiDNN.globals as globals
 from spiDNN.machine_vertices import Perceptron
 
 
 class Dense(AbstractLayerBase, WeightsInterface):
-    def __init__(self, n_neurons, activation, bias=True):
+    def __init__(self, n_neurons, activation="identity", bias=True):
         super(Dense, self).__init__("unnamed", n_neurons, [])
 
         if activation in globals.activations:
@@ -45,7 +46,9 @@ class Dense(AbstractLayerBase, WeightsInterface):
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
-        source_neurons = source_layer.n_neurons
+        source_neurons = source_layer.n_neurons * source_layer.n_filters
+        # dense layer only supports flattened input
+        source_layer.flatten = source_layer.n_filters > 1
 
         weights = np.array(
             np.random.rand(source_neurons, self.n_neurons), dtype=np.float32)

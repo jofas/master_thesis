@@ -6,12 +6,24 @@
 #include <debug.h>
 #include <math.h>
 
+#define _SPIDNN_
 
 /* function which has to be implemented by a machine vertex including
  * spiDNN.h */
 void __init_base_params(
     uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key);
 
+
+//! human readable definitions of each region in SDRAM
+typedef enum regions_e {
+    SYSTEM_REGION,
+    BASE_PARAMS,
+    KEYS,
+    WEIGHTS,
+    SOFTMAX_PARAMS,
+    TRAINABLE_PARAMS,
+    NEXT_LAYER_WEIGHTS,
+} regions_e;
 
 //! values for the priority for each callback
 typedef enum callback_priorities {
@@ -21,8 +33,6 @@ typedef enum callback_priorities {
     DMA = 3
 } callback_priorities;
 
-
-const uint SYSTEM_REGION=0;
 
 static uint32_t spiDNN_time;
 data_specification_metadata_t *data_spec_meta = NULL;
@@ -58,18 +68,18 @@ void receive_forward(uint key, float payload) {
 }
 
 void receive_forward_with_channel(
-    uint key, float payload, uint *channel_counters, uint kernel_size)
+    uint key, float payload, uint *channel_counters, uint n_channels)
 {
   uint idx = key - min_pre_key;
   uint channel = channel_counters[idx];
 
-  potentials[channel * kernel_size + idx] = payload;
+  potentials[channel + n_channels * idx] = payload;
 
   spiDNN_received_potentials_counter++;
   channel_counters[idx]++;
 }
 
-bool forward_pass_complete() {
+bool forward_pass_complete(void) {
   if (spiDNN_received_potentials_counter == n_potentials) {
     spiDNN_received_potentials_counter = 0;
     return true;
@@ -99,7 +109,7 @@ static bool init_simulation_and_data_spec(uint32_t *timer_period) {
   return true;
 }
 
-void base_init() {
+void base_init(void) {
   uint32_t timer_period, timer_offset;
 
   if (!init_simulation_and_data_spec(&timer_period)) {

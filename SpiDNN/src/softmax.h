@@ -1,4 +1,6 @@
-#include "perceptron.h"
+#ifndef _SPIDNN_
+#include "spiDNN.h"
+#endif
 
 
 //! definitions of each element in the softmax_params region
@@ -22,14 +24,15 @@ uint received_softmax_counter = 0;
 /* functions */
 
 void receive_softmax(float payload) {
-  if (received_softmax_counter == 0) {
+  if (received_softmax_counter == 0)
     softmax_denominator = .0;
-  }
+
   softmax_denominator += payload;
+
   received_softmax_counter++;
 }
 
-bool softmax_pass_complete() {
+bool softmax_pass_complete(void) {
   if (received_softmax_counter == softmax_layer_size) {
     received_softmax_counter = 0;
     return true;
@@ -37,7 +40,7 @@ bool softmax_pass_complete() {
   return false;
 }
 
-void softmax_init() {
+void softmax_init(void) {
   softmax_params_sdram =
     data_specification_get_region(SOFTMAX_PARAMS, data_spec_meta);
 

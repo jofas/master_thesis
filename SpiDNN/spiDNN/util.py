@@ -60,9 +60,9 @@ class Partition:
     def __init__(self, identifier):
         self.identifier = identifier
         self.first_key = 0
+        self.size = 0
 
         self.machine_vertices = {}
-        self.constraint_generated = []
 
     def add(self, machine_vertex):
         """
@@ -73,30 +73,25 @@ class Partition:
         otherwise False is returned.
         """
         if machine_vertex.label not in self.machine_vertices:
-            self.machine_vertices[machine_vertex.label] = \
-                len(self.machine_vertices)
-            self.constraint_generated.append(False)
+            self.machine_vertices[machine_vertex.label] = self.size
+
+            self.size += machine_vertex.get_n_keys_for_partition(
+                self.identifier)
             return True
         return False
 
-    def get_key(self, machine_vertex):
+    def get_first_key(self, machine_vertex):
         if machine_vertex.label not in self.machine_vertices:
             raise KeyError("""Partition {} has never seen MachineVertex
                 {} as the source of an edge.""".format(
                 self.identifier, machine_vertex.label))
 
-        index = self.machine_vertices[machine_vertex.label]
+        vertex_first_key = self.machine_vertices[machine_vertex.label]
 
-        if self.constraint_generated[index]:
-            raise KeyError(""""Partition {} has already generated the
-                constraint for MachineVertex {}.""".format(
-                self.identifier, machine_vertex.label))
-
-        self.constraint_generated[index] = True
-        return self.first_key + index
+        return self.first_key + vertex_first_key
 
     def __len__(self):
-        return len(self.machine_vertices)
+        return self.size
 
 
 class PartitionManager:
@@ -113,22 +108,35 @@ class PartitionManager:
         if partition.add(machine_vertex):
             # bubble the first key of each partition which was touched
             # after this partition upwards in the key space
+            n_keys = machine_vertex.get_n_keys_for_partition(
+                partition_identifier)
+
             index = self.partitions_lookup[partition_identifier]
             if index < len(self.partitions) - 1:
                 for partition in self.partitions[index + 1:]:
-                    partition.first_key += 1
+                    partition.first_key += n_keys
 
-    def generate_constraint(self, machine_vertex, partition_identifier):
+    def generate_constraints(self, machine_vertex, partition_identifier):
         partition = self._get_partition(partition_identifier)
 
         if partition is None:
             raise KeyError("I've never heard of parition: {}".format(
                 partition_identifier))
 
-        key = partition.get_key(machine_vertex)
+        base_key = partition.get_first_key(machine_vertex)
+        n_keys = machine_vertex.get_n_keys_for_partition(
+            partition_identifier)
 
-        return FixedKeyAndMaskConstraint([BaseKeyAndMask(
-            key, globals.mask)])
+        keys_and_masks = [BaseKeyAndMask(key, globals.mask)
+            for key in range(base_key, base_key + n_keys)]
+
+        #assert len(keys_and_masks) == n_keys
+
+        #print(machine_vertex)
+        #for km in keys_and_masks:
+        #    print(km.get_keys(n_keys=n_keys, offset=1))
+
+        return [FixedKeyAndMaskConstraint(keys_and_masks)]
 
     def _get_partition(self, partition_identifier):
         if partition_identifier in self.partitions_lookup:

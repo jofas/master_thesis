@@ -8,6 +8,21 @@ from spinn_utilities.abstract_base import AbstractBase, abstractproperty, \
 class LayerInterface(object):
 
     @abstractproperty
+    def n_filters(self):
+        """
+        Number of filters the neurons of this layer instance provide.
+        Default is one but convolutional layers may have more then
+        one filter.
+        """
+
+    @abstractproperty
+    def flatten(self):
+        """
+        Bool whether layer needs to be flatten (e.g. connecting con-
+        volutional layers to a dense layer.
+        """
+
+    @abstractproperty
     def n_neurons(self):
         """
         Number of machine vertices contained in layer.

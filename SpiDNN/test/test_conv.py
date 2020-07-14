@@ -33,7 +33,7 @@ def test_conv_flatten():
                                           [0.6, 0.7, 0.8]],
                                          dtype=np.float32)).all()
 
-    conv1d = Conv1D((kernel_size,), "identity")
+    conv1d = Conv1D(1, (kernel_size,))
     conv1d.n_filters = n_filters
 
     input = Input(2)
@@ -96,7 +96,7 @@ def test_connection():
     input_layer = Input(5)
     input_layer.label = "Input"
 
-    conv1d_layer = Conv1D((3,), "identity")
+    conv1d_layer = Conv1D(1, (3,))
     conv1d_layer.label = "Conv1D"
 
     weights, biases = conv1d_layer.generate_weights(input_layer)
@@ -138,37 +138,99 @@ def test_connection():
 
 def test_same_padding():
     model = Model().add(Input(5)) \
-                   .add(Conv1D((8,), "identity", padding="same")) \
+                   .add(Conv1D(1, (8,), padding="same")) \
                    .add(Dense(1, activation="identity"))
 
     X = np.random.rand(1, 5, 1)
 
     model.predict(X)
 
-    lower, upper = \
-        model._layers[1].neurons[0]._generate_lower_and_upper_padding()
-    assert lower == 3 and upper == 0
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+    neuron2 = model._layers[1].neurons[2]
+    neuron3 = model._layers[1].neurons[3]
+    neuron4 = model._layers[1].neurons[4]
 
-    lower, upper = \
-        model._layers[1].neurons[1]._generate_lower_and_upper_padding()
-    assert lower == 2 and upper == 1
+    assert neuron0.lower_padding == 3 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 2 and neuron1.upper_padding == 1
+    assert neuron2.lower_padding == 1 and neuron2.upper_padding == 2
+    assert neuron3.lower_padding == 0 and neuron3.upper_padding == 3
+    assert neuron4.lower_padding == 0 and neuron4.upper_padding == 4
 
-    lower, upper = \
-        model._layers[1].neurons[2]._generate_lower_and_upper_padding()
-    assert lower == 1 and upper == 2
 
-    lower, upper = \
-        model._layers[1].neurons[3]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 3
+def test_same_padding_with_stride1():
+    model = Model().add(Input(5)) \
+                   .add(Conv1D(1, (9,), padding="same", stride=2)) \
+                   .add(Dense(1, activation="identity"))
 
-    lower, upper = \
-        model._layers[1].neurons[4]._generate_lower_and_upper_padding()
-    assert lower == 0 and upper == 4
+    X = np.random.rand(1, 5, 1)
+
+    model.predict(X)
+
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+    neuron2 = model._layers[1].neurons[2]
+
+    assert neuron0.lower_padding == 4 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 2 and neuron1.upper_padding == 2
+    assert neuron2.lower_padding == 0 and neuron2.upper_padding == 4
+
+
+def test_same_padding_with_stride2():
+    model = Model().add(Input(5)) \
+                   .add(Conv1D(1, (4,), padding="same", stride=3)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 5, 1)
+
+    model.predict(X)
+
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+
+    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 1
+
+
+def test_same_padding_with_stride3():
+    model = Model().add(Input(4)) \
+                   .add(Conv1D(1, (4,), padding="same", stride=2)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 4, 1)
+
+    model.predict(X)
+
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+
+    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 1
+
+
+def test_same_padding_with_stride4():
+    model = Model().add(Input(6)) \
+                   .add(Conv1D(1, (4,), padding="same", stride=3)) \
+                   .add(Dense(1, activation="identity"))
+
+    X = np.random.rand(1, 6, 1)
+
+    model.predict(X)
+
+    neuron0 = model._layers[1].neurons[0]
+    neuron1 = model._layers[1].neurons[1]
+
+    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 0
 
 
 if __name__ == "__main__":
-    #test_conv_flatten()
-    #test_convolution()
-    #test_connection()
-    test_same_padding()
+    # test_conv_flatten()
+    # test_convolution()
+    # test_connection()
+    # test_same_padding()
+    # test_same_padding_with_stride1()
+    # test_same_padding_with_stride2()
+    # test_same_padding_with_stride3()
+    test_same_padding_with_stride4()
     print("SUCCESS.")

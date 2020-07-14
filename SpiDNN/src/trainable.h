@@ -1,8 +1,5 @@
-#ifdef softmax
-#include "softmax.h"
-#else
 #include "perceptron.h"
-#endif
+
 
 #define BATCH_COMPLETE batch_counter == batch_size \
                        || (backward_passes_counter % epoch_size == 0)
@@ -65,7 +62,7 @@ void receive_backward(uint key, float payload) {
   received_errors_counter++;
 }
 
-bool backward_pass_complete() {
+bool backward_pass_complete(void) {
   if (received_errors_counter == n_errors) {
     received_errors_counter = 0;
     return true;
@@ -73,7 +70,7 @@ bool backward_pass_complete() {
   return false;
 }
 
-void generate_neuron_error() {
+void generate_neuron_error(void) {
   switch (activation_function_id) {
     case IDENTITY:
       neuron_error = error;
@@ -102,7 +99,7 @@ void generate_neuron_error() {
   }
 }
 
-void update_gradients() {
+void update_gradients(void) {
   generate_neuron_error();
 
   for (uint i=0; i < n_potentials; i++) {
@@ -112,7 +109,7 @@ void update_gradients() {
   gradients[n_potentials] += neuron_error;
 }
 
-void update_weights() {
+void update_weights(void) {
   for (uint i=0; i < n_weights; i++) {
     weights[i] -= learning_rate * gradients[i];
   }
@@ -124,7 +121,7 @@ void update_weights() {
   }
 }
 
-void reset_batch() {
+void reset_batch(void) {
   batch_counter = 0;
 
   for (uint i=0; i < n_weights; i++) {
@@ -138,7 +135,7 @@ void reset_batch() {
   }
 }
 
-void trainable_init() {
+void trainable_init(void) {
   trainable_params_sdram =
     data_specification_get_region(TRAINABLE_PARAMS, data_spec_meta);
 

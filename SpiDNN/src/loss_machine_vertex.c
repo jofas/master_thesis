@@ -1,12 +1,5 @@
 #include "spiDNN.h"
 
-//! human readable definitions of each region in SDRAM
-typedef enum regions_e {
-    __SYSTEM_REGION,
-    PARAMS,
-    KEYS,
-} regions_e;
-
 //! human readable definitions of the loss functions
 typedef enum loss_functions_e {
   MEAN_SQUARED_ERROR,
@@ -98,7 +91,7 @@ void compute_error(uint i) {
   }
 }
 
-void compute_mse() {
+void compute_mse(void) {
     loss = .0;
     for (uint i=0; i < K; i++) {
       loss += (y[i] - potentials[i]) * (y[i] - potentials[i]);
@@ -109,7 +102,7 @@ void compute_mse() {
     average_loss = overall_loss / (float) N;
 }
 
-void compute_categorical_crossentropy() {
+void compute_categorical_crossentropy(void) {
   loss = .0;
   for (uint i=0; i < K; i++) {
     loss -= y[i] * log(potentials[i]);
@@ -119,14 +112,14 @@ void compute_categorical_crossentropy() {
   average_loss = overall_loss / (float) N;
 }
 
-void compute_binary_crossentropy() {
+void compute_binary_crossentropy(void) {
   loss = -y[0] * log(potentials[0]) + (1 - y[0]) * log(1 - potentials[0]);
 
   overall_loss += loss;
   average_loss = overall_loss / (float) N;
 }
 
-void compute_loss() {
+void compute_loss(void) {
   switch (loss_function_id) {
     case MEAN_SQUARED_ERROR:
       compute_mse();
@@ -175,7 +168,7 @@ void update(uint ticks, uint b) {
   }
 }
 
-void keys_and_y_init() {
+void keys_and_y_init(void) {
   keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
 
   keys = (uint *)malloc(sizeof(uint) * K);
@@ -203,7 +196,7 @@ void c_main(void) {
 void __init_base_params(
     uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key)
 {
-  params_sdram = data_specification_get_region(PARAMS, data_spec_meta);
+  params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
   extractor_key = params_sdram->extractor_key;
   loss_function_id = params_sdram->loss_function_id;
