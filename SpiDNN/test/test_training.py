@@ -1,9 +1,9 @@
 from spiDNN import Model
-from spiDNN.layers import Input, Dense
+from spiDNN.layers import Input, Dense, Conv1D
 
 import numpy as np
 
-from keras.layers import Dense as KDense
+from keras.layers import Dense as KDense, Conv1D as KConv1D, Flatten
 from keras.models import Sequential
 from keras.optimizers import SGD
 
@@ -83,7 +83,51 @@ def test_categorical_xor():
     compare_against_keras(X, y, loss)
 
 
+def test_training_conv1d():
+    loss = "mean_squared_error"
+    input_shape = (100, 3)
+    X = np.random.rand(500, *input_shape)
+    y = np.random.rand(500, 4)
+
+    kmodel = Sequential()
+    kmodel.add(KConv1D(1, 3, padding="same", input_shape=input_shape, activation="relu"))
+    kmodel.add(Flatten())
+    kmodel.add(KDense(y.shape[1]))
+
+    kmodel.compile(loss=loss, optimizer=SGD(learning_rate=LEARNING_RATE))
+
+    model = Model()
+    model.add(Input(*input_shape))
+    model.add(Conv1D(1, (3,), padding="same", activation="relu"))
+    model.add(Dense(y.shape[1]))
+
+    model.set_weights(kmodel.get_weights())
+
+    unfitted_weights = deepcopy(model.get_weights())
+
+    model.fit(
+        X, y, loss, epochs=EPOCHS, batch_size=BATCH_SIZE,
+        learning_rate=LEARNING_RATE)
+
+    kmodel.fit(X, y, epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=False)
+
+    w = model.get_weights()
+    w_ = kmodel.get_weights()
+
+    error = [x - x_ for x, x_ in zip(w, w_)]
+    update = [x - x_ for x, x_ in zip(w, unfitted_weights)]
+
+    for u in update:
+        assert np.amax(np.absolute(u)) > 0.0
+
+    for e in error:
+        e_max = np.amax(np.absolute(e))
+        print(e_max)
+        assert e_max < 0.1
+
+
 if __name__ == "__main__":
-    test_binary_xor()
-    test_categorical_xor()
+    # test_binary_xor()
+    # test_categorical_xor()
+    test_training_conv1d()
     print("SUCCESS.")

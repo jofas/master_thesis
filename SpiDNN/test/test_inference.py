@@ -3,8 +3,7 @@ from spiDNN.layers import Input, Dense, Conv1D
 
 import numpy as np
 
-from keras.layers import Dense as KDense, Conv1D as KConv1D, \
-    Flatten as KFlatten
+from keras.layers import Dense as KDense, Conv1D as KConv1D, Flatten
 from keras.models import Sequential
 
 
@@ -49,7 +48,7 @@ def test_inference_conv1d():
     kmodel.add(KConv1D(16, kernel_size, padding="same", strides=2, activation="sigmoid"))
     kmodel.add(KConv1D(16, kernel_size + 3, padding="same", strides=5, activation="softmax"))
     kmodel.add(KConv1D(5, kernel_size + 1, strides=3))
-    kmodel.add(KFlatten())
+    kmodel.add(Flatten())
     kmodel.add(KDense(1))
 
     model = Model()
