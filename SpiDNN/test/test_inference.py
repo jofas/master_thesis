@@ -8,8 +8,8 @@ from keras.layers import Dense as KDense, Conv1D as KConv1D, \
 from keras.models import Sequential
 
 
-N = 200
-n_channels = 4
+N = 224
+n_channels = 3
 kernel_size = 3
 
 
@@ -44,27 +44,22 @@ def test_inference_conv1d():
     X = np.random.rand(500, *input_shape)
 
     kmodel = Sequential()
-    kmodel.add(KConv1D(1, kernel_size, input_shape=input_shape, strides=1))
-    kmodel.add(KConv1D(1, kernel_size * 4, padding="same", strides=3))
-    kmodel.add(KConv1D(1, kernel_size, padding="same", strides=2))
-    kmodel.add(KConv1D(1, kernel_size +3, padding="same", strides=5))
-    kmodel.add(KConv1D(5, kernel_size, strides=1))
+    kmodel.add(KConv1D(1, 7, padding="same", input_shape=input_shape, strides=2))
+    kmodel.add(KConv1D(5, kernel_size * 4, padding="same", strides=3))
+    kmodel.add(KConv1D(16, kernel_size, padding="same", strides=2))
+    kmodel.add(KConv1D(16, kernel_size + 3, padding="same", strides=5))
+    kmodel.add(KConv1D(5, kernel_size + 1, strides=3))
     kmodel.add(KFlatten())
-    kmodel.add(KDense(1, activation=None))
+    kmodel.add(KDense(1))
 
-    # TODO: weird EIEIO input crap when first layer "valid" and stride > 1
-    #
-    #       "valid" padding may leaves last neuron of prev layer unconnected
-    #       which results in an error (catch that)
-    #
     model = Model()
     model.add(Input(*input_shape))
-    model.add(Conv1D(1, (kernel_size,), stride=1))
-    model.add(Conv1D(1, (kernel_size * 4,), padding="same", stride=3))
-    model.add(Conv1D(1, (kernel_size,), padding="same", stride=2))
-    model.add(Conv1D(1, (kernel_size +3,), padding="same", stride=5))
-    model.add(Conv1D(5, (kernel_size,), stride=1))
-    model.add(Dense(1, activation="identity"))
+    model.add(Conv1D(1, (7,), padding="same", stride=2))
+    model.add(Conv1D(5, (kernel_size * 4,), padding="same", stride=3))
+    model.add(Conv1D(16, (kernel_size,), padding="same", stride=2))
+    model.add(Conv1D(16, (kernel_size + 3,), padding="same", stride=5))
+    model.add(Conv1D(5, (kernel_size + 1,), stride=3))
+    model.add(Dense(1))
 
     model.set_weights(kmodel.get_weights())
 

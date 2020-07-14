@@ -163,6 +163,17 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
             self.n_neurons = int(
                 (source_layer.n_neurons - self.kernel_shape[0])
                 / self.stride + 1)
+
+            size = (self.n_neurons - 1) * self.stride + 1
+            size += 2 * int(self.kernel_shape[0] / 2)
+
+            print(self, self.n_neurons, source_layer.n_neurons, size)
+
+            if size < source_layer.n_neurons:
+                raise Exception("""{}: The chosen stride of {} with
+                    valid padding currently is not allowed, because
+                    not all neurons from the previous layer will be
+                    connected.""".format(self, self.stride))
         else:
             self.n_neurons = \
                 int(math.ceil(source_layer.n_neurons / self.stride))
