@@ -76,6 +76,25 @@ class Conv1DNeuron(
         super(Conv1DNeuron, self).__init__(
             "{}_{}".format(layer.label, self.id), executable)
 
+    def extract_weights(self):
+        transceiver = gfe.transceiver()
+        placement = gfe.placements().get_placement_of_vertex(self)
+
+        weights_region_base_address = locate_memory_region_for_placement(
+            placement, Conv1DDataRegions.WEIGHTS.value, transceiver)
+
+        raw_data = transceiver.read_memory(
+            placement.x, placement.y,
+            weights_region_base_address,
+            self.weight_container_size)
+
+        unpacked_data = struct.unpack("<{}f".format(
+            self.weights.shape[0]), raw_data)
+
+        self.weights = np.array(unpacked_data, dtype=np.float32)
+
+        return self.weights
+
     @overrides(AbstractProvidesNKeysForPartition
                .get_n_keys_for_partition)
     def get_n_keys_for_partition(self, partition):

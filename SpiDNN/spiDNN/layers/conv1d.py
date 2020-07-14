@@ -142,21 +142,23 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
     @overrides(WeightsInterface.extract_weights)
     def extract_weights(self):
-        pass
-        """
         weights = np.empty(
-            (self.neurons[0].weights.shape[0] - 1, self.n_neurons),
+            (*self.kernel_shape, self.n_channels, self.n_filters),
             dtype=np.float32)
-        biases = np.empty((self.n_neurons,), dtype=np.float32)
+        biases = np.empty((self.n_filters,), dtype=np.float32)
 
-        for i, neuron in enumerate(self.neurons):
-            neuron_weights = neuron.extract_weights()
+        flattened_weights = self.neurons[0].extract_weights()
 
-            weights[:, i] = neuron_weights[:-1]
-            biases[i] = neuron_weights[-1]
+        flattened_weights = flattened_weights.reshape(
+            self.kernel_shape[0] * self.n_channels + 1, self.n_filters,
+            order="F")
+
+        for i in range(0, self.n_filters):
+            weights[:, :, i] = flattened_weights[:-1, i].reshape(
+                self.kernel_shape[0], self.n_channels)
+            biases[i] = flattened_weights[-1, i]
 
         return weights, biases
-        """
 
     def _set_n_neurons(self, source_layer):
         if self.padding == "valid":
