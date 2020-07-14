@@ -1,8 +1,5 @@
-#ifdef softmax
-#include "softmax.h"
-#else
 #include "perceptron.h"
-#endif
+
 
 #define BATCH_COMPLETE batch_counter == batch_size \
                        || (backward_passes_counter % epoch_size == 0)

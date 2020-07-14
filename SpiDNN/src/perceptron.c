@@ -1,9 +1,11 @@
 #ifdef trainable
 #include "trainable.h"
-#elif defined softmax
-#include "softmax.h"
 #else
 #include "perceptron.h"
+#endif
+
+#ifdef softmax
+#include "softmax.h"
 #endif
 
 void receive(uint key, float payload) {

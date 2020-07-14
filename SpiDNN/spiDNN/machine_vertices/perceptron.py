@@ -21,22 +21,13 @@ from spiDNN.util import generate_offset
 
 from .abstract_partition_managed_machine_vertex import \
     AbstractPartitionManagedMachineVertex
+from .data_regions import DataRegions
 
 import sys
 import math
-from enum import Enum
 import struct
 
 import numpy as np
-
-
-class PerceptronDataRegions(Enum):
-    SYSTEM = 0
-    BASE_PARAMS = 1
-    WEIGHTS = 2
-    SOFTMAX_PARAMS = 3
-    TRAINABLE_PARAMS = 4
-    NEXT_LAYER_WEIGHTS = 5
 
 
 class Perceptron(
@@ -82,7 +73,7 @@ class Perceptron(
         placement = gfe.placements().get_placement_of_vertex(self)
 
         weights_region_base_address = locate_memory_region_for_placement(
-            placement, PerceptronDataRegions.WEIGHTS.value, transceiver)
+            placement, DataRegions.WEIGHTS.value, transceiver)
 
         raw_data = transceiver.read_memory(
             placement.x, placement.y,
@@ -115,7 +106,7 @@ class Perceptron(
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
-            spec, PerceptronDataRegions.SYSTEM.value, self,
+            spec, DataRegions.SYSTEM.value, self,
             machine_time_step, time_scale_factor)
 
         self._generate_and_write_base_params(
@@ -136,7 +127,7 @@ class Perceptron(
     def _generate_and_write_base_params(
             self, spec, placement, machine_graph, routing_info):
         spec.reserve_memory_region(
-            region=PerceptronDataRegions.BASE_PARAMS.value,
+            region=DataRegions.BASE_PARAMS.value,
             size=self.BASE_PARAMS_DATA_SIZE,
             label="base_params")
 
@@ -151,7 +142,7 @@ class Perceptron(
             self, globals.forward_partition)
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.BASE_PARAMS.value)
+            region=DataRegions.BASE_PARAMS.value)
         spec.write_value(key)
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
@@ -160,18 +151,18 @@ class Perceptron(
 
     def _generate_and_write_weights(self, spec):
         spec.reserve_memory_region(
-            region=PerceptronDataRegions.WEIGHTS.value,
+            region=DataRegions.WEIGHTS.value,
             size=self.weight_container_size,
             label="weights")
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.WEIGHTS.value)
+            region=DataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
     def _generate_and_write_softmax_params(
             self, spec, machine_graph, routing_info):
         spec.reserve_memory_region(
-            region=PerceptronDataRegions.SOFTMAX_PARAMS.value,
+            region=DataRegions.SOFTMAX_PARAMS.value,
             size=self.softmax_params_data_size,
             label="softmax_params")
 
@@ -186,7 +177,7 @@ class Perceptron(
             edge.pre_vertex, globals.softmax_partition) for edge in edges])
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.SOFTMAX_PARAMS.value)
+            region=DataRegions.SOFTMAX_PARAMS.value)
         spec.write_value(softmax_key)
         spec.write_value(min_layer_key)
         spec.write_value(self.layer.n_neurons)
@@ -195,7 +186,7 @@ class Perceptron(
     def _generate_and_write_trainable_regions(
             self, spec, machine_graph, routing_info):
         spec.reserve_memory_region(
-            region=PerceptronDataRegions.TRAINABLE_PARAMS.value,
+            region=DataRegions.TRAINABLE_PARAMS.value,
             size=self.trainable_params_data_size,
             label="trainable_params")
 
@@ -238,16 +229,16 @@ class Perceptron(
                 edge.pre_vertex.weights[self.id] for edge in edges]
 
             spec.reserve_memory_region(
-                region=PerceptronDataRegions.NEXT_LAYER_WEIGHTS.value,
+                region=DataRegions.NEXT_LAYER_WEIGHTS.value,
                 size=self.next_layer_weights_container_size,
                 label="next_layer_weights")
 
             spec.switch_write_focus(
-                region=PerceptronDataRegions.NEXT_LAYER_WEIGHTS.value)
+                region=DataRegions.NEXT_LAYER_WEIGHTS.value)
             spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
 
         spec.switch_write_focus(
-            region=PerceptronDataRegions.TRAINABLE_PARAMS.value)
+            region=DataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
         spec.write_value(n_errors)

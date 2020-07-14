@@ -21,23 +21,13 @@ from spiDNN.util import generate_offset
 
 from .abstract_partition_managed_machine_vertex import \
     AbstractPartitionManagedMachineVertex
+from .data_regions import DataRegions
 
 import sys
 import math
-from enum import Enum
 import struct
 
 import numpy as np
-
-
-class Conv1DDataRegions(Enum):
-    SYSTEM = 0
-    BASE_PARAMS = 1
-    KEYS = 2
-    WEIGHTS = 3
-    SOFTMAX_PARAMS = 4
-    TRAINABLE_PARAMS = 5
-    NEXT_LAYER_WEIGHTS = 5
 
 
 class Conv1DNeuron(
@@ -63,11 +53,6 @@ class Conv1DNeuron(
         self.lower_padding = 0
         self.upper_padding = 0
 
-        if self.layer.activation == "softmax":
-            raise Exception("Unimplemented")
-        else:
-            self.softmax_params_data_size = 0
-
         if self.trainable_params is not None:
             raise Exception("Unimplemented")
         else:
@@ -81,7 +66,7 @@ class Conv1DNeuron(
         placement = gfe.placements().get_placement_of_vertex(self)
 
         weights_region_base_address = locate_memory_region_for_placement(
-            placement, Conv1DDataRegions.WEIGHTS.value, transceiver)
+            placement, DataRegions.WEIGHTS.value, transceiver)
 
         raw_data = transceiver.read_memory(
             placement.x, placement.y,
@@ -112,7 +97,6 @@ class Conv1DNeuron(
                        + self.BASE_PARAMS_DATA_SIZE
                        + self.key_container_size
                        + self.weight_container_size
-                       + self.softmax_params_data_size
                        + self.trainable_params_data_size)
 
         return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
@@ -124,7 +108,7 @@ class Conv1DNeuron(
 
         # Generate the system data region for simulation requirements
         generate_system_data_region(
-            spec, Conv1DDataRegions.SYSTEM.value, self,
+            spec, DataRegions.SYSTEM.value, self,
             machine_time_step, time_scale_factor)
 
         self._generate_and_write_base_params(
@@ -139,7 +123,7 @@ class Conv1DNeuron(
     def _generate_and_write_base_params(
             self, spec, placement, machine_graph, routing_info):
         spec.reserve_memory_region(
-            region=Conv1DDataRegions.BASE_PARAMS.value,
+            region=DataRegions.BASE_PARAMS.value,
             size=self.BASE_PARAMS_DATA_SIZE,
             label="base_params")
 
@@ -151,7 +135,7 @@ class Conv1DNeuron(
             edge.pre_vertex, globals.forward_partition) for edge in edges])
 
         spec.switch_write_focus(
-            region=Conv1DDataRegions.BASE_PARAMS.value)
+            region=DataRegions.BASE_PARAMS.value)
         spec.write_value(min_pre_key)
         spec.write_value(generate_offset(placement.p))
         spec.write_value(self.layer.kernel_shape[0])
@@ -163,7 +147,7 @@ class Conv1DNeuron(
 
     def _generate_and_write_keys(self, spec, routing_info):
         spec.reserve_memory_region(
-            region=Conv1DDataRegions.KEYS.value,
+            region=DataRegions.KEYS.value,
             size=self.key_container_size,
             label="keys")
 
@@ -176,17 +160,17 @@ class Conv1DNeuron(
         assert len(keys) == self.layer.n_filters
 
         spec.switch_write_focus(
-            region=Conv1DDataRegions.KEYS.value)
+            region=DataRegions.KEYS.value)
         spec.write_array(keys)
 
     def _generate_and_write_weights(self, spec):
         spec.reserve_memory_region(
-            region=Conv1DDataRegions.WEIGHTS.value,
+            region=DataRegions.WEIGHTS.value,
             size=self.weight_container_size,
             label="weights")
 
         spec.switch_write_focus(
-            region=Conv1DDataRegions.WEIGHTS.value)
+            region=DataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
 
     def __repr__(self):

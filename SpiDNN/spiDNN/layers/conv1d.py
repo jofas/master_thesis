@@ -72,11 +72,9 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         super(Conv1D, self).init_neurons()
 
-        """
         if self.activation == "softmax":
             super(Conv1D, self).connect_incoming(
                 self, globals.softmax_partition)
-        """
 
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
@@ -155,8 +153,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
             size = (self.n_neurons - 1) * self.stride + 1
             size += 2 * int(self.kernel_shape[0] / 2)
-
-            print(self, self.n_neurons, source_layer.n_neurons, size)
 
             if size < source_layer.n_neurons:
                 raise Exception("""{}: The chosen stride of {} with

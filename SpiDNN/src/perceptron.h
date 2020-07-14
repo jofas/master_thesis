@@ -6,16 +6,6 @@
 
 /* structs and enums */
 
-//! human readable definitions of each region in SDRAM
-typedef enum regions_e {
-    __SYSTEM_REGION,
-    BASE_PARAMS,
-    WEIGHTS,
-    SOFTMAX_PARAMS,
-    TRAINABLE_PARAMS,
-    NEXT_LAYER_WEIGHTS,
-} regions_e;
-
 //! human readable definitions of the activation functions (except
 //! softmax, which is handled by another type of perceptron)
 typedef enum activations_e {

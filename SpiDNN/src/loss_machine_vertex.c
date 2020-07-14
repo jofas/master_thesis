@@ -1,12 +1,5 @@
 #include "spiDNN.h"
 
-//! human readable definitions of each region in SDRAM
-typedef enum regions_e {
-    __SYSTEM_REGION,
-    PARAMS,
-    KEYS,
-} regions_e;
-
 //! human readable definitions of the loss functions
 typedef enum loss_functions_e {
   MEAN_SQUARED_ERROR,
@@ -203,7 +196,7 @@ void c_main(void) {
 void __init_base_params(
     uint32_t *timer_offset, uint *n_potentials, uint *min_pre_key)
 {
-  params_sdram = data_specification_get_region(PARAMS, data_spec_meta);
+  params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
   extractor_key = params_sdram->extractor_key;
   loss_function_id = params_sdram->loss_function_id;

@@ -8,16 +8,6 @@
 
 /* structs and enums */
 
-//! human readable definitions of each region in SDRAM
-typedef enum regions_e {
-    __SYSTEM_REGION,
-    BASE_PARAMS,
-    KEYS,
-    WEIGHTS,
-    SOFTMAX_PARAMS,
-    TRAINABLE_PARAMS,
-} regions_e;
-
 //! human readable definitions of the activation functions (except
 //! softmax, which is handled by another type of perceptron)
 typedef enum activations_e {
@@ -149,9 +139,21 @@ void update(uint ticks, uint b) {
   spiDNN_time++;
 
   if (forward_pass_complete()) {
-    for (uint i = 0; i < n_filters; i++) {
-      activate(i);
-      send(forward_keys[i], (void *)&filter_results[i]);
+    if (activation_function_id == SOFTMAX) {
+      float softmax_denom = .0;
+      for (uint i = 0; i < n_filters; i++) {
+        activate(i);
+        softmax_denom += filter_results[i];
+      }
+      for (uint i = 0; i < n_filters; i++) {
+        filter_results[i] = filter_results[i] / softmax_denom;
+        send(forward_keys[i], (void *)&filter_results[i]);
+      }
+    } else {
+      for (uint i = 0; i < n_filters; i++) {
+        activate(i);
+        send(forward_keys[i], (void *)&filter_results[i]);
+      }
     }
   }
 }

@@ -1,4 +1,6 @@
-#include "perceptron.h"
+#ifndef _SPIDNN_
+#include "spiDNN.h"
+#endif
 
 
 //! definitions of each element in the softmax_params region
