@@ -73,7 +73,7 @@ void receive(uint key, float payload) {
 void compute_error(uint i) {
   switch (loss_function_id) {
     case MEAN_SQUARED_ERROR:
-      error = potentials[i] - y[i];
+      error = 2. * (potentials[i] - y[i]);
       break;
 
     case CATEGORICAL_CROSSENTROPY:
