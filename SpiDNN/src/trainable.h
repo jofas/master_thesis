@@ -2,9 +2,10 @@
 #include "perceptron.h"
 
 
-#define BATCH_COMPLETE batch_counter == batch_size \
+#define BATCH_COMPLETE (batch_counter == batch_size) \
                        || (backward_passes_counter % epoch_size == 0)
-#define FIT_COMPLETE backward_passes_counter == epoch_size * epochs
+#define FIT_COMPLETE (backward_passes_counter == epoch_size * epochs)
+#define NEXT_LAYER_IS_DENSE (n_errors < n_next_layer_weights)
 
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region {
@@ -39,6 +40,7 @@ uint batch_size;
 float learning_rate;
 
 float *next_layer_weights;
+uint *next_layer_receive_counters;
 
 float *gradients;
 float *next_layer_gradients;
@@ -51,42 +53,54 @@ uint batch_counter;
 
 /* functions */
 
-reset_errors(uint n_filters) {
+reset_backward_receive(uint n_filters) {
   for (uint i = 0; i < n_filters; i++)
     errors[i] = .0;
+
+  for (uint i = 0; i < n_next_layer_weights; i++)
+    next_layer_receive_counters[i] = 0;
 }
 
-void receive_backward(uint key, float payload, uint n_filters) {
+void receive_backward(
+    uint key, float payload, float *potentials, uint n_filters)
+{
   if (received_errors_counter == 0)
-    reset_errors(n_filters);
+    reset_backward_receive(n_filters);
 
-  // error to array the size of n_filters
-  //
-  // next_layer_is_dense
-  // if (n_errors < n_next_layer_weights)
-  //   for (uint j = 0; j < n_next_layer_weights / n_errors; j++) {
-  //     errors[i] += payload * next_layer_weights[
-  //       key - min_next_key + j];
-  //   }
-  //   do some
-  // else
-  //   update error for each filter
-  //    errors[i] += payload * next_layer_weights[
-  //      key - min_next_key + receive_counter[key - min_next_key]];
-  //    receive_counter[key - min_next_key]++;
-  //
-  //   do some else
-  //
+  uint idx = key - min_next_key;
 
-  for (uint i = 0; i < n_filters; i++) {
+  // Only interesting when called from a Conv layer. If next layer is
+  // dense this layer was flattened, which means the neuron I receive
+  // from only sends one error but is associated with every filter of
+  // this layer.
+  if (NEXT_LAYER_IS_DENSE) {
+    // TODO: once I support Conv layers as output layer I need to
+    //       catch whether this layer is the output layer
+    for (uint i = 0; i < n_filters; i++) {
+      errors[i] += payload * next_layer_weights[idx + i];
+    }
+  } else {
+
     if (is_output_layer) {
-      errors[i] += payload;
+      // TODO: how will this look with Conv as output layer?
+      for (uint i = 0; i < n_filters; i++) {
+        errors[i] += payload;
+      }
+
     } else {
-      errors[i] += payload * next_layer_weights[key - min_next_key];
-      next_layer_gradients[key - min_next_key] += payload * potential;
+      for (uint i = 0; i < n_filters; i++) {
+        errors[i] += payload * next_layer_weights[
+          idx + next_layer_receive_counters[idx]];
+
+        next_layer_gradients[idx + next_layer_receive_counters[idx]] +=
+          payload * potentials[i];
+      }
     }
   }
 
+  // TODO: next_layer_receive_counters must only be as big as
+  //       len(edges), not len(edges) * XXX.n_filters
+  next_layer_receive_counters[idx]++;
   received_errors_counter++;
 }
 
@@ -179,6 +193,7 @@ void next_layer_weights_init(void) {
   );
 
   next_layer_gradients = (float *)malloc(sizeof(float) * n_next_layer_weights);
+  next_layer_receive_counters = (uint *)malloc(sizeof(uint) * n_next_layer_weights);
 }
 
 void trainable_init(uint n_filters) {

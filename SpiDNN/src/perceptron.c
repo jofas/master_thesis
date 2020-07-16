@@ -26,7 +26,7 @@ void receive(uint key, float payload) {
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
-    receive_backward(key, payload, 1);
+    receive_backward(key, payload, &potential, 1);
     return;
   }
 #endif
