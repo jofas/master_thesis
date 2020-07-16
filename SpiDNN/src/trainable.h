@@ -141,11 +141,14 @@ void apply_activation_function_derivative(uint i) {
 }
 
 void update_gradients(uint n_filters) {
-  // TODO: how will look with conv???
-  //
   for (uint i = 0; i < n_filters; i++) {
     apply_activation_function_derivative(i);
 
+    // TODO: how will look with conv???
+    //
+    // potentials is shit i received .. need to hande this per kernel
+    // so j = 0..kernel_size, j * i as index,
+    // gradients[kernel_size] is bias
     for (uint j = 0; j < n_potentials; j++) {
       gradients[j] += errors[i] * potentials[j];
     }

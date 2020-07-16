@@ -8,7 +8,7 @@ forward_partition = "PARTITION_FORWARD"
 backward_partition = "PARTITION_BACKWARD"
 softmax_partition = "PARTITION_SOFTMAX"
 y_partition = "PARTITION_Y"
-meta_partition = "PARTITION_META"
+kernel_update_partition = "PARTITION_UPDATE_KERNEL"
 
 # mask for key space
 mask = 0xffffffff

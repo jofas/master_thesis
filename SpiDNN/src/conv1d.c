@@ -125,6 +125,17 @@ void reset_forward_pass(void) {
 }
 
 void receive(uint key, float payload) {
+
+#ifdef trainable
+  // min_next_key will always be bigger than min_pre_key, because
+  // the forward partition is touched by the toolchain before the
+  // backward partition
+  if (key >= min_next_key) {
+    receive_backward(key, payload);
+    return;
+  }
+#endif
+
   if (spiDNN_received_potentials_counter == 0)
     reset_forward_pass();
 

@@ -209,8 +209,7 @@ class Perceptron(
 
             n_errors = len(edges)
 
-            self.next_layer_weights_container_size = \
-                len(edges) * BYTES_PER_WORD
+            self.next_layer_weights_container_size = n_errors * BYTES_PER_WORD
 
             next_layer_weights = [
                 edge.pre_vertex.weights[self.id] for edge in edges]

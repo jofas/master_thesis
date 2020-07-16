@@ -54,7 +54,9 @@ class Conv1DNeuron(
         self.upper_padding = 0
 
         if self.trainable_params is not None:
-            raise Exception("Unimplemented")
+            self.trainable_params_data_size = \
+                (6 + self.trainable_params.n_elements) * BYTES_PER_WORD
+            executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
 
@@ -118,6 +120,10 @@ class Conv1DNeuron(
 
         self._generate_and_write_weights(spec)
 
+        if self.trainable_params is not None:
+            self._generate_and_write_trainable_regions(
+                spec, machine_graph, routing_info)
+
         spec.end_specification()
 
     def _generate_and_write_base_params(
@@ -172,6 +178,140 @@ class Conv1DNeuron(
         spec.switch_write_focus(
             region=DataRegions.WEIGHTS.value)
         spec.write_array(self.weights, data_type=DataType.FLOAT_32)
+
+    def _generate_and_write_trainable_regions(
+            self, spec, machine_graph, routing_info):
+        # I have no idea how package initialization works, but I can't
+        # import it in the global space, because spiDNN does not yet
+        # have its subpackages as attributes
+        from spiDNN.layers import Dense
+
+        spec.reserve_memory_region(
+            region=DataRegions.TRAINABLE_PARAMS.value,
+            size=self.trainable_params_data_size,
+            label="trainable_params")
+
+        backward_key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.backward_partition)
+
+        kernel_update_key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.kernel_update_partition)
+
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, globals.backward_partition))
+
+        is_output_layer = len(edges) == 0
+
+        if is_output_layer:
+            raise Exception("Unimplemented")
+        else:
+
+            # TODO: if next_layer is Dense or Conv1D
+            #
+            # Dense => receive 1 but multiply with self.n_filters many
+            #          next_layer_weights.
+            #
+            #          also how are weights extracted?
+            #          next_layer_weights[id:id+self.n_filters]
+            #
+            # Conv1D => receive next_layer.n_filters and have
+            #           next_layer.n_filters many next_layer_weights
+            #
+            #           how are weights extracted?
+            #           ... that's a quite interesting question
+            #
+            # n_errors != sizeof(next_layer_weights)
+            #
+            # I'm a bitch and will just multiply n_errors if
+            # n_next_layer_weights > n_errors
+            #
+            # additional params: kernel_update_key
+            #                    n_next_layer_weights
+            #
+            #
+            # NEXT: implement backprop on spinnaker
+
+            min_next_key = min([
+                routing_info.get_first_key_from_pre_vertex(
+                    edge.pre_vertex, globals.backward_partition)
+                for edge in edges])
+
+            next_layer = edges[0].pre_vertex.layer
+            kernel_container = edges[0].pre_vertex
+
+            n_errors = len(edges) * next_layer.n_filters
+
+            if type(next_layer) == Dense:
+                n_next_layer_weights = n_errors * self.layer.n_filters
+            else:
+                n_next_layer_weights = n_errors
+
+            self.next_layer_weights_container_size = \
+                n_next_layer_weights * BYTES_PER_WORD
+
+
+            next_layer_weights = np.empty(
+                (n_next_layer_weights,), dtype=np.float32)
+
+            if type(next_layer) == Dense:
+                for i, edge in enumerate(edges):
+                    next_layer_weights[i:i+self.layer.n_filters] = \
+                        edge.pre_vertex.weights[
+                            self.id:self.id + self.layer.n_filters]
+            else:
+                weights = edges[0].pre_vertex.weights
+                next_layer_kernel_size = int(
+                    len(weights) / next_layer.n_filters)
+
+                i = 0
+                for edge in edges:
+                    # TODO: this could be your achilles heel again
+                    position = self.id % next_layer.kernel_shape[0] \
+                               + edge.pre_vertex.lower_padding
+
+                    j = 0
+                    for filter in range(0, next_layer.n_filters):
+                        next_layer_weights[i] = \
+                            weights[position * next_layer.n_channels + j]
+                        j += next_layer_kernel_size
+                        i += 1
+
+            spec.reserve_memory_region(
+                region=DataRegions.NEXT_LAYER_WEIGHTS.value,
+                size=self.next_layer_weights_container_size,
+                label="next_layer_weights")
+
+            spec.switch_write_focus(
+                region=DataRegions.NEXT_LAYER_WEIGHTS.value)
+            spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
+
+        spec.switch_write_focus(
+            region=DataRegions.TRAINABLE_PARAMS.value)
+        spec.write_value(backward_key)
+        spec.write_value(min_next_key)
+        spec.write_value(n_errors)
+        spec.write_value(int(is_output_layer))
+        spec.write_value(kernel_update_key)
+        spec.write_value(n_next_layer_weights)
+
+        self.trainable_params.write_to_spec(spec)
+
+    def get_edges_ending_at_vertex_where_partition_name_starts_with(
+            self, machine_graph, starts_with_str):
+
+        edges = machine_graph.get_edges_ending_at_vertex(self)
+
+        result = []
+
+        for edge in edges:
+            partition = machine_graph.get_outgoing_partition_for_edge(edge) \
+                .identifier
+
+            if partition.startswith(starts_with_str):
+                result.append(edge)
+
+        return result
 
     def __repr__(self):
         return self.label

@@ -29,7 +29,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         self.kernel_shape = kernel_shape
 
         self.n_channels = None # set during generate_weights
-        self.meta_vertex = None
 
         self.bias = bias
         self.stride = stride
@@ -72,9 +71,9 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         super(Conv1D, self).init_neurons()
 
-        if self.activation == "softmax":
+        if trainable_params is not None:
             super(Conv1D, self).connect_incoming(
-                self, globals.softmax_partition)
+                self, globals.kernel_update_partition)
 
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
