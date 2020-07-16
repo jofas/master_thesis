@@ -43,7 +43,7 @@ float *next_layer_weights;
 float *gradients;
 float *next_layer_gradients;
 
-float error;
+float *errors;
 
 uint received_errors_counter = 0;
 uint backward_passes_counter = 0;
@@ -51,10 +51,14 @@ uint batch_counter;
 
 /* functions */
 
-void receive_backward(uint key, float payload) {
-  if (received_errors_counter == 0) {
-    error = .0;
-  }
+reset_errors(uint n_filters) {
+  for (uint i = 0; i < n_filters; i++)
+    errors[i] = .0;
+}
+
+void receive_backward(uint key, float payload, uint n_filters) {
+  if (received_errors_counter == 0)
+    reset_errors(n_filters);
 
   // error to array the size of n_filters
   //
@@ -74,11 +78,13 @@ void receive_backward(uint key, float payload) {
   //   do some else
   //
 
-  if (is_output_layer) {
-    error += payload;
-  } else {
-    error += payload * next_layer_weights[key - min_next_key];
-    next_layer_gradients[key - min_next_key] += payload * potential;
+  for (uint i = 0; i < n_filters; i++) {
+    if (is_output_layer) {
+      errors[i] += payload;
+    } else {
+      errors[i] += payload * next_layer_weights[key - min_next_key];
+      next_layer_gradients[key - min_next_key] += payload * potential;
+    }
   }
 
   received_errors_counter++;
@@ -92,25 +98,25 @@ bool backward_pass_complete(void) {
   return false;
 }
 
-void apply_activation_function_derivative(void) {
+void apply_activation_function_derivative(uint i) {
   switch (activation_function_id) {
     case IDENTITY:
       break;
 
     case RELU:
-      error = potential > .0 ? error : .0;
+      errors[i] = potential > .0 ? errors[i] : .0;
       break;
 
     case SIGMOID:
-      error = error * potential * (1 - potential);
+      errors[i] = errors[i] * potential * (1 - potential);
       break;
 
     case TANH:
-      error = error * (1 - potential * potential);
+      errors[i] = errors[i] * (1 - potential * potential);
       break;
 
     case SOFTMAX:
-      error = error * potential * (1 - potential);
+      errors[i] = errors[i] * potential * (1 - potential);
       break;
 
     default:
@@ -120,14 +126,18 @@ void apply_activation_function_derivative(void) {
   }
 }
 
-void update_gradients(void) {
-  apply_activation_function_derivative();
+void update_gradients(uint n_filters) {
+  // TODO: how will look with conv???
+  //
+  for (uint i = 0; i < n_filters; i++) {
+    apply_activation_function_derivative(i);
 
-  for (uint i=0; i < n_potentials; i++) {
-    gradients[i] += error * potentials[i];
+    for (uint j = 0; j < n_potentials; j++) {
+      gradients[j] += errors[i] * potentials[j];
+    }
+    // special case: bias neuron has potential := 1
+    gradients[n_potentials] += errors[i];
   }
-  // special case: bias neuron has potential := 1
-  gradients[n_potentials] += error;
 }
 
 void update_weights(void) {
@@ -136,7 +146,7 @@ void update_weights(void) {
   }
 
   if (!is_output_layer) {
-    for (uint i=0; i < n_errors; i++) {
+    for (uint i=0; i < n_next_layer_weights; i++) {
       next_layer_weights[i] -= learning_rate * next_layer_gradients[i];
     }
   }
@@ -150,13 +160,13 @@ void reset_batch(void) {
   }
 
   if (!is_output_layer) {
-    for (uint i=0; i < n_errors; i++) {
+    for (uint i=0; i < n_next_layer_weights; i++) {
       next_layer_gradients[i] = .0;
     }
   }
 }
 
-void trainable_init(void) {
+void trainable_init(uint n_filters) {
   trainable_params_sdram =
     data_specification_get_region(TRAINABLE_PARAMS, data_spec_meta);
 
@@ -172,6 +182,8 @@ void trainable_init(void) {
   learning_rate = trainable_params_sdram->learning_rate;
 
   gradients = (float *)malloc(sizeof(float) * n_weights);
+
+  errors = (float *)malloc(sizeof(float) * n_filters);
 
   if (!is_output_layer) {
     next_layer_weights_sdram =

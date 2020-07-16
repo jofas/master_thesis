@@ -26,7 +26,7 @@ void receive(uint key, float payload) {
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
-    receive_backward(key, payload);
+    receive_backward(key, payload, 1);
     return;
   }
 #endif
@@ -64,7 +64,7 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients();
+    update_gradients(1);
 
     if (BATCH_COMPLETE) {
       update_weights();
@@ -75,7 +75,7 @@ void update(uint ticks, uint b) {
       reset_batch();
     }
 
-    send(backward_key, (void *)&error);
+    send(backward_key, (void *)errors);
   }
 #endif
 }
@@ -90,7 +90,7 @@ void c_main(void) {
 #endif
 
 #ifdef trainable
-  trainable_init();
+  trainable_init(1);
 #endif
 
   // register callbacks
