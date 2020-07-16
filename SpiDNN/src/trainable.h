@@ -1,3 +1,4 @@
+// GODDAMN! NEED SOMETHING SIMILAR FOR CONV (just pass arguments)
 #include "perceptron.h"
 
 
@@ -11,6 +12,8 @@ typedef struct trainable_params_region {
   uint32_t min_next_key;
   uint32_t n_errors;
   uint32_t is_output_layer;
+  uint32_t kernel_update_key; // Only used by Conv layers
+  uint32_t n_next_layer_weights;
   uint32_t epochs;
   uint32_t epoch_size;
   uint32_t batch_size;
@@ -27,6 +30,8 @@ uint backward_key;
 uint min_next_key;
 uint n_errors;
 uint is_output_layer;
+uint kernel_update_key;
+uint n_next_layer_weights;
 
 uint epochs;
 uint epoch_size;
@@ -143,6 +148,8 @@ void trainable_init(void) {
   min_next_key = trainable_params_sdram->min_next_key;
   n_errors = trainable_params_sdram->n_errors;
   is_output_layer = trainable_params_sdram->is_output_layer;
+  kernel_update_key = trainable_params_sdram->kernel_update_key;
+  n_next_layer_weights = trainable_params_sdram->n_next_layer_weights;
   epochs = trainable_params_sdram->epochs;
   epoch_size = trainable_params_sdram->epoch_size;
   batch_size = trainable_params_sdram->batch_size;
@@ -154,14 +161,14 @@ void trainable_init(void) {
     next_layer_weights_sdram =
       data_specification_get_region(NEXT_LAYER_WEIGHTS, data_spec_meta);
 
-    next_layer_weights = (float *)malloc(sizeof(float) * n_errors);
+    next_layer_weights = (float *)malloc(sizeof(float) * n_next_layer_weights);
 
     sark_mem_cpy(
       (void *)next_layer_weights,
       (void *)next_layer_weights_sdram,
-      sizeof(float) * n_errors
+      sizeof(float) * n_next_layer_weights
     );
 
-    next_layer_gradients = (float *)malloc(sizeof(float) * n_errors);
+    next_layer_gradients = (float *)malloc(sizeof(float) * n_next_layer_weights);
   }
 }
