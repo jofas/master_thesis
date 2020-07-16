@@ -166,6 +166,21 @@ void reset_batch(void) {
   }
 }
 
+void next_layer_weights_init(void) {
+  next_layer_weights_sdram =
+    data_specification_get_region(NEXT_LAYER_WEIGHTS, data_spec_meta);
+
+  next_layer_weights = (float *)malloc(sizeof(float) * n_next_layer_weights);
+
+  sark_mem_cpy(
+    (void *)next_layer_weights,
+    (void *)next_layer_weights_sdram,
+    sizeof(float) * n_next_layer_weights
+  );
+
+  next_layer_gradients = (float *)malloc(sizeof(float) * n_next_layer_weights);
+}
+
 void trainable_init(uint n_filters) {
   trainable_params_sdram =
     data_specification_get_region(TRAINABLE_PARAMS, data_spec_meta);
@@ -185,20 +200,8 @@ void trainable_init(uint n_filters) {
 
   errors = (float *)malloc(sizeof(float) * n_filters);
 
-  if (!is_output_layer) {
-    next_layer_weights_sdram =
-      data_specification_get_region(NEXT_LAYER_WEIGHTS, data_spec_meta);
-
-    next_layer_weights = (float *)malloc(sizeof(float) * n_next_layer_weights);
-
-    sark_mem_cpy(
-      (void *)next_layer_weights,
-      (void *)next_layer_weights_sdram,
-      sizeof(float) * n_next_layer_weights
-    );
-
-    next_layer_gradients = (float *)malloc(sizeof(float) * n_next_layer_weights);
-  }
+  if (!is_output_layer)
+    next_layer_weights_init();
 
   reset_batch();
 }
