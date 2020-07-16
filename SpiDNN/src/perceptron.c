@@ -91,7 +91,6 @@ void c_main(void) {
 
 #ifdef trainable
   trainable_init();
-  reset_batch();
 #endif
 
   // register callbacks

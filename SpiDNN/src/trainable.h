@@ -187,4 +187,6 @@ void trainable_init(void) {
 
     next_layer_gradients = (float *)malloc(sizeof(float) * n_next_layer_weights);
   }
+
+  reset_batch();
 }
