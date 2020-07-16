@@ -44,7 +44,6 @@ float *gradients;
 float *next_layer_gradients;
 
 float error;
-float neuron_error;
 
 uint received_errors_counter = 0;
 uint backward_passes_counter = 0;
@@ -56,6 +55,24 @@ void receive_backward(uint key, float payload) {
   if (received_errors_counter == 0) {
     error = .0;
   }
+
+  // error to array the size of n_filters
+  //
+  // next_layer_is_dense
+  // if (n_errors < n_next_layer_weights)
+  //   for (uint j = 0; j < n_next_layer_weights / n_errors; j++) {
+  //     errors[i] += payload * next_layer_weights[
+  //       key - min_next_key + j];
+  //   }
+  //   do some
+  // else
+  //   update error for each filter
+  //    errors[i] += payload * next_layer_weights[
+  //      key - min_next_key + receive_counter[key - min_next_key]];
+  //    receive_counter[key - min_next_key]++;
+  //
+  //   do some else
+  //
 
   if (is_output_layer) {
     error += payload;
@@ -75,26 +92,25 @@ bool backward_pass_complete(void) {
   return false;
 }
 
-void generate_neuron_error(void) {
+void apply_activation_function_derivative(void) {
   switch (activation_function_id) {
     case IDENTITY:
-      neuron_error = error;
       break;
 
     case RELU:
-      neuron_error = potential > .0 ? error : .0;
+      error = potential > .0 ? error : .0;
       break;
 
     case SIGMOID:
-      neuron_error = error * potential * (1 - potential);
+      error = error * potential * (1 - potential);
       break;
 
     case TANH:
-      neuron_error = error * (1 - potential * potential);
+      error = error * (1 - potential * potential);
       break;
 
     case SOFTMAX:
-      neuron_error = error * potential * (1 - potential);
+      error = error * potential * (1 - potential);
       break;
 
     default:
@@ -105,13 +121,13 @@ void generate_neuron_error(void) {
 }
 
 void update_gradients(void) {
-  generate_neuron_error();
+  apply_activation_function_derivative();
 
   for (uint i=0; i < n_potentials; i++) {
-    gradients[i] += neuron_error * potentials[i];
+    gradients[i] += error * potentials[i];
   }
   // special case: bias neuron has potential := 1
-  gradients[n_potentials] += neuron_error;
+  gradients[n_potentials] += error;
 }
 
 void update_weights(void) {

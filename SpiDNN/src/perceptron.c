@@ -75,7 +75,7 @@ void update(uint ticks, uint b) {
       reset_batch();
     }
 
-    send(backward_key, (void *)&neuron_error);
+    send(backward_key, (void *)&error);
   }
 #endif
 }
