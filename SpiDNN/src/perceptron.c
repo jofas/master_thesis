@@ -64,10 +64,11 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients(activation_function_id, 1, n_potentials, &potential);
+    update_neuron_gradients(activation_function_id, 1, n_potentials,
+      0, &potential);
 
     if (BATCH_COMPLETE) {
-      update_weights(n_weights, weights);
+      update_neuron_weights(n_weights, weights);
       if (FIT_COMPLETE) {
         sark_mem_cpy((void *)weights_sdram, (void *)weights,
           sizeof(float) * n_weights);

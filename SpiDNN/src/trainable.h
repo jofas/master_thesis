@@ -49,7 +49,8 @@ float learning_rate;
 float *next_layer_weights;
 uint *next_layer_receive_counters;
 
-float *gradients;
+float *neuron_gradients;
+float *kernel_gradients;
 float *next_layer_gradients;
 
 uint *received_gradients_from_neuron_counter;
@@ -103,9 +104,18 @@ void receive_backward(
       }
 
     } else {
+      // TODO: this for loop is wrong
+      //       backward pass graph as connect_outgoing
       for (uint i = 0; i < n_filters; i++) {
         errors[i] += payload * next_layer_weights[
           idx + next_layer_receive_counters[idx]];
+
+        log_info("error: %d %f %f %f",
+          i,
+          errors[i],
+          payload,
+          next_layer_weights[idx + next_layer_receive_counters[idx]]
+        );
 
         next_layer_gradients[idx + next_layer_receive_counters[idx]] +=
           payload * potentials[i];
@@ -120,20 +130,22 @@ void receive_backward(
 }
 
 void receive_gradient(uint key, float payload) {
-  if (received_errors_counter == 0)
+  if (received_gradients_counter == 0)
     reset_gradient_receive();
-
-  received_gradients_counter++;
-
-  // Don't update gradients with own gradients
-  if (key == kernel_update_key)
-    return;
 
   uint idx = key - min_layer_key;
 
-  gradients[received_gradients_from_neuron_counter[idx]] += payload;
+  kernel_gradients[received_gradients_from_neuron_counter[idx]] += payload;
+
+  log_info("updating gradient: %d %d %f %f",
+    key,
+    received_gradients_from_neuron_counter[idx],
+    payload,
+    kernel_gradients[received_gradients_from_neuron_counter[idx]]
+  );
 
   received_gradients_from_neuron_counter[idx]++;
+  received_gradients_counter++;
 }
 
 bool backward_pass_complete(void) {
@@ -176,46 +188,73 @@ float apply_activation_function_derivative(uint activation_function_id, float er
   }
 }
 
-void update_gradients(
-    uint activation_function_id, uint n_filters, uint kernel_size,
-    float *results)
+void update_neuron_gradients(
+    uint activation_function_id, uint n_filters, uint n_kernel_elements,
+    uint padding_offset, float *results)
 {
   for (uint i = 0; i < n_filters; i++) {
+    // as far as I know this works (at least for identity activation)
     errors[i] = apply_activation_function_derivative(
       activation_function_id, errors[i], results[i]);
 
-    for (uint j = 0; j < kernel_size; j++) {
-      float potential = potentials[j + i * (kernel_size + 1)];
-      gradients[j + i * (kernel_size + 1)] += errors[i] * potential;
+    uint filter_offset = i * (n_kernel_elements + 1);
+
+    for (uint j = 0; j < n_potentials; j++) {
+      uint idx = j + filter_offset + padding_offset;
+      // I only need to update gradients where I received a potential
+      // (and bias), the other ones are zero anyways... so iter over
+      // n_potentials (4) and index into gradients like in
+      // generate_filter_results
+
+      // potentials no bias me muy stupido
+      // padding... goddamn
+      // TODO: how to index potential ???
+      // potentials : [      0, 1, 2, 3,          0,  1,  2,  3,   ]
+      // gradients  : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+      neuron_gradients[idx] += errors[i] * potentials[j];
+      //log_info("gradient at position: %f %f %d",
+      //  neuron_gradients[idx], potentials[j], idx);
     }
     // special case: bias neuron has potential := 1
-    gradients[kernel_size + i * (kernel_size + 1)] += errors[i];
+    neuron_gradients[n_kernel_elements + filter_offset] += errors[i];
   }
 }
 
-void update_weights(uint n_weights, float *weights) {
+void update_next_layer_weights(void) {
+  for (uint i=0; i < n_next_layer_weights; i++) {
+    next_layer_weights[i] -= learning_rate * next_layer_gradients[i];
+  }
+}
+
+void update_neuron_weights(uint n_weights, float *weights) {
   for (uint i=0; i < n_weights; i++) {
-    weights[i] -= learning_rate * gradients[i];
+    weights[i] -= learning_rate * neuron_gradients[i];
   }
 
-  if (!is_output_layer) {
-    for (uint i=0; i < n_next_layer_weights; i++) {
-      next_layer_weights[i] -= learning_rate * next_layer_gradients[i];
-    }
+  if (!is_output_layer)
+    update_next_layer_weights();
+}
+
+void update_kernel_weights(uint n_weights, float *weights) {
+  for (uint i=0; i < n_weights; i++) {
+    weights[i] -= learning_rate * kernel_gradients[i];
   }
+
+  if (!is_output_layer)
+    update_next_layer_weights();
 }
 
 void reset_batch(uint n_weights) {
   batch_counter = 0;
 
   for (uint i=0; i < n_weights; i++) {
-    gradients[i] = .0;
+    neuron_gradients[i] = .0;
+    kernel_gradients[i] = .0;
   }
 
   if (!is_output_layer) {
-    for (uint i=0; i < n_next_layer_weights; i++) {
+    for (uint i=0; i < n_next_layer_weights; i++)
       next_layer_gradients[i] = .0;
-    }
   }
 }
 
@@ -252,7 +291,8 @@ void trainable_init(uint n_weights, uint n_filters) {
   batch_size = trainable_params_sdram->batch_size;
   learning_rate = trainable_params_sdram->learning_rate;
 
-  gradients = (float *)malloc(sizeof(float) * n_weights);
+  neuron_gradients = (float *)malloc(sizeof(float) * n_weights);
+  kernel_gradients = (float *)malloc(sizeof(float) * n_weights);
 
   errors = (float *)malloc(sizeof(float) * n_filters);
 

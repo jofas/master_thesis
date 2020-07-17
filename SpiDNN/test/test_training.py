@@ -184,7 +184,7 @@ def test_training_conv1d_with_known_weights():
 
 if __name__ == "__main__":
     # test_binary_xor()
-    test_categorical_xor()
+    #test_categorical_xor()
     #test_training_conv1d()
-    #test_training_conv1d_with_known_weights()
+    test_training_conv1d_with_known_weights()
     print("SUCCESS.")

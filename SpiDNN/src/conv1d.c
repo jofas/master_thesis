@@ -174,18 +174,20 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients(
-      activation_function_id, n_filters, kernel_size, filter_results);
+    update_neuron_gradients(
+      activation_function_id, n_filters, N_KERNEL_ELEMENTS,
+      PADDING_OFFSET, filter_results);
 
-    for (uint i = 0; i < N_WEIGHTS; i++)
-      send(kernel_update_key, (void *)&gradients[i]);
-
+    for (uint i = 0; i < N_WEIGHTS; i++) {
+      send(kernel_update_key, (void *)&neuron_gradients[i]);
+      neuron_gradients[i] = .0;
+    }
     return;
   }
 
   if (gradient_pass_complete(N_WEIGHTS)) {
     if (BATCH_COMPLETE) {
-      update_weights(N_WEIGHTS, weights);
+      update_kernel_weights(N_WEIGHTS, weights);
       if (FIT_COMPLETE) {
         sark_mem_cpy((void *)weights_sdram, (void *)weights,
           sizeof(float) * N_WEIGHTS);

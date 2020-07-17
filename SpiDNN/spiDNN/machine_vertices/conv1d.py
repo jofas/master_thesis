@@ -258,15 +258,16 @@ class Conv1DNeuron(
             self.next_layer_weights_container_size = \
                 n_next_layer_weights * BYTES_PER_WORD
 
-
             next_layer_weights = np.empty(
                 (n_next_layer_weights,), dtype=np.float32)
 
             if type(next_layer) == Dense:
+                idx = self.id * self.layer.n_filters
+
                 for i, edge in enumerate(edges):
                     next_layer_weights[i:i+self.layer.n_filters] = \
                         edge.pre_vertex.weights[
-                            self.id:self.id + self.layer.n_filters]
+                            idx:idx + self.layer.n_filters]
             else:
                 weights = edges[0].pre_vertex.weights
                 next_layer_kernel_size = int(
