@@ -62,7 +62,7 @@ reset_backward_receive(uint n_filters) {
 }
 
 void receive_backward(
-    uint key, float payload, float *potentials, uint n_filters)
+    uint key, float payload, uint n_filters, float *potentials)
 {
   if (received_errors_counter == 0)
     reset_backward_receive(n_filters);
