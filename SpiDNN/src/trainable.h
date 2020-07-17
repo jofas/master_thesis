@@ -15,6 +15,16 @@ typedef struct trainable_params_region {
   uint32_t n_errors;
   uint32_t is_output_layer;
   uint32_t kernel_update_key; // Only used by Conv layers
+  uint32_t min_layer_key;     // Only used by Conv layers
+  uint32_t layer_size;        // Only used by Conv layers
+
+                              // i also need to know layer_size
+                              // (each neuron a counter[N_WEIGHTS],
+                              //  so I know which gradient received
+                              //  from that neuron)
+                              // and min_layer_key
+                              // receive_gradient_counter == \
+                              //   N_WEIGHTS * layer_size
   uint32_t n_next_layer_weights;
   uint32_t epochs;
   uint32_t epoch_size;

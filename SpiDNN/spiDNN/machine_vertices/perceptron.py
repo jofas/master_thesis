@@ -54,7 +54,7 @@ class Perceptron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (6 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (8 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -229,7 +229,9 @@ class Perceptron(
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
-        spec.write_value(0)
+        spec.write_value(0) # Only used by Conv layer
+        spec.write_value(0) # Only used by Conv layer
+        spec.write_value(0) # Only used by Conv layer
         spec.write_value(n_errors)
 
         self.trainable_params.write_to_spec(spec)

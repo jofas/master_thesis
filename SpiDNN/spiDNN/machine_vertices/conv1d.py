@@ -55,7 +55,7 @@ class Conv1DNeuron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (6 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (8 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -286,6 +286,7 @@ class Conv1DNeuron(
                 region=DataRegions.NEXT_LAYER_WEIGHTS.value)
             spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
 
+        # TODO: min_layer_key and layer_size
         spec.switch_write_focus(
             region=DataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(backward_key)

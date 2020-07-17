@@ -1,5 +1,9 @@
 #include "spiDNN.h"
 
+#ifdef trainable
+#include "trainable.h"
+#endif
+
 #define N_KERNEL_ELEMENTS kernel_size * n_channels
 #define N_WEIGHTS (N_KERNEL_ELEMENTS + 1) * n_filters
 
@@ -131,9 +135,11 @@ void receive(uint key, float payload) {
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
-    receive_backward(key, payload);
+    receive_backward(key, payload, n_filters, filter_results);
     return;
   }
+
+  // TODO: receive_gradient (disregard if key == kernel_update_key)
 #endif
 
   if (spiDNN_received_potentials_counter == 0)
@@ -167,6 +173,36 @@ void update(uint ticks, uint b) {
       }
     }
   }
+
+#ifdef trainable
+  if (backward_pass_complete()) {
+    backward_passes_counter++;
+    batch_counter++;
+
+    update_gradients(n_filters, kernel_size, filter_results);
+
+    for (uint i = 0; i < N_WEIGHTS; i++)
+      send(kernel_update_key, (void *)&gradients[i]);
+
+    return;
+  }
+
+  // TODO: impl all_gradients_received()
+  //       and receive_gradients
+  if (all_gradients_received()) {
+    if (BATCH_COMPLETE) {
+      update_weights(N_WEIGHTS, weights);
+      if (FIT_COMPLETE) {
+        sark_mem_cpy((void *)weights_sdram, (void *)weights,
+          sizeof(float) * N_WEIGHTS);
+      }
+      reset_batch(N_WEIGHTS);
+    }
+
+    for (uint i = 0; i < n_filters; i++)
+      send(backward_key, (void *)&errors[i]);
+  }
+#endif
 }
 
 void c_main(void) {
@@ -174,6 +210,10 @@ void c_main(void) {
 
   weights_init();
   keys_init();
+
+#ifdef trainable
+  trainable_init(N_WEIGHTS, n_filters);
+#endif
 
   channel_counters = (uint *)malloc(sizeof(uint) * n_potentials);
   filter_results = (float *)malloc(sizeof(float) * n_filters);
