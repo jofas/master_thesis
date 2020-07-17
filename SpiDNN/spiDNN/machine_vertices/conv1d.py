@@ -199,6 +199,14 @@ class Conv1DNeuron(
 
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
+                self, globals.kernel_update_partition))
+
+        min_layer_key = min([routing_info.get_first_key_from_pre_vertex(
+            edge.pre_vertex, globals.kernel_update_partition)
+            for edge in edges])
+
+        edges = list(
+            machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.backward_partition))
 
         is_output_layer = len(edges) == 0
@@ -286,7 +294,6 @@ class Conv1DNeuron(
                 region=DataRegions.NEXT_LAYER_WEIGHTS.value)
             spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
 
-        # TODO: min_layer_key and layer_size
         spec.switch_write_focus(
             region=DataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(backward_key)
@@ -294,6 +301,8 @@ class Conv1DNeuron(
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
         spec.write_value(kernel_update_key)
+        spec.write_value(min_layer_key)
+        spec.write_value(self.layer.n_neurons)
         spec.write_value(n_next_layer_weights)
 
         self.trainable_params.write_to_spec(spec)
