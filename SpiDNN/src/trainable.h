@@ -1,11 +1,12 @@
-// GODDAMN! NEED SOMETHING SIMILAR FOR CONV (just pass arguments)
-#include "perceptron.h"
-
+#ifndef _SPIDNN_
+#include "spiDNN.h"
+#endif
 
 #define BATCH_COMPLETE (batch_counter == batch_size) \
                        || (backward_passes_counter % epoch_size == 0)
 #define FIT_COMPLETE (backward_passes_counter == epoch_size * epochs)
 #define NEXT_LAYER_IS_DENSE (n_errors < n_next_layer_weights)
+
 
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region {
@@ -140,24 +141,20 @@ void apply_activation_function_derivative(uint i) {
   }
 }
 
-void update_gradients(uint n_filters) {
+void update_gradients(uint n_filters, uint kernel_size, float *potentials) {
   for (uint i = 0; i < n_filters; i++) {
     apply_activation_function_derivative(i);
 
-    // TODO: how will look with conv???
-    //
-    // potentials is shit i received .. need to hande this per kernel
-    // so j = 0..kernel_size, j * i as index,
-    // gradients[kernel_size] is bias
-    for (uint j = 0; j < n_potentials; j++) {
-      gradients[j] += errors[i] * potentials[j];
+    for (uint j = 0; j < kernel_size; j++) {
+      gradients[j + i * (kernel_size + 1)] +=
+        errors[i] * potentials[j + i * (kernel_size + 1)];
     }
     // special case: bias neuron has potential := 1
-    gradients[n_potentials] += errors[i];
+    gradients[kernel_size + i * (kernel_size + 1)] += errors[i];
   }
 }
 
-void update_weights(void) {
+void update_weights(uint n_weights, float *weights) {
   for (uint i=0; i < n_weights; i++) {
     weights[i] -= learning_rate * gradients[i];
   }
@@ -169,7 +166,7 @@ void update_weights(void) {
   }
 }
 
-void reset_batch(void) {
+void reset_batch(uint n_weights) {
   batch_counter = 0;
 
   for (uint i=0; i < n_weights; i++) {
@@ -199,7 +196,7 @@ void next_layer_weights_init(void) {
   next_layer_receive_counters = (uint *)malloc(sizeof(uint) * n_next_layer_weights);
 }
 
-void trainable_init(uint n_filters) {
+void trainable_init(uint n_weights, uint n_filters) {
   trainable_params_sdram =
     data_specification_get_region(TRAINABLE_PARAMS, data_spec_meta);
 
@@ -221,5 +218,5 @@ void trainable_init(uint n_filters) {
   if (!is_output_layer)
     next_layer_weights_init();
 
-  reset_batch();
+  reset_batch(n_weights);
 }

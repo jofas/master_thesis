@@ -1,7 +1,7 @@
+#include "perceptron.h"
+
 #ifdef trainable
 #include "trainable.h"
-#else
-#include "perceptron.h"
 #endif
 
 #ifdef softmax
@@ -64,15 +64,15 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients(1);
+    update_gradients(1, n_potentials, potentials);
 
     if (BATCH_COMPLETE) {
-      update_weights();
+      update_weights(n_weights, weights);
       if (FIT_COMPLETE) {
         sark_mem_cpy((void *)weights_sdram, (void *)weights,
           sizeof(float) * n_weights);
       }
-      reset_batch();
+      reset_batch(n_weights);
     }
 
     send(backward_key, (void *)errors);
@@ -90,7 +90,7 @@ void c_main(void) {
 #endif
 
 #ifdef trainable
-  trainable_init(1);
+  trainable_init(n_weights, 1);
 #endif
 
   // register callbacks
