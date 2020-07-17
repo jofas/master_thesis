@@ -10,17 +10,6 @@
 #define PADDING_OFFSET lower_padding * n_channels
 #define FILTER_OFFSET (N_KERNEL_ELEMENTS + 1) * filter
 
-/* structs and enums */
-
-//! human readable definitions of the activation functions (except
-//! softmax, which is handled by another type of perceptron)
-typedef enum activations_e {
-  IDENTITY,
-  RELU,
-  SIGMOID,
-  TANH,
-  SOFTMAX,
-} activations_e;
 
 //! definitions of each element in the base_params region
 typedef struct base_params_region {
@@ -139,7 +128,13 @@ void receive(uint key, float payload) {
     return;
   }
 
-  // TODO: receive_gradient (disregard if key == kernel_update_key)
+  // min_pre_key will always be bigger than min_layer_key, because
+  // kernel update partitions are touched by the toolchain before
+  // forward and backward partitions
+  if (key < min_pre_key) {
+    receive_gradient(key, payload);
+    return;
+  }
 #endif
 
   if (spiDNN_received_potentials_counter == 0)
@@ -179,7 +174,8 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients(n_filters, kernel_size, filter_results);
+    update_gradients(
+      activation_function_id, n_filters, kernel_size, filter_results);
 
     for (uint i = 0; i < N_WEIGHTS; i++)
       send(kernel_update_key, (void *)&gradients[i]);
@@ -187,9 +183,7 @@ void update(uint ticks, uint b) {
     return;
   }
 
-  // TODO: impl all_gradients_received()
-  //       and receive_gradients
-  if (all_gradients_received()) {
+  if (gradient_pass_complete(N_WEIGHTS)) {
     if (BATCH_COMPLETE) {
       update_weights(N_WEIGHTS, weights);
       if (FIT_COMPLETE) {

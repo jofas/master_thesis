@@ -64,7 +64,7 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients(1, n_potentials, potentials);
+    update_gradients(activation_function_id, 1, n_potentials, &potential);
 
     if (BATCH_COMPLETE) {
       update_weights(n_weights, weights);

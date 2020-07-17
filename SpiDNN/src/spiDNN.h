@@ -25,6 +25,16 @@ typedef enum regions_e {
     NEXT_LAYER_WEIGHTS,
 } regions_e;
 
+//! human readable definitions of the activation functions (except
+//! softmax, which is handled by another type of perceptron)
+typedef enum activations_e {
+  IDENTITY,
+  RELU,
+  SIGMOID,
+  TANH,
+  SOFTMAX,
+} activations_e;
+
 //! values for the priority for each callback
 typedef enum callback_priorities {
     MC_PACKET = -1,

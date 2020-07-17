@@ -17,14 +17,6 @@ typedef struct trainable_params_region {
   uint32_t kernel_update_key; // Only used by Conv layers
   uint32_t min_layer_key;     // Only used by Conv layers
   uint32_t layer_size;        // Only used by Conv layers
-
-                              // i also need to know layer_size
-                              // (each neuron a counter[N_WEIGHTS],
-                              //  so I know which gradient received
-                              //  from that neuron)
-                              // and min_layer_key
-                              // receive_gradient_counter == \
-                              //   N_WEIGHTS * layer_size
   uint32_t n_next_layer_weights;
   uint32_t epochs;
   uint32_t epoch_size;
@@ -42,7 +34,11 @@ uint backward_key;
 uint min_next_key;
 uint n_errors;
 uint is_output_layer;
+
 uint kernel_update_key;
+uint min_layer_key;
+uint layer_size;
+
 uint n_next_layer_weights;
 
 uint epochs;
@@ -56,20 +52,28 @@ uint *next_layer_receive_counters;
 float *gradients;
 float *next_layer_gradients;
 
+uint *received_gradients_from_neuron_counter;
+
 float *errors;
 
 uint received_errors_counter = 0;
 uint backward_passes_counter = 0;
-uint batch_counter;
+uint received_gradients_counter = 0;
+uint batch_counter = 0;
 
 /* functions */
 
-reset_backward_receive(uint n_filters) {
+void reset_backward_receive(uint n_filters) {
   for (uint i = 0; i < n_filters; i++)
     errors[i] = .0;
 
   for (uint i = 0; i < n_next_layer_weights; i++)
     next_layer_receive_counters[i] = 0;
+}
+
+void reset_gradient_receive(void) {
+  for (uint i = 0; i < layer_size; i++)
+    received_gradients_from_neuron_counter[i] = 0;
 }
 
 void receive_backward(
@@ -115,6 +119,23 @@ void receive_backward(
   received_errors_counter++;
 }
 
+void receive_gradient(uint key, float payload) {
+  if (received_errors_counter == 0)
+    reset_gradient_receive();
+
+  received_gradients_counter++;
+
+  // Don't update gradients with own gradients
+  if (key == kernel_update_key)
+    return;
+
+  uint idx = key - min_layer_key;
+
+  gradients[received_gradients_from_neuron_counter[idx]] += payload;
+
+  received_gradients_from_neuron_counter[idx]++;
+}
+
 bool backward_pass_complete(void) {
   if (received_errors_counter == n_errors) {
     received_errors_counter = 0;
@@ -123,26 +144,30 @@ bool backward_pass_complete(void) {
   return false;
 }
 
-void apply_activation_function_derivative(uint i) {
+bool gradient_pass_complete(uint n_weights) {
+  if (received_gradients_counter == n_weights * layer_size) {
+    received_gradients_counter = 0;
+    return true;
+  }
+  return false;
+}
+
+float apply_activation_function_derivative(uint activation_function_id, float error, float potential) {
   switch (activation_function_id) {
     case IDENTITY:
-      break;
+      return error;
 
     case RELU:
-      errors[i] = potential > .0 ? errors[i] : .0;
-      break;
+      return potential > .0 ? error : .0;
 
     case SIGMOID:
-      errors[i] = errors[i] * potential * (1 - potential);
-      break;
+      return error * potential * (1 - potential);
 
     case TANH:
-      errors[i] = errors[i] * (1 - potential * potential);
-      break;
+      return error * (1 - potential * potential);
 
     case SOFTMAX:
-      errors[i] = errors[i] * potential * (1 - potential);
-      break;
+      return error * potential * (1 - potential);
 
     default:
       log_error("Unknown activation function %d - exiting!",
@@ -151,13 +176,17 @@ void apply_activation_function_derivative(uint i) {
   }
 }
 
-void update_gradients(uint n_filters, uint kernel_size, float *potentials) {
+void update_gradients(
+    uint activation_function_id, uint n_filters, uint kernel_size,
+    float *results)
+{
   for (uint i = 0; i < n_filters; i++) {
-    apply_activation_function_derivative(i);
+    errors[i] = apply_activation_function_derivative(
+      activation_function_id, errors[i], results[i]);
 
     for (uint j = 0; j < kernel_size; j++) {
-      gradients[j + i * (kernel_size + 1)] +=
-        errors[i] * potentials[j + i * (kernel_size + 1)];
+      float potential = potentials[j + i * (kernel_size + 1)];
+      gradients[j + i * (kernel_size + 1)] += errors[i] * potential;
     }
     // special case: bias neuron has potential := 1
     gradients[kernel_size + i * (kernel_size + 1)] += errors[i];
@@ -215,6 +244,8 @@ void trainable_init(uint n_weights, uint n_filters) {
   n_errors = trainable_params_sdram->n_errors;
   is_output_layer = trainable_params_sdram->is_output_layer;
   kernel_update_key = trainable_params_sdram->kernel_update_key;
+  min_layer_key = trainable_params_sdram->min_layer_key;
+  layer_size = trainable_params_sdram->layer_size;
   n_next_layer_weights = trainable_params_sdram->n_next_layer_weights;
   epochs = trainable_params_sdram->epochs;
   epoch_size = trainable_params_sdram->epoch_size;
@@ -227,6 +258,11 @@ void trainable_init(uint n_weights, uint n_filters) {
 
   if (!is_output_layer)
     next_layer_weights_init();
+
+  // TODO: try removing if statement
+  if (!layer_size == 0) // perceptron has layer_size of 0
+    received_gradients_from_neuron_counter = (uint *)malloc(
+      sizeof(uint) * layer_size);
 
   reset_batch(n_weights);
 }
