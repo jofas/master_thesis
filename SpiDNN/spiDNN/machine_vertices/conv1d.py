@@ -55,7 +55,7 @@ class Conv1DNeuron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (8 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (9 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -249,11 +249,7 @@ class Conv1DNeuron(
             kernel_container = edges[0].pre_vertex
 
             n_errors = len(edges) * next_layer.n_filters
-
-            if type(next_layer) == Dense:
-                n_next_layer_weights = n_errors * self.layer.n_filters
-            else:
-                n_next_layer_weights = n_errors
+            n_next_layer_weights = n_errors * self.layer.n_filters
 
             self.next_layer_weights_container_size = \
                 n_next_layer_weights * BYTES_PER_WORD
@@ -269,9 +265,56 @@ class Conv1DNeuron(
                         edge.pre_vertex.weights[
                             idx:idx + self.layer.n_filters]
             else:
+                # kernel is shared, so each neuron of next layer has
+                # the same kernel/weights
                 weights = edges[0].pre_vertex.weights
                 next_layer_kernel_size = int(
                     len(weights) / next_layer.n_filters)
+
+                # all next_layer_weights look different (well not all
+                # but there are a few possibilites (based on position
+                # and offset)
+                # I could load position onto board, which is not very
+                # helpful or is it?
+                #
+                # + bool next_layer_has_kernel
+                #
+                # .... please god, make this one work, if not I'm dead
+                #      in the water
+                # !!!! so first test whether position is working with
+                #      strides... motherfucking strides
+                #
+                # position = 1
+                #
+                # idx = <- receive key = 0x0 => + position = 1
+                #
+                # idx * self.n_filters:+1 => [.9, 1.]
+                #
+                # idx = <- receive key = 1x0 => + position = 2
+                #          % self.n_filters (== next_layer.n_channels)
+                #          = 0
+                #
+                # idx * self.n_filters:+1 => [.7, .8]
+                #
+                # idx = <- receive key = 0x1 => + position = 1
+                #          + 1 * next_layer_kernel_size
+                #
+                # idx * self.n_filters:+1 => [.9, 1.]
+                #
+                # idx = <- receive key = 1x0 => + position = 2
+                #          % self.n_filters = 0
+                #
+                # idx * self.n_filters:+1 => [.7, .8]
+                #
+                # currently:
+                # [.9, 1., 1.5, 1.6, .7, .8, 1.3, 1.4]
+                # [.7, .8, .9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8]
+                #  ------
+                #  self.n_filters (next_layer.n_channels)
+                #  ----------
+                #  kernel_size
+                #  ------------------------
+                #  kernel
 
                 i = 0
                 for edge in edges:
@@ -279,12 +322,15 @@ class Conv1DNeuron(
                     position = self.id % next_layer.kernel_shape[0] \
                                + edge.pre_vertex.lower_padding
 
-                    j = 0
-                    for filter in range(0, next_layer.n_filters):
-                        next_layer_weights[i] = \
-                            weights[position * next_layer.n_channels + j]
-                        j += next_layer_kernel_size
-                        i += 1
+                    filter = 0
+                    for _ in range(0, next_layer.n_filters):
+                        idx = position * next_layer.n_channels + filter
+
+                        next_layer_weights[i:i+self.layer.n_filters] = \
+                            weights[idx:idx+self.layer.n_filters]
+
+                        filter += next_layer_kernel_size
+                        i += self.layer.n_filters
 
             spec.reserve_memory_region(
                 region=DataRegions.NEXT_LAYER_WEIGHTS.value,
@@ -305,6 +351,7 @@ class Conv1DNeuron(
         spec.write_value(min_layer_key)
         spec.write_value(self.layer.n_neurons)
         spec.write_value(n_next_layer_weights)
+        spec.write_value(len(edges))
 
         self.trainable_params.write_to_spec(spec)
 
