@@ -284,6 +284,14 @@ class Conv1DNeuron(
                 # !!!! so first test whether position is working with
                 #      strides... motherfucking strides
                 #
+                # lol motherfucker strides are already not working
+                # because index key - min_next_key will be wrong in
+                # the first place
+                #
+                # maybe use the key somehow instead of position
+                #
+                #
+                #
                 # position = 1
                 #
                 # idx = <- receive key = 0x0 => + position = 1
