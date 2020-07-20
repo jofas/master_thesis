@@ -217,38 +217,50 @@ Deep learning is revolutionizing the world.
 It has become part of our daily lives as consumers, powering major
 software products---from recommendation systems and translation tools
 to web search \citep{lecun_et_al_2015}.
-Major breakthroughs in fields like computer vision or natural language
-processing were achieved through the use of deep learning
-\citep{krizhevsky_et_al_2012, hinton_et_al_2012}.
+Major breakthroughs in fields like computer vision
+\citep{krizhevsky_et_al_2012} or natural language
+processing \citep{hinton_et_al_2012} were achieved through the use of
+deep learning.
 It has emerged as a driving force behind discoveries in numerous
-domains like particle physics, drug discovery, genomics and gaming
-\citep{ciodaro_et_al_2012, ma_et_al_2015, leung_et_al_2014,
-  silver_et_al_2016}.
+domains like particle physics \citep{ciodaro_et_al_2012},
+drug discovery \citep{ma_et_al_2015}, genomics
+\citep{leung_et_al_2014} and gaming \citep{silver_et_al_2016}.
 
 Deep learning has become so ubiquitous that we are changing the
 way we build modern hardware to account for its computational demands.
 From the way edge devices like mobile phones or embedded systems are
-built and modern CPUs to specialized hardware designed only for deep
-learning models \citep{deng_2019, boitano_2020, perez_2017,
-  jouppi_et_al_2017}.
+built \citep{deng_2019} and modern CPUs \citep{perez_2017} to
+specialized hardware designed only for deep learning models, such
+as Google's tensor processing unit (TPU) \citep{jouppi_et_al_2017} or
+NVIDIA's EGX Edge AI platform \citep{boitano_2020}.
 Whole state-of-the-art supercomputers are built solely for deep
-learning \citep{langston_2020}.
+learning.
+An example would be a supercomputer built by Microsoft for OpenAI,
+which is part of the Azure cloud \citep{langston_2020}.
+
 Hardware manufacturer are faced with a major challenge in meeting the
 computational demands arising from inference, and more importantly,
 training deep learning models.
 OpenAI researchers have estimated that the computational costs of
 training increases exponentially; approximately every 3.4 months the
 cost doubles \citep{amodei_et_al_2019}.
+\citet{amodei_et_al_2019} claims the deep reinforcement learning agent
+AlphaGo Zero---the successor of the famous AlphaGo program, which
+was able to beat Go world champion Lee Sedol
+\citep{silver_et_al_2017}---to be the system  with the highest
+computational demands of approximately 1850 petaflop/s-days.
+AlphaGo Zero was trained for 40 days on a machine with 4 TPUs
+\citep{silver_et_al_2017}.
 With the end of Moore's Law \citep{loeffler_2018}, chip makers have to
 get creative in scaling up computing, the same way machine learning
 researchers are scaling up their models \citep{simonite_2016}.
-Production and research into new hardware designs for deep learning
-are well on the way.
+Therefore production and research into new hardware designs for deep
+learning are well on the way.
 
 Another field which has high computational demands for very specific
-tasks and algorithms is neuroscience.
-Neuroscience has long been linked to deep learning, which has its
-origin in reasearch done by neuroscientists
+tasks and algorithms is computational neuroscience.
+Computational neuroscience has long been linked to deep learning,
+which has its origin in research done by neuroscientists
 \citep{mcculloch_et_al_1943}.
 While in the recent past deep learning research has been more focused
 on mathematical topics like statistics and probability theory,
@@ -258,10 +270,11 @@ learning models \citep{marblestone_et_al_2016}.
 
 But the algorithms developed by computational neuroscientists are not
 the only aspect drawing attention from the deep learning community.
-Computational neuroscience has long been trying to develop hardware
-for the efficient modeling of the human brain and neuromorphic
-computing---a computer architecture inspired by the biological
-nervous system---has been around since the 1980s \citep{mead_1989}.
+Computational neuroscience has long a long standing history of
+developing custom hardware for the efficient modeling of the human
+brain, so called neuromorphic computing. Neuromorphic computing---a
+computer architecture inspired by the biological nervous system---has
+been around since the 1980s \citep{mead_1989}.
 Today, neuromorphic computers are being developed to meet the
 demands for efficient computing needed to run large-scale
 spiking neural networks used for modeling brain
@@ -281,8 +294,8 @@ cloud-era \citep{gomes_2017}.
 
 This thesis investigates the performance of SpiNNaker machines for
 deep learning by training the state-of-the-art computer vision model
-ResNet-50 under the closed division rules of the MLPerf benchmark
-\citep{he_et_al_2015, mattson_et_al_2019}.
+ResNet-50 \citep{he_et_al_2015} under the closed division rules of the
+MLPerf benchmark \citep{mattson_et_al_2019}.
 In order to benchmark ResNet-50 on SpiNNaker a prototypical
 implementation was developed as part of this thesis.
 
@@ -291,13 +304,15 @@ implementation was developed as part of this thesis.
 \end{itemize}
 
 Section~\ref{sec:background} presents the background of this thesis.
-An introduction to deep learning is given, as well as an overview
-of the benchmark presented in Section~\ref{sec:benchmark}.
-The SpiNNaker architecture is also described and compared to
-current deep learning hardware.
-Related work can be found in Section~\ref{subsec:related_work}.
+An introduction to deep learning is given in
+Section~\ref{subsec:intro_dl}, as well as an overview
+of the benchmark in Section~\ref{subsec:intro_bench}.
+Section~\ref{subsec:intro_spinn} describes the SpiNNaker architecture
+and compares it to current deep learning hardware.
+Related work can be found in Section~\ref{sec:related_work}.
 Section~\ref{sec:SpiDNN} presents the architecture of the
-prototype developed for benchmarking.
+prototype developed for benchmarking and Section~\ref{sec:benchmark}
+presents the benchmarks and its results.
 In Section~\ref{sec:discussion} the results of the benchmark are
 discussed, as well as the development process.
 Section~\ref{sec:conclusion} contains the conclusion, while
@@ -310,6 +325,7 @@ prototype.
 \label{sec:background}
 
 \subsection{An Introduction to Deep Learning} % {{{
+\label{subsec:intro_dl}
 
 \begin{enumerate}
   \item history of DL
@@ -325,51 +341,23 @@ prototype.
     \end{itemize}
   \item CNNs
 \end{enumerate}
-% history
-% neural network as a statistical method, not biologically correct
-
-% non-linear classifiers
-
-% concepts: layers, activation, optimizer, forward- and backward-pass
-%           hidden units, ... (chapter 6 goodfellow)
-
-% CNN's (cnn, relu, pooling, ...)
-
-% (Residual stuff)
 
 % }}}
 
-\subsection{Computer Vision: ImageNet and the ILSVRC} % {{{
+\subsection{Benchmarking Deep Learning Systems for Computer Vision} % {{{
+\label{subsec:intro_bench}
 
 \begin{enumerate}
   \item short section about imagenet and ilsvrc and their importance
         for computer vision
   \item ResNet50 and residual stuff
+  \item paragraph about MLPerf
 \end{enumerate}
-% short section describing imagenet and ilsvrc and their importance
-% for image recognition (computer vision) tasks
-
-% ResNet50
-
-% }}}
-
-\subsection{Benchmarking Deep Learning Systems: The MLPerf Benchmark} % {{{
-
-\begin{enumerate}
-  \item short section about MLPerf (so short that I maybe add it to
-        previous section. Could maybe be only a single paragraph.
-\end{enumerate}
-% also rather short
-
-% what is the point
-
-% some benchmarks
-
-% if references are too small: add all the papers from the report
 
 % }}}
 
 \subsection{SpiNNaker as a Neuromorphic Computer Architecture} % {{{
+\label{subsec:intro_spinn}
 
 \begin{enumerate}
   \item describe spinnaker and the spinnaker architecture
@@ -385,26 +373,29 @@ prototype.
 
 % }}}
 
-\subsection{Related Work} % {{{
-\label{subsec:related_work}
+% }}}
+
+
+\section{Related Work} % {{{
+\label{sec:related_work}
 
 \begin{enumerate}
   \item SNNToolbox for translating DNNs to SNNs (only inference)
   \item TrueNorth has a paper about its DL implementation
+  \item (optional) The 2011 paper about mapping MLP's and recurrent
+    networks onto SpiNNaker
 \end{enumerate}
-% that neural thing that translates trained models to spiking nns
-
-% find more about DL on SpiNNaker
 
 % }}}
 
-% }}}
 
 \section{Deep Learning on SpiNNaker}
 \label{sec:SpiDNN}
 
 \begin{itemize}
   \item concepts (layers, neurons, \dots)
+  \item partitions and how that allows me to use min keys to discern
+    between what I have received
   \item communication structure (partitions and global partition manager)
   \item ping-pong
   \item graph structure (especially focused on edge and host--SpiNN
