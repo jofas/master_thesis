@@ -1,22 +1,15 @@
 #include "spiDNN.h"
 
+#ifdef trainable
+#include "trainable.h"
+#endif
+
 #define N_KERNEL_ELEMENTS kernel_size * n_channels
 #define N_WEIGHTS (N_KERNEL_ELEMENTS + 1) * n_filters
 
 #define PADDING_OFFSET lower_padding * n_channels
 #define FILTER_OFFSET (N_KERNEL_ELEMENTS + 1) * filter
 
-/* structs and enums */
-
-//! human readable definitions of the activation functions (except
-//! softmax, which is handled by another type of perceptron)
-typedef enum activations_e {
-  IDENTITY,
-  RELU,
-  SIGMOID,
-  TANH,
-  SOFTMAX,
-} activations_e;
 
 //! definitions of each element in the base_params region
 typedef struct base_params_region {
@@ -125,6 +118,25 @@ void reset_forward_pass(void) {
 }
 
 void receive(uint key, float payload) {
+
+#ifdef trainable
+  // min_next_key will always be bigger than min_pre_key, because
+  // the forward partition is touched by the toolchain before the
+  // backward partition
+  if (key >= min_next_key) {
+    receive_backward(key, payload, n_filters, filter_results);
+    return;
+  }
+
+  // min_pre_key will always be bigger than min_layer_key, because
+  // kernel update partitions are touched by the toolchain before
+  // forward and backward partitions
+  if (key < min_pre_key) {
+    receive_gradient(key, payload);
+    return;
+  }
+#endif
+
   if (spiDNN_received_potentials_counter == 0)
     reset_forward_pass();
 
@@ -156,6 +168,37 @@ void update(uint ticks, uint b) {
       }
     }
   }
+
+#ifdef trainable
+  if (backward_pass_complete()) {
+    backward_passes_counter++;
+    batch_counter++;
+
+    update_neuron_gradients(
+      activation_function_id, n_filters, N_KERNEL_ELEMENTS,
+      PADDING_OFFSET, filter_results);
+
+    for (uint i = 0; i < N_WEIGHTS; i++) {
+      send(kernel_update_key, (void *)&neuron_gradients[i]);
+      neuron_gradients[i] = .0;
+    }
+    return;
+  }
+
+  if (gradient_pass_complete(N_WEIGHTS)) {
+    if (BATCH_COMPLETE) {
+      update_kernel_weights(N_WEIGHTS, weights);
+      if (FIT_COMPLETE) {
+        sark_mem_cpy((void *)weights_sdram, (void *)weights,
+          sizeof(float) * N_WEIGHTS);
+      }
+      reset_batch(N_WEIGHTS);
+    }
+
+    for (uint i = 0; i < n_filters; i++)
+      send(backward_key, (void *)&errors[i]);
+  }
+#endif
 }
 
 void c_main(void) {
@@ -163,6 +206,10 @@ void c_main(void) {
 
   weights_init();
   keys_init();
+
+#ifdef trainable
+  trainable_init(N_WEIGHTS, n_filters);
+#endif
 
   channel_counters = (uint *)malloc(sizeof(uint) * n_potentials);
   filter_results = (float *)malloc(sizeof(float) * n_filters);

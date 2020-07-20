@@ -1,7 +1,7 @@
+#include "perceptron.h"
+
 #ifdef trainable
 #include "trainable.h"
-#else
-#include "perceptron.h"
 #endif
 
 #ifdef softmax
@@ -26,7 +26,7 @@ void receive(uint key, float payload) {
   // the forward partition is touched by the toolchain before the
   // backward partition
   if (key >= min_next_key) {
-    receive_backward(key, payload);
+    receive_backward(key, payload, 1, &potential);
     return;
   }
 #endif
@@ -64,18 +64,19 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
-    update_gradients();
+    update_neuron_gradients(activation_function_id, 1, n_potentials,
+      0, &potential);
 
     if (BATCH_COMPLETE) {
-      update_weights();
+      update_neuron_weights(n_weights, weights);
       if (FIT_COMPLETE) {
         sark_mem_cpy((void *)weights_sdram, (void *)weights,
           sizeof(float) * n_weights);
       }
-      reset_batch();
+      reset_batch(n_weights);
     }
 
-    send(backward_key, (void *)&neuron_error);
+    send(backward_key, (void *)errors);
   }
 #endif
 }
@@ -90,8 +91,7 @@ void c_main(void) {
 #endif
 
 #ifdef trainable
-  trainable_init();
-  reset_batch();
+  trainable_init(n_weights, 1);
 #endif
 
   // register callbacks

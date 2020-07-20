@@ -6,8 +6,6 @@ from spinn_front_end_common.utilities.constants import (
 from spinn_front_end_common.utilities.exceptions import ConfigurationException
 from spinn_front_end_common.utilities.helpful_functions import (
     locate_memory_region_for_placement)
-from spinn_front_end_common.abstract_models import \
-    AbstractProvidesOutgoingPartitionConstraints
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
 from spinnaker_graph_front_end.utilities import SimulatorVertex
@@ -56,7 +54,7 @@ class Perceptron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (4 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (9 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -211,8 +209,7 @@ class Perceptron(
 
             n_errors = len(edges)
 
-            self.next_layer_weights_container_size = \
-                len(edges) * BYTES_PER_WORD
+            self.next_layer_weights_container_size = n_errors * BYTES_PER_WORD
 
             next_layer_weights = [
                 edge.pre_vertex.weights[self.id] for edge in edges]
@@ -232,6 +229,11 @@ class Perceptron(
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
+        spec.write_value(0) # Only used by Conv layer
+        spec.write_value(0) # Only used by Conv layer
+        spec.write_value(0) # Only used by Conv layer
+        spec.write_value(n_errors)
+        spec.write_value(n_errors)
 
         self.trainable_params.write_to_spec(spec)
 

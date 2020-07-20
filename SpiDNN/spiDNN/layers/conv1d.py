@@ -29,7 +29,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         self.kernel_shape = kernel_shape
 
         self.n_channels = None # set during generate_weights
-        self.meta_vertex = None
 
         self.bias = bias
         self.stride = stride
@@ -72,40 +71,17 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         super(Conv1D, self).init_neurons()
 
-        if self.activation == "softmax":
+        if trainable_params is not None:
             super(Conv1D, self).connect_incoming(
-                self, globals.softmax_partition)
+                self, globals.kernel_update_partition)
 
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
-        if self.padding == "valid":
-            growing_down = 0
-        elif self.padding == "same":
-            size = (self.n_neurons - 1) * self.stride + 1
-
-            padding = self.kernel_shape[0] - 1
-            padding -= source_layer.n_neurons - size
-
-            growing_down = int(padding / 2)
+        if type(source_layer) == Conv1D:
+            self._connect_incoming_conv1d(source_layer, partition)
         else:
-            raise KeyError(
-                "Unexpected padding: {}".format(padding))
-
-        i = -growing_down
-        for neuron in self.neurons:
-            if i < 0:
-                neuron.lower_padding = abs(i)
-
-            if i + self.kernel_shape[0] >= source_layer.n_neurons:
-                neuron.upper_padding = \
-                    i + self.kernel_shape[0] - source_layer.n_neurons
-
-            for j in range(
-                    i + neuron.lower_padding,
-                    i + self.kernel_shape[0] - neuron.upper_padding):
-                gfe.add_machine_edge_instance(
-                    source_layer.neurons[j], neuron, partition)
-            i += self.stride
+            super(Conv1D, self).connect_incoming(
+                source_layer, partition)
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
@@ -144,6 +120,36 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
             biases[i] = flattened_weights[-1, i]
 
         return weights, biases
+
+    def _connect_incoming_conv1d(self, source_layer, partition):
+        if self.padding == "valid":
+            growing_down = 0
+        elif self.padding == "same":
+            size = (self.n_neurons - 1) * self.stride + 1
+
+            padding = self.kernel_shape[0] - 1
+            padding -= source_layer.n_neurons - size
+
+            growing_down = int(padding / 2)
+        else:
+            raise KeyError(
+                "Unexpected padding: {}".format(padding))
+
+        i = -growing_down
+        for neuron in self.neurons:
+            if i < 0:
+                neuron.lower_padding = abs(i)
+
+            if i + self.kernel_shape[0] >= source_layer.n_neurons:
+                neuron.upper_padding = \
+                    i + self.kernel_shape[0] - source_layer.n_neurons
+
+            for j in range(
+                    i + neuron.lower_padding,
+                    i + self.kernel_shape[0] - neuron.upper_padding):
+                gfe.add_machine_edge_instance(
+                    source_layer.neurons[j], neuron, partition)
+            i += self.stride
 
     def _set_n_neurons(self, source_layer):
         if self.padding == "valid":

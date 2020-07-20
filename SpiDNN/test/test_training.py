@@ -126,8 +126,65 @@ def test_training_conv1d():
         assert e_max < 0.1
 
 
+def test_training_conv1d_with_known_weights():
+    input_shape = (2, 1)
+
+    X = np.array([[0., 1.]]).reshape(1,2,1)
+    y = np.array([[1.]])
+
+    weights = [
+        np.array([[[.1, .4]],
+                  [[.2, .5]],
+                  [[.3, .6]]]), np.array([.0, .0]),
+        np.array([[[ .7, 1.3],
+                   [ .8, 1.4]],
+                  [[ .9, 1.5],
+                   [1. , 1.6]],
+                  [[1.1, 1.7],
+                   [1.2, 1.8]]]), np.array([.0, .0]),
+        np.array([[1.9],[2.0],[2.1],[2.2]]), np.array([.0])
+    ]
+
+
+    c1 = KConv1D(2, 3, padding="same", input_shape=input_shape)
+    c2 = KConv1D(2, 3, padding="same")
+
+    kmodel = Sequential()
+    kmodel.add(c1)
+    kmodel.add(c2)
+    kmodel.add(Flatten())
+    kmodel.add(KDense(1))
+
+    kmodel.compile(loss="mean_squared_error", optimizer=SGD(learning_rate=1.0))
+
+    kmodel.set_weights(weights)
+
+    kmodel.train_on_batch(X, y)
+
+    model = Model()
+    model.add(Input(*input_shape))
+    model.add(Conv1D(2, (3,), padding="same"))
+    model.add(Conv1D(2, (3,), padding="same"))
+    model.add(Dense(1))
+
+    model.set_weights(weights)
+
+    #model.predict(X)
+
+    #print(model._layers[2].neurons[0].weights)
+    #print(len(model._layers[2].neurons[0].weights))
+
+    model.fit(X, y, "mean_squared_error", epochs=1, batch_size=1,
+              learning_rate=1.0)
+
+    print(kmodel.get_weights())
+
+    print(model.get_weights())
+
+
 if __name__ == "__main__":
     # test_binary_xor()
-    # test_categorical_xor()
-    test_training_conv1d()
+    test_categorical_xor()
+    #test_training_conv1d()
+    #test_training_conv1d_with_known_weights()
     print("SUCCESS.")

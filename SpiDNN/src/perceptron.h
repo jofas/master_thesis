@@ -4,18 +4,6 @@
 #define N_POTENTIALS n_weights - 1
 
 
-/* structs and enums */
-
-//! human readable definitions of the activation functions (except
-//! softmax, which is handled by another type of perceptron)
-typedef enum activations_e {
-  IDENTITY,
-  RELU,
-  SIGMOID,
-  TANH,
-  SOFTMAX,
-} activations_e;
-
 //! definitions of each element in the base_params region
 typedef struct base_params_region {
   uint32_t forward_key;
