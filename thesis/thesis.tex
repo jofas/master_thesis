@@ -344,8 +344,77 @@ unit (TPU).
 \subsection{An Introduction to Deep Learning} % {{{
 \label{subsec:intro_dl}
 
+While it may seem that deep learning is a recent development in the
+field of artificial intelligence---due to all the hype and all
+the announced breakthroughs---it is actually around since the 1940s.
+\citet{mcculloch_et_al_1943} first described the McCulloch-Pitts
+neuron as a simple mathematical model of a biological neuron, which
+should mark the origin of what today is known as deep learning.
+The history of deep learning can be broken down into three distinct
+phases and only during the last phase the methodology involved is
+called deep learning; arguably the reason why deep learning seems to
+be a new development.
+
+The first phase, where deep learning was known as cybernetics, ranged
+from the 1940s to the 1960s \citep{goodfellow_et_al_2016}.
+Like stated above, it was the time where the first biologically
+inspired representations of neurons where developed.
+\citet{rosenblatt_1958} presents the first model, a single trainable
+artificial neuron known as the perceptron.
+
+The second phase is known as connectionism (1980s-1990s)
+\citep{goodfellow_et_al_2016}.
+Its main contributions to today's knowledge was the backpropagation
+algorithm \citep{rumelhart_et_al_1986} and the approach of parallel
+distributed processing
+\citep{rumelhart_et_al_1986a, rumelhart_et_al_1986b}, which provided a
+mathematical framework around the idea that a large number of simple
+computational units (e.g.\ the perceptron) can achieve intelligent
+behavior when connected together \citep{goodfellow_et_al_2016}.
+Backpropagation enabled the training of networks of perceptrons
+organized in layers.
+A layer consists of multiple perceptrons and the layers are connected
+successively so that no cycle exists between perceptrons.
+An artificial neural network with such an architecture is known as the
+multilayer perceptron (MLP) or the feedforward artificial neural
+network.
+\citet{hornik_et_al_1989} demonstrated that a non-linear MLP can
+overcome the famous XOR problem of a single layer perceptron
+demonstrated in \citet{minsky_et_al_1969}.
+Another major contribution of the phase of connectionism was the
+neocognitron \citep{fukushima_1980}, the origin of today's
+convolutional neural networks (CNNs)---which are the state-of-the-art
+approach for building computer vision models---and the application of
+the backpropagation algorithm to fully automate the training of CNNs
+\citep{lecun_et_al_1989}.
+
+\citet{goodfellow_et_al_2016} claims that the third and current phase
+of deep learning---where the name deep learning was
+established---starts with \citet{hinton_et_al_2006} describing a new
+learning algorithm called greedy layer-wise pretraining, which they
+applied to deep belief networks.
+Greedy layer-wise pretraining was soon generalized to work with other
+deep artificial neural network architectures
+\citep{renzato_et_al_2006, bengio_et_al_2007}.
+While these papers may have resulted in the term deep learning,
+they were not the reason for the resurrected interest in this
+methodology.
+The two most important factors are the increase of available data
+and computation.
+The former enables better generalization while the latter allows
+training bigger models which can solve more complex problems
+\citep{goodfellow_et_al_2016}.
+
+% TODO: interwove concepts into history (perceptron, backprop ? and
+%       so forth)... maybe only for a few concepts... keep sgd, cnns
+%       and such by themselves
+%       figures
+
+% here make clear difference between DL and spiking neural networks
+It is from that time that another synonym of deep learning originates:
+(deep) artificial neural networks.
+
 \begin{enumerate}
-  \item history of DL
   \item clarify that DNNs are statistical methods (glorified non-linear
         classifiers) not biological like SNNs
   \item concepts of the MLP:
