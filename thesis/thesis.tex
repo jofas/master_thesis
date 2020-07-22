@@ -352,11 +352,22 @@ the announced breakthroughs---it is actually around since the 1940s.
 \citet{mcculloch_et_al_1943} first described the McCulloch-Pitts
 neuron as a simple mathematical model of a biological neuron, which
 should mark the origin of what today is known as deep learning.
+
+Even though deep learning models today are still called
+\textit{artificial neural networks}, due to their historical context,
+they are quite different from \textit{spiking neural networks}
+(which SpiNNaker was designed to run efficiently).
+While the former has been described as ``just nonlinear statistical
+models'' \citep{hastie_et_al_2009}, the latter incorporated findings
+about biological neurons and is therefore closer related to how the
+nervous system works \citep{maass1997}.
+Spiking neural networks are mostly used for simulation rather than
+inference like deep learning models.
+
 The history of deep learning can be broken down into three distinct
 phases and only during the last phase the methodology is
-called deep learning; arguably the reason why deep learning seems to
-be a new development.
-
+called deep learning \citep{goodfellow_et_al_2016};
+arguably the reason why deep learning seems to be a new development.
 The first phase, where deep learning was known as cybernetics, ranged
 from the 1940s to the 1960s \citep{goodfellow_et_al_2016}.
 Like stated above, it was the time where the first biologically
@@ -364,10 +375,11 @@ inspired representations of neurons where developed.
 \citet{rosenblatt_1958} presents the first model, a single trainable
 artificial neuron known as the perceptron (see
 Figure~\ref{fig:perceptron}).
+
 Today's perceptron receives a real-valued $n$-vector $\mathbf{x}$ of
 \textit{input} signals and builds the dot product with another
 real-valued $n$-vector known as \textit{weights} $\mathbf{w}$:
-$\mathbf{x}\cdot\mathbf{w} = \sum_{i=0}^{n}x_iw_i$.
+$\mathbf{x}\cdot\mathbf{w} = \sum_{i=1}^{n}x_iw_i$.
 The \textit{bias} $b$ is added to the dot product.
 $\mathbf{x} \cdot \mathbf{w} + b$ is then passed to the
 \textit{activation function} $g$---some fixed transformation function
@@ -420,16 +432,28 @@ distributed processing
 mathematical framework around the idea that a large number of simple
 computational units (e.g.\ the perceptron) can achieve intelligent
 behavior when connected together \citep{goodfellow_et_al_2016}.
-Backpropagation enabled the training of networks of perceptrons
-organized in layers.
-A layer consists of multiple perceptrons and the layers are connected
-successively so that no cycle exists between perceptrons.
-An artificial neural network with such an architecture is known as the
-multilayer perceptron (MLP) or the feedforward artificial neural
-network.
-\citet{hornik_et_al_1989} demonstrated that a non-linear MLP can
-overcome the famous XOR problem of a single layer perceptron
-demonstrated in \citet{minsky_et_al_1969}.
+Backpropagation enabled the training of networks of
+perceptrons---artificial neural networks.
+
+The quintessential artificial neural network is the multilayer
+perceptron (MLP), also called a feedforward neural network
+(see Figure~\ref{fig:mlp}) \citep{goodfellow_et_al_2016}.
+The MLP consists of multiple perceptrons organized in \textit{layers}.
+Layers are connected successively such that the output of each of its
+perceptrons reaches all perceptrons in the next layer it is connected
+to. Such a layer is known to be \textit{fully-connected} or
+\textit{dense}. No cycle exists between perceptrons; the MLP is a
+directed acyclic graph.
+Unlike the single layer perceptron, the MLP has at least one
+\textit{hidden layer}.
+
+% here inference and backprop of the mlp
+
+\citet{hornik_et_al_1989} demonstrated that a non-linear MLP
+(the activation functions are non-linear transformations of
+$\mathbf{x} \cdot \mathbf{w} + b$) can overcome the famous XOR problem
+of a single layer perceptron demonstrated in
+\citet{minsky_et_al_1969}.
 Another major contribution of the phase of connectionism was the
 neocognitron \citep{fukushima_1980}, the origin of today's
 convolutional neural networks (CNNs)---which are the state-of-the-art
@@ -495,7 +519,8 @@ the backpropagation algorithm to fully automate the training of CNNs
 			edge[->] (i3);
 	\end{tikzpicture}
 \end{center}
-\caption {Schema of a MLP or feedforward neural network.}
+\caption {Schema of a MLP or feedforward neural network. The grey
+  edges are directed edges from left to right.}
 \label{fig:mlp}
 \end{figure}
 
@@ -513,30 +538,11 @@ methodology.
 The two most important factors are the increase of available data
 and computation.
 The former enables better generalization while the latter allows
-training bigger models which can solve more complex problems
+training bigger models (more hidden layers---the depth of the neural
+networks increased) which can solve more complex problems
 \citep{goodfellow_et_al_2016}.
 
-
-% TODO: interwove concepts into history (perceptron, backprop ? and
-%       so forth)... maybe only for a few concepts... keep sgd, cnns
-%       and such by themselves
-%       figures
-
-% here make clear difference between DL and spiking neural networks
-It is from that time that another synonym of deep learning originates:
-(deep) artificial neural networks.
-
 \begin{enumerate}
-  \item clarify that DNNs are statistical methods (glorified non-linear
-        classifiers) not biological like SNNs
-  \item concepts of the MLP:
-    \begin{itemize}
-      \item layers
-      \item activations
-      \item forward- and backward-pass
-      \item SGD
-      \item \dots
-    \end{itemize}
   \item CNNs
 \end{enumerate}
 
