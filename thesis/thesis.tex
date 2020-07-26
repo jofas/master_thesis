@@ -682,7 +682,8 @@ function like the perceptron and the concept of the bias applies also.
   \node[right=.3 of z] {$=$};
 
   \node[right=1 of z, box] (fst) {$ax + by + cz$};
-  \node[right=.1 of fst, box] (snd) {$bx + cy + dz$};
+  \node[right=.1 of fst, box, label=feature map] (snd)
+    {$bx + cy + dz$};
   \node[right=.1 of snd, box] (trd) {$cx + dy + ez$};
 \end{tikzpicture}
 \end{center}
