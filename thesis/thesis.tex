@@ -645,10 +645,12 @@ Below convolution will refer to cross-correlation.
 
 In the case of deep learning, $x$ is a $n$D array called the
 \textit{input} and $w$ is another $n$D array referred to as the
-\textit{kernel} \citep{goodfellow_et_al_2016}.
+\textit{kernel}. The kernel elements are the trainable parameters
+\citep{goodfellow_et_al_2016}.
 In Equation~\ref{eq:conv}, $x$ and $w$ are one dimensional.
 If we say $x$ to be a $m$-vector, the function $x(i)$ is defined as:
 \begin{align}
+  \label{eq:valid_conv}
   x(i) = \begin{cases}
     x_i &\text{if } 1 \leq i \leq m \\
     0 &\text{otherwise.}
@@ -657,6 +659,8 @@ If we say $x$ to be a $m$-vector, the function $x(i)$ is defined as:
 $n$ is the size of the kernel in the first dimension.
 Figure~\ref{fig:conv_op} shows an example of how the output of a
 1D convolutional layer is computed.
+Figure~\ref{fig:cnn} shows the schema of the convolutional
+layer performing the operation from Figure~\ref{fig:conv_op}.
 
 \begin{figure}
 \begin{center}
@@ -714,13 +718,56 @@ Figure~\ref{fig:conv_op} shows an example of how the output of a
 	\end{tikzpicture}
 \end{center}
 \caption {Schema for the convolutional layer performing the
-  convolution shown in Figure~\ref{fig:conv_op}. The schema shows the
-  property of sparse connectivity and shared weights. The black edges
+  convolution shown in Figure~\ref{fig:conv_op}. Each neuron
+  represents one convolution. The schema shows the
+  property of shared weights and sparse
+  connectivity \citep{goodfellow_et_al_2016}. The black edges
   all have the same associated weight $y$, while one can see that
   there are much less edges compared to a dense layer shown in
   Figure~\ref{fig:mlp}.}
 \label{fig:cnn}
 \end{figure}
+
+Normally a convolutional layer does not consist of a single
+convolution, but applies multiple kernels to the output of the
+previous layer.
+A single convolution is called a \textit{filter} and a layer
+consists of a predefined amount of filters, each with its own kernel
+\citep{brownlee_2019}.
+The output of a convolutional layer is often called a
+\textit{feature map} \citep{goodfellow_et_al_2016}.
+Even though an image may seem to be a two dimensional structure of
+pixels, in most cases it is actually three dimensional, the third
+dimension being the RGB color values for each pixel.
+The third dimension of the three RGB colors are called the
+\textit{channels} \citep{goodfellow_et_al_2016}.
+For example, we have a data set of images with $256\times256$
+pixels and three channels (red, green and blue).
+We pass the image to a convolutional layer with a $3\times3$ kernel
+shape and $64$ filters.
+A kernel consists of 18 elements, the kernel size (for the two
+spatial dimensions) times the three channels of each pixel.
+The shape of the feature map of that layer---if we assume ``same''
+padding (see below)---would be $256\times256\times64$, so the
+next layer would have 64 channels.
+
+There are two more notable concepts of convolutional layers:
+\textit{stride} and \textit{padding}.
+The former refers to skipping convolutions in order to reduce the
+computational cost at the expense of less exact feature extraction
+(patterns may not be detected by the model due to the increased
+inaccuracy).
+The latter is a way of dealing with vanishing spacial dimensions of
+the feature map if we only perform convolutions on ``valid'' inputs
+($1 \leq i \leq m$ in Equation~\ref{eq:valid_conv}).
+``valid'' padding refers to the fact that the input has no padding,
+which means the feature map of the convolutional layer will have
+its kernel size minus one less neurons than its input
+(see Figure~\ref{fig:cnn}).
+``Same'' padding would be to add enough zeros evenly above and below
+the valid input (along each spacial dimension) so that the feature map
+of the convolutional layer will have the same spacial dimensions as
+its input (see Figure~\ref{fig:padding} \citep{goodfellow_et_al_2016}.
 
 \begin{figure}
 \begin{center}
@@ -752,10 +799,8 @@ Figure~\ref{fig:conv_op} shows an example of how the output of a
 \label{fig:padding}
 \end{figure}
 
+
 \begin{enumerate}
-  \item filters, kernels and channels
-  \item shared weights sparsity, spatial invariance
-  \item strides, padding
   \item Pooling
 \end{enumerate}
 
