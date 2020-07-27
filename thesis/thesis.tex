@@ -838,12 +838,29 @@ The top-1 ($y = \text{argmax } f(\mathbf{x})$) accuracy is measured on
 a test set of 150,000 images and winner is the model with the highest
 top-1 accuracy.
 
-% mlperf to benchmark hardware
-
-% ResNet50
+While a benchmark like the ILSVRC produces new insights into computer
+vision and keeps the community up-to-date on what is possible,
+deep learning has another issue on which a benchmark can shed light:
+training/inference speed of hardware and software systems.
+The MLPerf benchmark was developed to tackle this problem, so
+stakeholders can make informed decisions and to provide the
+industry---like hardware vendors, cloud providers and machine learning
+engineers---with a fair standard to rely on
+\citep{mattson_et_al_2019}.
+One task of the MLPerf training benchmark is training the ResNet-50
+model (see below) on the image classification task from the ILSVRC
+2012, until it reaches a top-1 accuracy of 74.9 percent.
+The wallclock time is measured and serves as the result for the
+benchmarked system \citep{mattson_et_al_2019}.
+Currently the fastest solution, from the latest MLPerf training
+benchmark v0.6, is Google's cloud system based on Tensorflow and
+one TPUv3 pod (1024 TPUv3s) \citep{mlperf_2019, stone_2019}.
+Our benchmark presented in Section~\ref{sec:benchmark} will be based
+on the image classification task of the MLPerf training benchmark,
+making it easy to compare SpiNNaker to other state-of-the-art
+deep learning systems.
 
 \begin{enumerate}
-  \item paragraph about MLPerf
   \item ResNet50 and residual stuff
 \end{enumerate}
 
