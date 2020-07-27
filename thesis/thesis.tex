@@ -571,24 +571,26 @@ $w_{ij}$ is updated by performing the stochastic gradient descent%
   training set. Batch or Mini-batch gradient descent takes a subset of
   the whole training set and updates the weights after each
   mini-batch. Deep learning models are normally trained by passing the
-  training set multiple times to the model. Each pass over the whole
-  training set is called an \textit{epoch}.
+  training set multiple times through the model. Each pass over the
+  whole training set is called an \textit{epoch}.
 }:
 \begin{align}
   w_{ij}^+ = w_{ij} - \mu \frac{\delta L}{\delta w_{ij}},
 \end{align}
 with $\mu$ as the \textit{learning rate}.
-The same procedure is applied to the following hidden layers, only
-that the loss is now computed as:
+The same procedure is applied to the following hidden layers.
+The total loss of the next hidden layer is given as:
 \begin{align}
-  L^{(l-1)} = \sum_{i=1}^{k}\frac{\delta L}{\delta h_k},
+  L^{(l-1)} = \sum_{i=1}^n\frac{\delta L}{\delta f^{(l - 1)}_i} =
+  \sum_{i=1}^n\frac{\delta L}{\delta g}
+    \frac{\delta g}{\delta h}
+    \frac{\delta h}{\delta f^{(l - 1)}_i},
 \end{align}
-which can be interpreted as the sum over the error of each perceptron
-in the previous layer.
+$f^{(l-1)}_i$ being the $i$-th perceptron of the hidden layer $l-1$.
 
 \citet{hornik_et_al_1989} demonstrated that a non-linear MLP
 (the activation functions are non-linear transformations of
-$\mathbf{x}^\top \mathbf{W} + \mathbf{b}$) can overcome the
+$h(x) = \mathbf{x}^\top \mathbf{W} + \mathbf{b}$) can overcome the
 famous XOR problem of a single layer perceptron demonstrated in
 \citet{minsky_et_al_1969}.
 Another major contribution of the phase of connectionism was the
