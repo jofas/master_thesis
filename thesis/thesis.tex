@@ -820,11 +820,31 @@ maximum value of that neighborhood.
 \subsection{Benchmarking Deep Learning Systems for Computer Vision} % {{{
 \label{subsec:intro_bench}
 
+In 2010 the annual (until 2017) ImageNet Large Scale Visual
+Recognition Challenge (ILSVRC) was launched and has become the most
+famous benchmark for computer vision models, producing many well-known
+deep learning models like AlexNet in 2012
+\citep{krizhevsky_et_al_2012}, VGG16 in 2014
+\citep{simonyan_et_al_2014} and the ResNet models in 2015
+\citep{he_et_al_2015}.
+The ILSVRC---like the name suggests---is based on the ImageNet data
+set consisting of more than 14 million images
+\citep{russakovsky_et_al_2015}.
+One task of the ILSVRC benchmark is image classification.
+During image classification the model is trained on 1000 categories
+(1.2 million images), without overlapping labels (each image has a
+single label, e.g.~``dog'') \citep{russakovsky_et_al_2015}.
+The top-1 ($y = \text{argmax } f(\mathbf{x})$) accuracy is measured on
+a test set of 150,000 images and winner is the model with the highest
+top-1 accuracy.
+
+% mlperf to benchmark hardware
+
+% ResNet50
+
 \begin{enumerate}
-  \item short section about imagenet and ilsvrc and their importance
-        for computer vision
-  \item ResNet50 and residual stuff
   \item paragraph about MLPerf
+  \item ResNet50 and residual stuff
 \end{enumerate}
 
 % }}}
@@ -899,6 +919,7 @@ maximum value of that neighborhood.
 \label{sec:next_steps}
 
 \begin{itemize}
+  \item profiling
   \item multiple copies of the same network on the same machine
     $\rightarrow$ use all resources available
   \item better domain decomposition (SpiNNaker application graph or
