@@ -972,13 +972,13 @@ architecture.
       \node[block, fill=black!40, below=.2 of block13] (block14) {512, 2048};
       \node[block, fill=black!40, below=.2 of block14] (block15) {512, 2048};
 
-      \node[below=.5 of block15] (pool2) {Avg pool};
-      \node[block, below=.5 of pool2] (dense) {dense 1000};
+      \node[below=.2 of block15] (pool2) {Avg pool};
+      \node[block, below=.2 of pool2] (dense) {dense 1000};
 
-      \node[above=.5 of block0] (pool1) {Max pool, /2};
-      \node[block, above=.5 of pool1] (conv1)
+      \node[above=.2 of block0] (pool1) {Max pool, /2};
+      \node[block, above=.2 of pool1] (conv1)
         {$7\times7$ convolution, 64 filters, /2};
-      \node[above=.5 of conv1] (x) {$\mathbf{x}$};
+      \node[above=.2 of conv1] (x) {$\mathbf{x}$};
 
       \draw[->] (block0) -- (block1);
       \draw[->] (block1) -- (block2);
