@@ -921,6 +921,17 @@ set and to measure the wallclock time it took to reach that goal.
 Figure~\ref{fig:resnet50_block} shows an example block from the
 ResNet-50 model, while Figure~\ref{fig:resnet50} shows its
 architecture.
+The model takes a $224\times224\times3$ image as its input and first
+passes it through a convolutional layer with a relatively big kernel
+of $7\times7$ and a max pooling layer.
+Both times the spacial dimensions are halved by applying a stride of
+two, so the first residual block receives a $56 \times 56 \times 64$
+feature map as its input.
+The model consists of multiple residual blocks.
+Some of them have a stride of two.
+Each time the input is halved that way, channels are doubled.
+This should keep computational cost the same for each block
+\citep{he_et_al_2015}.
 
 \begin{figure}
   \begin{center}
