@@ -860,9 +860,160 @@ on the image classification task of the MLPerf training benchmark,
 making it easy to compare SpiNNaker and our prototype to other
 state-of-the-art deep learning systems.
 
-\begin{enumerate}
-  \item ResNet50 and residual stuff
-\end{enumerate}
+Winner of the image classification task of the ILSVRC 2015 was an
+ensemble of residual nets (ResNets) introduced in
+\citet{he_et_al_2015}.
+The ensemble generated a top-5 accuracy (true label in the five
+highest outputs of the ensemble) of 96.4 percent.
+ResNets are a revolution in the sense that they are not only better
+classifiers than previous models, they also can be significantly
+deeper \citep{he_et_al_2015}.
+\citet{he_et_al_2015} presents a 152-layer deep network, eight times
+deeper than a ``very deep convolutional network'' (VGG11--VGG19)
+\citep{simonyan_et_al_2014, he_et_al_2015}.
+ResNets can be so deep, without losing their ability of convergence
+and without degradation (saturated accuracy and higher training error
+with increased depth) \citep{he_et_al_2015}, by introducing residual
+blocks with shortcut connections (see Figure~\ref{fig:shortcut_conn}).
+\citet{he_et_al_2015} hypothesizes that residual blocks ease the
+learning of the model.
+These shortcut connections do not increase the complexity of the
+model. No additional parameters are added to the model and nothing
+changes during backpropagation.
+Only the negligible operation where $\mathbf{x}$ is added to the
+output of the residual block must be performed during the forward
+pass.
+\citet{he_et_al_2015} shows comprehensive tests on how residual blocks
+decrease degradation impact by comparing ResNets against their
+counterpart with the same architecture, but without shortcut
+connections.
+The models without shortcut connections show a higher training error
+than their ResNet counterpart.
+
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}
+      \node[rectangle, draw] at (0, 0) (layer0) {layer};
+      \node[rectangle, draw, below=1 of layer0] (layer1) {layer};
+      \node[circle, draw, below=.5 of layer1] (layer_add) {$+$};
+      \node[below=.5 of layer_add] (layer_out) {};
+      \node[above=1 of layer0] (layer_in) {$\mathbf{x}$};
+
+      \draw[->] (layer_in) -- (layer0);
+      \draw[->] (layer0) -- node[left]{$g$} (layer1);
+      \draw[->] (layer1) -- (layer_add);
+      \draw[->] (layer_add) -- node[left]{$g^\prime$} (layer_out);
+
+      \draw[->] (layer_in) -| ($(layer_add) + (1,0)$) |- (layer_add);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema of a residual block with two layers. $\mathbf{x}$ is
+    added to the output of the last layer of the residual block,
+    before the result is passed through its activation function
+    $g^\prime$.}
+  \label{fig:shortcut_conn}
+\end{figure}
+
+Like stated above, the image classification task of the MLPerf
+training benchmark is to train ResNet-50 (50, because it has 50
+layers) until it reaches a top-1 accuracy of 74.9 percent on the test
+set and to measure the wallclock time it took to reach that goal.
+Figure~\ref{fig:resnet50_block} shows an example block from the
+ResNet-50 model, while Figure~\ref{fig:resnet50} shows its
+architecture.
+
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}
+      \node[rectangle, draw] at (0, 0) (layer0)
+        {$1\times1$ convolution, 64 filters};
+      \node[rectangle, draw, below=1 of layer0] (layer1)
+        {$3\times3$ convolution, 64 filters};
+      \node[rectangle, draw, below=1 of layer1] (layer2)
+        {$1\times1$ convolution, 256 filters};
+      \node[circle, draw, below=.5 of layer2] (layer_add) {$+$};
+      \node[below=.5 of layer_add] (layer_out) {};
+      \node[above=1 of layer0] (layer_in)
+        {$\mathbf{x}$};
+
+      \draw[->] (layer_in) -- (layer0);
+      \draw[->] (layer0) -- node[left]{relu} (layer1);
+      \draw[->] (layer1) -- node[left]{relu} (layer2);
+      \draw[->] (layer2) -- (layer_add);
+      \draw[->] (layer_add) -- node[left]{relu} (layer_out);
+
+      \draw[->] (layer_in) node[below right] {256 channels} -| ($(layer_add) + (3,0)$) |- (layer_add);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Example of a residual block in ResNet-50.}
+  \label{fig:resnet50_block}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[block/.style={rectangle, draw, minimum width=6cm}]
+      \node[block, fill=black!5] at (0, 0) (block0) {64, 256};
+      \node[block, fill=black!5, below=.2 of block0] (block1) {64, 256};
+      \node[block, fill=black!5, below=.2 of block1] (block2) {64, 256};
+
+      \node[block, fill=black!15, below=.2 of block2] (block3) {128, 512, /2};
+      \node[block, fill=black!15, below=.2 of block3] (block4) {128, 512};
+      \node[block, fill=black!15, below=.2 of block4] (block5) {128, 512};
+      \node[block, fill=black!15, below=.2 of block5] (block6) {128, 512};
+
+      \node[block, fill=black!25, below=.2 of block6] (block7) {256, 1024, /2};
+      \node[block, fill=black!25, below=.2 of block7] (block8) {256, 1024};
+      \node[block, fill=black!25, below=.2 of block8] (block9) {256, 1024};
+      \node[block, fill=black!25, below=.2 of block9] (block10) {256, 1024};
+      \node[block, fill=black!25, below=.2 of block10] (block11) {256, 1024};
+      \node[block, fill=black!25, below=.2 of block11] (block12) {256, 1024};
+
+      \node[block, fill=black!40, below=.2 of block12] (block13) {512, 2048, /2};
+      \node[block, fill=black!40, below=.2 of block13] (block14) {512, 2048};
+      \node[block, fill=black!40, below=.2 of block14] (block15) {512, 2048};
+
+      \node[below=.5 of block15] (pool2) {Avg pool};
+      \node[block, below=.5 of pool2] (dense) {dense 1000};
+
+      \node[above=.5 of block0] (pool1) {Max pool, /2};
+      \node[block, above=.5 of pool1] (conv1)
+        {$7\times7$ convolution, 64 filters, /2};
+      \node[above=.5 of conv1] (x) {$\mathbf{x}$};
+
+      \draw[->] (block0) -- (block1);
+      \draw[->] (block1) -- (block2);
+      \draw[->] (block2) -- (block3);
+      \draw[->] (block3) -- (block4);
+      \draw[->] (block4) -- (block5);
+      \draw[->] (block5) -- (block6);
+      \draw[->] (block6) -- (block7);
+      \draw[->] (block7) -- (block8);
+      \draw[->] (block8) -- (block9);
+      \draw[->] (block9) -- (block10);
+      \draw[->] (block10) -- (block11);
+      \draw[->] (block11) -- (block12);
+      \draw[->] (block12) -- (block13);
+      \draw[->] (block13) -- (block14);
+      \draw[->] (block14) -- (block15);
+
+      \draw[->] (x) -- (conv1);
+      \draw[->] (conv1) -- (pool1);
+      \draw[->] (pool1) -- (block0);
+      \draw[->] (block15) -- (pool2);
+      \draw[->] (pool2) -- (dense);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema of ResNet-50. Each block in the middle represents
+    one residual block shown in Figure~\ref{fig:resnet50_block}.
+    The first number shows the amount of filters the first two layers
+    of a block have, while the second number shows the filters of the
+    last layer of the block. $/2$ indicates that a stride of two is
+    applied (spacial dimensions are halved---each convolutional and
+    pooling layer has ``same'' padding). Whenever the filters are
+    doubled (indicated by the varying grey scales), the shortcut layer
+    is linearly projected to match the higher channels.}
+  \label{fig:resnet50}
+\end{figure}
 
 % }}}
 
@@ -913,7 +1064,7 @@ state-of-the-art deep learning systems.
   \item interpreting neurons as domain decomposition over linear algebra
     compute graph
   \item backward pass: gradients computed two times so comm fabric is
-    not overly used by unique partitions
+    not overly used by unique partitions/lots of unused packages
   \item How I crushed $n$d-kernels into a single blog of weights (same
     for 2D convolutions even though less interesting)
 \end{itemize}
@@ -927,6 +1078,8 @@ state-of-the-art deep learning systems.
 \begin{itemize}
   \item space used inefficiently (cores and memory) $\rightarrow$ better
     domain decomposition
+  \item batch normalization and their implications for
+    vanishing/exploding gradients
 \end{itemize}
 
 \section{Conclusion}
@@ -937,6 +1090,7 @@ state-of-the-art deep learning systems.
 
 \begin{itemize}
   \item profiling
+  \item cost model
   \item multiple copies of the same network on the same machine
     $\rightarrow$ use all resources available
   \item better domain decomposition (SpiNNaker application graph or
