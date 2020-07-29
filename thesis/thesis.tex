@@ -1095,17 +1095,16 @@ theoretical peek performance of 125 terraflop/s
 \citep{markidis_et_al_2018}.
 The TPUv1 comes with $256\times256$ MACs performing 8 bit (unsigned)
 integer operations \citep{jouppi_et_al_2017}.
-The TPUv2 added support for mixed precision floating\dots
-
-\begin{enumerate}
-  \item compare to other DL accelerators (GPGPUs and TPUs)
-\end{enumerate}
-
-% compare to other state of the art machine learning hardware
-
-% why didn't we just implement a backend (e.g. tensorflow?)
-% because architecture is so different (MACs vs. massive parallelism
-% with small messages)
+The TPUv2 added support for mixed precision floating point operations
+(16 bit multiply with 32 bit add and accumulate, same as the
+tensor core of the Volta architecture)
+\citep{kennedy_2017, markidis_et_al_2018}.
+The SpiNNaker cores do not have a MAC unit, being designed to run
+spiking neurons efficiently rather than lots of matrix
+multiplications.
+That means the prototype presented in Section~\ref{sec:SpiDNN} must
+put more focus on SpiNNaker's massive parallelism rather than relying
+on fast instruction level parallelism.
 
 % }}}
 
