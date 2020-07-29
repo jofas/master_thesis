@@ -298,7 +298,7 @@ cloud-era \citep{gomes_2017}.
 This thesis investigates the performance of SpiNNaker machines for
 deep learning by training the state-of-the-art computer vision model
 ResNet-50 \citep{he_et_al_2015} under the closed division rules of the
-MLPerf benchmark \citep{mattson_et_al_2019}.
+MLPerf training benchmark \citep{mattson_et_al_2019}.
 In order to benchmark ResNet-50 on SpiNNaker a prototypical
 implementation was developed as part of this thesis.
 
@@ -1066,6 +1066,36 @@ together in a 2D triangular (six edges per router instead of four)
 torus \citep{furber_et_al_2020}.
 The biggest SpiNNaker machine is the SpiNNaker1M supercomputer in
 Manchester with over one million cores \citep{furber_et_al_2020}.
+
+SpiNNaker is quite different from common deep learning accelerators,
+like general purpose graphics processing units (GPGPUs) or Google's
+TPU \citep{jouppi_et_al_2017}.
+Common deep learning libraries like Tensorflow
+\citep{abadi_et_al_2015}, Keras \citep{keras} or PyTorch
+\citep{paszke_et_al_2019} implement
+deep learning on a layer basis, which means by multiplying
+\textit{tensors} ($n$D arrays), rather than implementing deep learning
+on a neuron level \citep{goodfellow_et_al_2016}.
+Therefore the common industry approach to building hardware
+accelerators for deep learning is to facilitate fast matrix
+multiplication, which represents the majority of computation needed
+for training and inference.
+The leading systems, when it comes to throughput and speed according
+to the MLPerf training benchmark \citep{mlperf_2019}, are Google's
+TPU \citep{jouppi_et_al_2017} and NVIDIA's GPU architecture
+Volta \citep{durant_et_al_2017}, with the successor Ampere released in
+2020, which, according to NVIDIA, is much more powerful
+\citep{krashinsky_et_al_2020}.
+Both architectures leverage instruction level parallelism, sacrificing
+significant chip space for specialized units performing a
+fused multiply-add-accumulate matrix operation (MAC).
+NVIDIA calls these units tensor cores. The Tesla V100 has 640 tensor
+cores, each performing one $4\times 4$ MAC per clock cycle, a
+theoretical peek performance of 125 terraflop/s
+\citep{markidis_et_al_2018}.
+The TPUv1 comes with $256\times256$ MACs performing 8 bit (unsigned)
+integer operations \citep{jouppi_et_al_2017}.
+The TPUv2 added support for mixed precision floating\dots
 
 \begin{enumerate}
   \item compare to other DL accelerators (GPGPUs and TPUs)
