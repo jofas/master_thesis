@@ -214,6 +214,7 @@ degree or professional qualification except as specified.
 % fancy page (maybe above arabic -- depends on page numbers)
 
 \section{Introduction}
+\label{sec:intro}
 
 Deep learning is revolutionizing the world.
 It has become part of our daily lives as consumers, powering major
@@ -1032,15 +1033,43 @@ This should keep computational cost the same for each block
 \label{subsec:intro_spinn}
 
 Spiking Neural Network Architecture (SpiNNaker, for short) is a
-massively parallel computer system designed to run spiking neural
-networks with up to one billion neurons (and a trillion synapses) in
-real-time \citep{painkras_et_al_2013}.
+massively parallel neuromorphic computer system designed to run
+spiking neural networks with up to one billion neurons (and a trillion
+synapses) in real-time \citep{painkras_et_al_2013}.
+Like stated in Section~\ref{sec:intro}, neuromorphic computing is
+the approach of developing hardware inspired by the biological
+nervous system \citep{mead_1989}.
+Neuromorphic computer architectures today range from very fast and
+energy efficient but inflexible direct electronic models
+(neurons in hardware) \citep{indiveri_et_al_2011} to very flexible but
+energy demanding systems based on common consumer hard-/and software
+(neurons in software) \citep{plesser_et_al_2007}.
+SpiNNaker sits somewhere in-between.
+On the one hand, flexibility is achieved by implementing neurons in
+software.
+On the other hand, speed is achieved by massive-parallelism and
+energy efficiency by using energy efficient processors, rather than
+fast ones \citep{furber_et_al_2020}.
+
+The SpiNNaker system's basic building block is the SpiNNaker chip,
+a multiprocessor chip consisting of 18 ARM968 cores and a
+Network-on-Chip (NoC) system for communication between the cores
+\citep{furber_et_al_2007, furber_et_al_2020}.
+Each core can run up to 1000 spiking neurons, which communicate with
+each other over spikes---small packages with a maximum size of 72 bits
+which are send over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
+
+For today's standards 18 cores do not qualify for being a
+massively-parallel system.
+Therefore a SpiNNaker machine consists of multiple chips connected
+together in a 2D triangular (six edges per router instead of four)
+torus \citep{furber_et_al_2020}.
+The biggest SpiNNaker machine is the SpiNNaker1M supercomputer in
+Manchester with over one million cores \citep{furber_et_al_2020}.
 
 \begin{enumerate}
-  \item describe spinnaker and the spinnaker architecture
   \item compare to other DL accelerators (GPGPUs and TPUs)
 \end{enumerate}
-% spinnaker architecture
 
 % compare to other state of the art machine learning hardware
 
