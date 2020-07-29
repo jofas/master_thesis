@@ -1103,8 +1103,10 @@ The SpiNNaker cores do not have a MAC unit, being designed to run
 spiking neurons efficiently rather than lots of matrix
 multiplications.
 That means the prototype presented in Section~\ref{sec:SpiDNN} must
-put more focus on SpiNNaker's massive parallelism rather than relying
-on fast instruction level parallelism.
+put more focus on leveraging SpiNNaker's massive parallelism rather
+than relying on fast instruction level parallelism, for example with
+optimized domain decomposition and smarter algorithms than matrix
+multiplication.
 
 % }}}
 
