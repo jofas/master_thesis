@@ -984,10 +984,10 @@ This should keep computational cost the same for each block
       \node[block, fill=black!40, below=.2 of block13] (block14) {512, 2048};
       \node[block, fill=black!40, below=.2 of block14] (block15) {512, 2048};
 
-      \node[below=.2 of block15] (pool2) {Avg pool};
+      \node[below=.2 of block15] (pool2) {$7\times7$ Avg pool};
       \node[block, below=.2 of pool2] (dense) {dense 1000};
 
-      \node[above=.2 of block0] (pool1) {Max pool, /2};
+      \node[above=.2 of block0] (pool1) {$3 \times 3$ Max pool, /2};
       \node[block, above=.2 of pool1] (conv1)
         {$7\times7$ convolution, 64 filters, /2};
       \node[above=.2 of conv1] (x) {$\mathbf{x}$};
@@ -1110,6 +1110,7 @@ on fast instruction level parallelism.
 
 % }}}
 
+% TODO: Alan's feedback
 
 \section{Related Work} % {{{
 \label{sec:related_work}
