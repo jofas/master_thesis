@@ -89,12 +89,15 @@ void receive_backward(
 
   uint idx = key - min_next_key;
 
+  /*
   if (is_output_layer) {
     // TODO: how will this look with Conv as output layer?
     for (uint i = 0; i < n_filters; i++)
       errors[i] += payload;
     received_errors_counter++;
-  } else {
+  } else */
+
+  {
 
     received_errors[idx]++;
 

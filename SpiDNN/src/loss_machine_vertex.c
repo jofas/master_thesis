@@ -9,6 +9,7 @@ typedef enum loss_functions_e {
 
 //! definitions of each element in the params region
 typedef struct params_region {
+  uint32_t backward_key;
   uint32_t extractor_key;
   uint32_t loss_function_id;
   uint32_t K;
@@ -21,6 +22,8 @@ typedef struct params_region {
 
 /* global variables */
 
+uint backward_key;
+
 uint extractor_key;
 
 uint min_y_key;
@@ -31,7 +34,7 @@ uint K;
 
 uint epoch_size;
 
-uint *keys;
+//uint *keys;
 
 float *y;
 
@@ -45,7 +48,7 @@ float average_loss;
 uint N = 0;
 
 params_region_t *params_sdram;
-uint *keys_sdram;
+//uint *keys_sdram;
 
 
 /* functions */
@@ -155,7 +158,7 @@ void update(uint ticks, uint b) {
 
     for (uint i=0; i < K; i++) {
       compute_error(i);
-      send(keys[i], (void *)&error);
+      send(backward_key, (void *)&error);
     }
 
     if (N == epoch_size) {
@@ -169,11 +172,11 @@ void update(uint ticks, uint b) {
 }
 
 void keys_and_y_init(void) {
-  keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
+  //keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
 
-  keys = (uint *)malloc(sizeof(uint) * K);
-  sark_mem_cpy((void *)keys, (void *)keys_sdram,
-    sizeof(uint) * K);
+  //keys = (uint *)malloc(sizeof(uint) * K);
+  //sark_mem_cpy((void *)keys, (void *)keys_sdram,
+  //  sizeof(uint) * K);
 
   y = (float *)malloc(sizeof(float) * K);
 }
@@ -198,6 +201,7 @@ void __init_base_params(
 {
   params_sdram = data_specification_get_region(BASE_PARAMS, data_spec_meta);
 
+  backward_key = params_sdram->backward_key;
   extractor_key = params_sdram->extractor_key;
   loss_function_id = params_sdram->loss_function_id;
   K = params_sdram->K;

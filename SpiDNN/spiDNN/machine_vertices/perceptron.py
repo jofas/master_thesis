@@ -209,6 +209,7 @@ class Perceptron(
 
             n_errors = len(edges)
 
+            """
             self.next_layer_weights_container_size = n_errors * BYTES_PER_WORD
 
             next_layer_weights = [
@@ -222,6 +223,7 @@ class Perceptron(
             spec.switch_write_focus(
                 region=DataRegions.NEXT_LAYER_WEIGHTS.value)
             spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
+            """
 
         spec.switch_write_focus(
             region=DataRegions.TRAINABLE_PARAMS.value)

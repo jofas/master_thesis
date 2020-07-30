@@ -105,11 +105,12 @@ class Model:
 
         # backward pass
         self._connect_layers_backward()
-        self._layers[-1].connect_incoming_unique(
-            loss_layer, base_name=globals.backward_partition)
+        self._layers[-1].connect_incoming(
+            loss_layer, globals.backward_partition)
         pong.connect_incoming(
             self._layers[1], globals.backward_partition)
-        pong.connect_incoming(loss_layer, globals.backward_partition)
+        pong.connect_incoming(
+            loss_layer, globals.loss_extractor_partition)
 
         conn = self._setup_fit_live_event_connection(
             pong, loss_layer, y_injectors, X, y, epochs)

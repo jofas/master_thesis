@@ -37,7 +37,7 @@ class LossMachineVertex(
         SimulatorVertex,
         MachineDataSpecableVertex):
 
-    PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
+    PARAMS_DATA_SIZE = 8 * BYTES_PER_WORD
 
     def __init__(self, layer, trainable_params):
         super(LossMachineVertex, self).__init__(
@@ -63,11 +63,13 @@ class LossMachineVertex(
             label="params"
         )
 
+        """
         spec.reserve_memory_region(
             region=DataRegions.KEYS.value,
             size=self.layer.K * BYTES_PER_WORD,
             label="keys"
         )
+        """
 
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
@@ -88,17 +90,23 @@ class LossMachineVertex(
         partitions = \
             machine_graph.get_outgoing_edge_partitions_starting_at_vertex(self)
 
+        backward_key = routing_info.get_first_key_from_pre_vertex(
+            self, globals.backward_partition)
+
+        """
         keys = []
         for partition in partitions:
             if partition.identifier != globals.backward_partition:
                 keys.append(routing_info.get_first_key_from_pre_vertex(
                     self, partition.identifier))
+        """
 
         extractor_key = routing_info.get_first_key_from_pre_vertex(
-            self, globals.backward_partition)
+            self, globals.loss_extractor_partition)
 
         spec.switch_write_focus(
             region=DataRegions.BASE_PARAMS.value)
+        spec.write_value(backward_key)
         spec.write_value(extractor_key)
         spec.write_value(globals.losses[self.layer.loss])
         spec.write_value(self.layer.K)
@@ -107,9 +115,11 @@ class LossMachineVertex(
         spec.write_value(generate_offset(placement.p))
         spec.write_value(self.trainable_params.epoch_size)
 
+        """
         spec.switch_write_focus(
             region=DataRegions.KEYS.value)
         spec.write_array(keys)
+        """
 
         spec.end_specification()
 
@@ -117,8 +127,8 @@ class LossMachineVertex(
     @overrides(MachineVertex.resources_required)
     def resources_required(self):
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
-                       + self.PARAMS_DATA_SIZE
-                       + self.layer.K * BYTES_PER_WORD)
+                       + self.PARAMS_DATA_SIZE)
+                       #+ self.layer.K * BYTES_PER_WORD)
 
         return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
 
