@@ -290,6 +290,42 @@ class Conv1DNeuron(
                 #
                 # maybe use the key somehow instead of position
                 #
+                # Restart:
+                #   problem: I need to share the next_layer_weights,
+                #            when next_layer has filters
+                #
+                #            In itself not difficult. Ugly but not
+                #            too difficult.
+                #
+                #            Solutions:
+                #               * ugly sharing which will be horrible
+                #                 but I can do that
+                #
+                #               * rework your backprop by sending
+                #                 multiple but unused packets
+                #
+                #                 a perceptron would send N times
+                #                 first one is for first neuron in
+                #                 prev layer and so forth.
+                #                 that means neurons would need
+                #                 counter for each next_layer_neuron
+                #                 and if counter ==
+                #                   self.id - min_layer_key then
+                #                 I use that and continue with back-
+                #                 prop like before
+                #
+                #                 much, much nicer. Far less memory
+                #                 pressure (currently
+                #                 n_next_layer_weights * 2 (gradients))
+                #                 and no shared state
+                #
+                #                 Much less weird. I'll try that in
+                #                 a new branch before doing anything
+                #                 else.
+                #
+                #                 but how about CNNs? min_layer_key
+                #                 must be different no? They aren't
+                #
                 #
                 #
                 # position = 1
