@@ -54,7 +54,7 @@ class Perceptron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (10 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (9 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -184,53 +184,18 @@ class Perceptron(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.backward_partition))
 
-        is_output_layer = len(edges) == 0
+        min_next_key = min([
+            routing_info.get_first_key_from_pre_vertex(
+                edge.pre_vertex, globals.backward_partition)
+            for edge in edges])
 
-        if is_output_layer:
-            edges = self \
-                .get_edges_ending_at_vertex_where_partition_name_starts_with(
-                    machine_graph, globals.backward_partition)
-
-            assert len(edges) == 1
-
-            out_edge = edges[0]
-            partition = machine_graph.get_outgoing_partition_for_edge(
-                out_edge).identifier
-
-            min_next_key = routing_info.get_first_key_from_pre_vertex(
-                out_edge.pre_vertex, partition)
-
-            n_errors = 1
-        else:
-            min_next_key = min([
-                routing_info.get_first_key_from_pre_vertex(
-                    edge.pre_vertex, globals.backward_partition)
-                for edge in edges])
-
-            n_errors = len(edges)
-
-            """
-            self.next_layer_weights_container_size = n_errors * BYTES_PER_WORD
-
-            next_layer_weights = [
-                edge.pre_vertex.weights[self.id] for edge in edges]
-
-            spec.reserve_memory_region(
-                region=DataRegions.NEXT_LAYER_WEIGHTS.value,
-                size=self.next_layer_weights_container_size,
-                label="next_layer_weights")
-
-            spec.switch_write_focus(
-                region=DataRegions.NEXT_LAYER_WEIGHTS.value)
-            spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
-            """
+        n_errors = len(edges)
 
         spec.switch_write_focus(
             region=DataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
-        spec.write_value(int(is_output_layer))
         spec.write_value(0) # Only used by Conv layer
         spec.write_value(0) # Only used by Conv layer
         spec.write_value(0) # Only used by Conv layer

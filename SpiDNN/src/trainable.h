@@ -12,7 +12,6 @@ typedef struct trainable_params_region {
   uint32_t backward_key;
   uint32_t min_next_key;
   uint32_t n_errors;
-  uint32_t is_output_layer;
   uint32_t kernel_update_key; // Only used by Conv layers
   uint32_t min_layer_key;     // Only used by Conv layers
   uint32_t layer_size;        // Only used by Conv layers
@@ -33,7 +32,6 @@ trainable_params_region_t *trainable_params_sdram;
 uint backward_key;
 uint min_next_key;
 uint n_errors;
-uint is_output_layer;
 
 uint kernel_update_key;
 uint min_layer_key;
@@ -220,7 +218,6 @@ void trainable_init(uint n_weights, uint n_filters) {
   backward_key = trainable_params_sdram->backward_key;
   min_next_key = trainable_params_sdram->min_next_key;
   n_errors = trainable_params_sdram->n_errors;
-  is_output_layer = trainable_params_sdram->is_output_layer;
   kernel_update_key = trainable_params_sdram->kernel_update_key;
   min_layer_key = trainable_params_sdram->min_layer_key;
   layer_size = trainable_params_sdram->layer_size;
