@@ -1150,9 +1150,34 @@ Another caveat of the SNN toolbox is the fact that it only supports
 inference and not training, which is the far more complex task
 computationally.
 
-\begin{enumerate}
-  \item TrueNorth has a paper about its DL implementation
-\end{enumerate}
+IBM's TrueNorth neuromorphic architecture has the goal of
+achieving energy efficiency and performance through scalability,
+same as SpiNNaker.
+\citet{esser_et_al_2016} presents Eedn (energy-efficient deep
+neuromorphic networks).
+Eedn is an approach of generating CNNs on the TrueNorth system,
+enabling both inference and training.
+TrueNorth---unlike SpiNNaker---uses one bit spikes
+\citep{esser_et_al_2016}, which means its substantially different from
+contemporary consumer hardware and deep learning accelerators and Eedn
+is needed to translate the CNN in order to make it run on TrueNorth.
+SpiNNaker on the other hand, like stated above, is just a collection
+of low power ARM cores connected over a NoC.
+Spikes on SpiNNaker a communicated with small multicast packets
+(up to 72 bits, see above) \citep{furber_et_al_2020}.
+These packets can be used to transfer any information from one core
+to another.
+This makes it much easier to implement deep learning on SpiNNaker,
+because focus lies more on how to deconstruct the model and map it
+onto the cores, rather than having to translate the model into a
+SpiNNaker-specific format.
+Nonetheless, Eedn models show promising results.
+\citet{esser_et_al_2016} presents tests on 6 well known,
+industry-strength data sets with the Eedn models having approximately
+the same accuracy as the original models.
+The throughput of the TrueNorth system is promising as well.
+\citet{esser_et_al_2016} shows that TrueNorth is able to process
+between 1,200 and 2,600 $32\times32\times3$ images per second.
 
 % }}}
 
