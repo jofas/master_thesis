@@ -1112,16 +1112,46 @@ multiplication.
 
 % }}}
 
-% TODO: Alan's feedback
-
 \section{Related Work} % {{{
 \label{sec:related_work}
 
+Like \citet{gomes_2017} states, implementing deep learning on
+neuromorphic chips has been a desire for some time.
+This section will outline two approaches to implementing deep learning
+models on neuromorphic hardware.
+One being the SNN toolbox \citep{rueckauer_et_al_2017}, the other
+being an implementation of CNNs on IBM's TrueNorth system
+\citep{esser_et_al_2016}.
+
+The SNN toolbox takes pre-trained deep learning models and translates
+them into spiking neural networks.
+Its front-end supports a wide range of different input formats from
+various deep learning libraries, including Keras, Tensorflow, PyTorch
+or Caffe \citep{jia_et_al_2014}, while its back-end supports different
+spiking neural network simulators like Brian2
+\citep{stimberg_et_al_2019}, the simulator independent language PyNN
+\citep{davison_et_al_2009} or direct mappings to neuromorphic
+computers like SpiNNaker or Intel's Loihi
+\citep{davies_et_al_2018, snn_toolbox_2020}.
+It supports complex CNNs like VGG16 or Inception-v3
+\citep{szegedy_et_al_2015, rueckauer_et_al_2017}.
+\citet{rueckauer_et_al_2017} shows that using the converted version of
+LeNet \citep{lecun_et_al_1989} on the MNIST data set
+\citep{lecun_et_al_2020} and BinaryNet \citep{courbariaux_et_al_2016}
+on CIFAR-10 \citep{krizhevsky_2009} requires two times
+less operations than the original CNNs without considerable loss in
+accuracy.
+Unfortunately for bigger problems, namely VGG16 and Inception-v3 on
+the ImageNet data set, the converted models have a much lower accuracy
+than their original counterpart (63.9 percent accuracy for the
+original VGG16 and only an accuracy of 49.6 for the converted model)
+\citep{rueckauer_et_al_2017}.
+Another caveat of the SNN toolbox is the fact that it only supports
+inference and not training, which is the far more complex task
+computationally.
+
 \begin{enumerate}
-  \item SNNToolbox for translating DNNs to SNNs (only inference)
   \item TrueNorth has a paper about its DL implementation
-  \item (optional) The 2011 paper about mapping MLP's and recurrent
-    networks onto SpiNNaker
 \end{enumerate}
 
 % }}}
