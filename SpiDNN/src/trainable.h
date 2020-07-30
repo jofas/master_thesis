@@ -14,10 +14,12 @@ typedef struct trainable_params_region {
   uint32_t n_errors;
   uint32_t is_output_layer;
   uint32_t kernel_update_key; // Only used by Conv layers
-  uint32_t min_layer_key;     // Only used by Conv layers
+  uint32_t min_layer_key;
+  // Only used by Conv layers
   uint32_t layer_size;        // Only used by Conv layers
   uint32_t n_next_layer_weights;
   uint32_t n_next_layer_connections;
+  uint32_t id;
   uint32_t epochs;
   uint32_t epoch_size;
   uint32_t batch_size;
@@ -28,7 +30,6 @@ typedef struct trainable_params_region {
 /* global variables */
 
 trainable_params_region_t *trainable_params_sdram;
-float *next_layer_weights_sdram;
 
 uint backward_key;
 uint min_next_key;
@@ -47,9 +48,6 @@ uint epoch_size;
 uint batch_size;
 float learning_rate;
 
-float *next_layer_weights;
-uint *next_layer_receive_counters;
-
 float *neuron_gradients;
 float *kernel_gradients;
 float *next_layer_gradients;
@@ -63,19 +61,24 @@ uint backward_passes_counter = 0;
 uint received_gradients_counter = 0;
 uint batch_counter = 0;
 
+uint *received_errors;
+uint id;
+
 /* functions */
 
 void reset_backward_receive(uint n_filters) {
   for (uint i = 0; i < n_filters; i++)
     errors[i] = .0;
-
-  for (uint i = 0; i < n_next_layer_connections; i++)
-    next_layer_receive_counters[i] = 0;
 }
 
 void reset_gradient_receive(void) {
   for (uint i = 0; i < layer_size; i++)
     received_gradients_from_neuron_counter[i] = 0;
+}
+
+void reset_received_errors(void) {
+  for (uint i = 0; i < n_next_layer_weights; i++)
+    received_errors[i] = 0;
 }
 
 void receive_backward(
@@ -90,24 +93,17 @@ void receive_backward(
     // TODO: how will this look with Conv as output layer?
     for (uint i = 0; i < n_filters; i++)
       errors[i] += payload;
+    received_errors_counter++;
   } else {
-    for (uint i = 0; i < n_filters; i++) {
-      errors[i] += payload * next_layer_weights[
-        idx * CONNECTION_OFFSET +
-        next_layer_receive_counters[idx] * n_filters +
-        i
-      ];
 
-      next_layer_gradients[
-        idx * CONNECTION_OFFSET +
-        next_layer_receive_counters[idx] * n_filters +
-        i
-      ] += payload * potentials[i];
+    received_errors[idx]++;
+
+    if (received_errors[idx] == (id + 1)) {
+      for (uint i = 0; i < n_filters; i++)
+        errors[i] += payload;
+      received_errors_counter++;
     }
   }
-
-  next_layer_receive_counters[idx]++;
-  received_errors_counter++;
 }
 
 void receive_gradient(uint key, float payload) {
@@ -134,6 +130,7 @@ void receive_gradient(uint key, float payload) {
 bool backward_pass_complete(void) {
   if (received_errors_counter == n_errors) {
     received_errors_counter = 0;
+    reset_received_errors();
     return true;
   }
   return false;
@@ -203,46 +200,16 @@ void update_neuron_gradients(
   }
 }
 
-void update_next_layer_weights(void) {
-  for (uint i=0; i < n_next_layer_weights; i++) {
-    // TODO: if prev layer has a kernel I need to communicate my
-    //       next_layer_gradients with the other neurons in this
-    //       layer
-    //
-    //       in theory easy, but in practise hard, because next_layer
-    //       gradients for edge neurons... (e.g neuron 0 missing part
-    //       of his gradients as does neuron n - 1 if kernel == 3 and
-    //       padding is same)...
-    //
-
-    log_info("next_layer_weights before: %d %f",
-      i,
-      next_layer_weights[i]
-    );
-    next_layer_weights[i] -= learning_rate * next_layer_gradients[i];
-    log_info("next_layer_weights: %d %f",
-      i,
-      next_layer_weights[i]
-    );
-  }
-}
-
 void update_neuron_weights(uint n_weights, float *weights) {
   for (uint i=0; i < n_weights; i++) {
     weights[i] -= learning_rate * neuron_gradients[i];
   }
-
-  if (!is_output_layer)
-    update_next_layer_weights();
 }
 
 void update_kernel_weights(uint n_weights, float *weights) {
   for (uint i=0; i < n_weights; i++) {
     weights[i] -= learning_rate * kernel_gradients[i];
   }
-
-  if (!is_output_layer)
-    update_next_layer_weights();
 }
 
 void reset_batch(uint n_weights) {
@@ -252,29 +219,6 @@ void reset_batch(uint n_weights) {
     neuron_gradients[i] = .0;
     kernel_gradients[i] = .0;
   }
-
-  if (!is_output_layer) {
-    for (uint i=0; i < n_next_layer_weights; i++)
-      next_layer_gradients[i] = .0;
-  }
-}
-
-void next_layer_weights_init(void) {
-  next_layer_weights_sdram =
-    data_specification_get_region(NEXT_LAYER_WEIGHTS, data_spec_meta);
-
-  next_layer_weights = (float *)malloc(sizeof(float) * n_next_layer_weights);
-
-  sark_mem_cpy(
-    (void *)next_layer_weights,
-    (void *)next_layer_weights_sdram,
-    sizeof(float) * n_next_layer_weights
-  );
-
-  next_layer_gradients = (float *)malloc(
-    sizeof(float) * n_next_layer_weights);
-  next_layer_receive_counters = (uint *)malloc(
-    sizeof(uint) * n_next_layer_connections);
 }
 
 void trainable_init(uint n_weights, uint n_filters) {
@@ -290,6 +234,7 @@ void trainable_init(uint n_weights, uint n_filters) {
   layer_size = trainable_params_sdram->layer_size;
   n_next_layer_weights = trainable_params_sdram->n_next_layer_weights;
   n_next_layer_connections = trainable_params_sdram->n_next_layer_connections;
+  id = trainable_params_sdram->id;
   epochs = trainable_params_sdram->epochs;
   epoch_size = trainable_params_sdram->epoch_size;
   batch_size = trainable_params_sdram->batch_size;
@@ -300,8 +245,9 @@ void trainable_init(uint n_weights, uint n_filters) {
 
   errors = (float *)malloc(sizeof(float) * n_filters);
 
-  if (!is_output_layer)
-    next_layer_weights_init();
+  received_errors = (uint *)malloc(
+    sizeof(uint) * n_next_layer_weights);
+  reset_received_errors();
 
   // TODO: try removing if statement
   if (!layer_size == 0) // perceptron has layer_size of 0

@@ -145,6 +145,11 @@ void update(uint ticks, uint b) {
     update_neuron_gradients(activation_function_id, 1, n_potentials,
       0, &potential);
 
+    for (uint i; i < N_POTENTIALS; i++) {
+      float error = errors[0] * weights[i];
+      send(backward_key, (void *)&error);
+    }
+
     if (BATCH_COMPLETE) {
       update_neuron_weights(n_weights, weights);
       if (FIT_COMPLETE) {
@@ -153,8 +158,6 @@ void update(uint ticks, uint b) {
       }
       reset_batch(n_weights);
     }
-
-    send(backward_key, (void *)errors);
   }
 #endif
 }

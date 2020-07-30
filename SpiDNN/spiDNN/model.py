@@ -291,7 +291,7 @@ class Model:
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
         extractor_manager = util.PingPongExtractionManager(
-            epochs, len(X), len(receive_labels))
+            epochs, len(X), len(receive_labels) * X.shape[1])
 
         def extractor_callback(label, _0, _1):
             extractor_manager.receive()
