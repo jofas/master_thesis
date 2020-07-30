@@ -7,4 +7,3 @@ class DataRegions(Enum):
     WEIGHTS = 3
     SOFTMAX_PARAMS = 4
     TRAINABLE_PARAMS = 5
-    NEXT_LAYER_WEIGHTS = 6

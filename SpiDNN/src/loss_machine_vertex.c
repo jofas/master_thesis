@@ -34,13 +34,9 @@ uint K;
 
 uint epoch_size;
 
-//uint *keys;
-
 float *y;
 
 uint received_y_counter = 0;
-
-float error;
 
 float loss;
 float overall_loss = .0;
@@ -48,7 +44,6 @@ float average_loss;
 uint N = 0;
 
 params_region_t *params_sdram;
-//uint *keys_sdram;
 
 
 /* functions */
@@ -73,19 +68,16 @@ void receive(uint key, float payload) {
   }
 }
 
-void compute_error(uint i) {
+float compute_error(uint i) {
   switch (loss_function_id) {
     case MEAN_SQUARED_ERROR:
-      error = 2. * (potentials[i] - y[i]);
-      break;
+      return 2. * (potentials[i] - y[i]);
 
     case CATEGORICAL_CROSSENTROPY:
-      error = -y[i] / potentials[i];
-      break;
+      return -y[i] / potentials[i];
 
     case BINARY_CROSSENTROPY:
-      error = -y[i] / potentials[i] + (1 - y[i]) / (1 - potentials[i]);
-      break;
+      return -y[i] / potentials[i] + (1 - y[i]) / (1 - potentials[i]);
 
     default:
       log_error("Unknown loss function %d - exiting!",
@@ -157,7 +149,7 @@ void update(uint ticks, uint b) {
     send(extractor_key, (void *)&average_loss);
 
     for (uint i=0; i < K; i++) {
-      compute_error(i);
+      float error = compute_error(i);
       send(backward_key, (void *)&error);
     }
 
@@ -171,20 +163,10 @@ void update(uint ticks, uint b) {
   }
 }
 
-void keys_and_y_init(void) {
-  //keys_sdram = data_specification_get_region(KEYS, data_spec_meta);
-
-  //keys = (uint *)malloc(sizeof(uint) * K);
-  //sark_mem_cpy((void *)keys, (void *)keys_sdram,
-  //  sizeof(uint) * K);
-
-  y = (float *)malloc(sizeof(float) * K);
-}
-
 void c_main(void) {
   base_init();
 
-  keys_and_y_init();
+  y = (float *)malloc(sizeof(float) * K);
 
   // register callbacks
   spin1_callback_on(MCPL_PACKET_RECEIVED, receive, MC_PACKET);

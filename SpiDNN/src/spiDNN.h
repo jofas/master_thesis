@@ -22,7 +22,6 @@ typedef enum regions_e {
     WEIGHTS,
     SOFTMAX_PARAMS,
     TRAINABLE_PARAMS,
-    NEXT_LAYER_WEIGHTS,
 } regions_e;
 
 //! human readable definitions of the activation functions (except

@@ -14,8 +14,7 @@ typedef struct trainable_params_region {
   uint32_t n_errors;
   uint32_t is_output_layer;
   uint32_t kernel_update_key; // Only used by Conv layers
-  uint32_t min_layer_key;
-  // Only used by Conv layers
+  uint32_t min_layer_key;     // Only used by Conv layers
   uint32_t layer_size;        // Only used by Conv layers
   uint32_t n_next_layer_weights;
   uint32_t n_next_layer_connections;
@@ -64,6 +63,7 @@ uint batch_counter = 0;
 uint *received_errors;
 uint id;
 
+
 /* functions */
 
 void reset_backward_receive(uint n_filters) {
@@ -89,23 +89,12 @@ void receive_backward(
 
   uint idx = key - min_next_key;
 
-  /*
-  if (is_output_layer) {
-    // TODO: how will this look with Conv as output layer?
+  received_errors[idx]++;
+
+  if (received_errors[idx] == (id + 1)) {
     for (uint i = 0; i < n_filters; i++)
       errors[i] += payload;
     received_errors_counter++;
-  } else */
-
-  {
-
-    received_errors[idx]++;
-
-    if (received_errors[idx] == (id + 1)) {
-      for (uint i = 0; i < n_filters; i++)
-        errors[i] += payload;
-      received_errors_counter++;
-    }
   }
 }
 

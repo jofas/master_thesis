@@ -13,7 +13,6 @@ from spinn_front_end_common.abstract_models import \
 from spinn_front_end_common.abstract_models.impl import (
     MachineDataSpecableVertex)
 from spinnaker_graph_front_end.utilities import SimulatorVertex
-
 from spinnaker_graph_front_end.utilities.data_utils import (
     generate_system_data_region)
 from data_specification.enums import DataType
@@ -63,14 +62,6 @@ class LossMachineVertex(
             label="params"
         )
 
-        """
-        spec.reserve_memory_region(
-            region=DataRegions.KEYS.value,
-            size=self.layer.K * BYTES_PER_WORD,
-            label="keys"
-        )
-        """
-
         edges = list(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.forward_partition))
@@ -93,14 +84,6 @@ class LossMachineVertex(
         backward_key = routing_info.get_first_key_from_pre_vertex(
             self, globals.backward_partition)
 
-        """
-        keys = []
-        for partition in partitions:
-            if partition.identifier != globals.backward_partition:
-                keys.append(routing_info.get_first_key_from_pre_vertex(
-                    self, partition.identifier))
-        """
-
         extractor_key = routing_info.get_first_key_from_pre_vertex(
             self, globals.loss_extractor_partition)
 
@@ -115,12 +98,6 @@ class LossMachineVertex(
         spec.write_value(generate_offset(placement.p))
         spec.write_value(self.trainable_params.epoch_size)
 
-        """
-        spec.switch_write_focus(
-            region=DataRegions.KEYS.value)
-        spec.write_array(keys)
-        """
-
         spec.end_specification()
 
     @property
@@ -128,7 +105,6 @@ class LossMachineVertex(
     def resources_required(self):
         fixed_sdram = (SYSTEM_BYTES_REQUIREMENT
                        + self.PARAMS_DATA_SIZE)
-                       #+ self.layer.K * BYTES_PER_WORD)
 
         return ResourceContainer(sdram=ConstantSDRAM(fixed_sdram))
 
