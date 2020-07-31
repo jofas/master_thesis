@@ -55,7 +55,7 @@ class Conv1DNeuron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (9 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (7 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -209,31 +209,6 @@ class Conv1DNeuron(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.backward_partition))
 
-        # TODO: if next_layer is Dense or Conv1D
-        #
-        # Dense => receive 1 but multiply with self.n_filters many
-        #          next_layer_weights.
-        #
-        #          also how are weights extracted?
-        #          next_layer_weights[id:id+self.n_filters]
-        #
-        # Conv1D => receive next_layer.n_filters and have
-        #           next_layer.n_filters many next_layer_weights
-        #
-        #           how are weights extracted?
-        #           ... that's a quite interesting question
-        #
-        # n_errors != sizeof(next_layer_weights)
-        #
-        # I'm a bitch and will just multiply n_errors if
-        # n_next_layer_weights > n_errors
-        #
-        # additional params: kernel_update_key
-        #                    n_next_layer_weights
-        #
-        #
-        # NEXT: implement backprop on spinnaker
-
         min_next_key = min([
             routing_info.get_first_key_from_pre_vertex(
                 edge.pre_vertex, globals.backward_partition)
@@ -242,153 +217,30 @@ class Conv1DNeuron(
         next_layer = edges[0].pre_vertex.layer
         kernel_container = edges[0].pre_vertex
 
-        n_errors = len(edges) * next_layer.n_filters
-        n_next_layer_weights = n_errors * self.layer.n_filters
+        # so I need to know how many neurons am I connected to
+        # len(edges) = 1 (=> received_errors_counter)
+        #
+        # and how many channels does the next layer have?
+        # (already on board/known for dense)
+        #
+        # on board compute n_errors = n_next_layer_neurons * filters
 
-        self.next_layer_weights_container_size = \
-            n_next_layer_weights * BYTES_PER_WORD
-
-        next_layer_weights = np.empty(
-            (n_next_layer_weights,), dtype=np.float32)
-
-        if type(next_layer) == Dense:
-            idx = self.id * self.layer.n_filters
-
-            for i, edge in enumerate(edges):
-                next_layer_weights[i:i+self.layer.n_filters] = \
-                    edge.pre_vertex.weights[
-                        idx:idx + self.layer.n_filters]
-        else:
-            # kernel is shared, so each neuron of next layer has
-            # the same kernel/weights
-            weights = edges[0].pre_vertex.weights
-            next_layer_kernel_size = int(
-                len(weights) / next_layer.n_filters)
-
-            # all next_layer_weights look different (well not all
-            # but there are a few possibilites (based on position
-            # and offset)
-            # I could load position onto board, which is not very
-            # helpful or is it?
-            #
-            # + bool next_layer_has_kernel
-            #
-            # .... please god, make this one work, if not I'm dead
-            #      in the water
-            # !!!! so first test whether position is working with
-            #      strides... motherfucking strides
-            #
-            # lol motherfucker strides are already not working
-            # because index key - min_next_key will be wrong in
-            # the first place
-            #
-            # maybe use the key somehow instead of position
-            #
-            # Restart:
-            #   problem: I need to share the next_layer_weights,
-            #            when next_layer has filters
-            #
-            #            In itself not difficult. Ugly but not
-            #            too difficult.
-            #
-            #            Solutions:
-            #               * ugly sharing which will be horrible
-            #                 but I can do that
-            #
-            #               * rework your backprop by sending
-            #                 multiple but unused packets
-            #
-            #                 a perceptron would send N times
-            #                 first one is for first neuron in
-            #                 prev layer and so forth.
-            #                 that means neurons would need
-            #                 counter for each next_layer_neuron
-            #                 and if counter ==
-            #                   self.id - min_layer_key then
-            #                 I use that and continue with back-
-            #                 prop like before
-            #
-            #                 much, much nicer. Far less memory
-            #                 pressure (currently
-            #                 n_next_layer_weights * 2 (gradients))
-            #                 and no shared state
-            #
-            #                 Much less weird. I'll try that in
-            #                 a new branch before doing anything
-            #                 else.
-            #
-            #                 but how about CNNs? min_layer_key
-            #                 must be different no? They aren't
-            #
-            #
-            #
-            # position = 1
-            #
-            # idx = <- receive key = 0x0 => + position = 1
-            #
-            # idx * self.n_filters:+1 => [.9, 1.]
-            #
-            # idx = <- receive key = 1x0 => + position = 2
-            #          % self.n_filters (== next_layer.n_channels)
-            #          = 0
-            #
-            # idx * self.n_filters:+1 => [.7, .8]
-            #
-            # idx = <- receive key = 0x1 => + position = 1
-            #          + 1 * next_layer_kernel_size
-            #
-            # idx * self.n_filters:+1 => [.9, 1.]
-            #
-            # idx = <- receive key = 1x0 => + position = 2
-            #          % self.n_filters = 0
-            #
-            # idx * self.n_filters:+1 => [.7, .8]
-            #
-            # currently:
-            # [.9, 1., 1.5, 1.6, .7, .8, 1.3, 1.4]
-            # [.7, .8, .9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8]
-            #  ------
-            #  self.n_filters (next_layer.n_channels)
-            #  ----------
-            #  kernel_size
-            #  ------------------------
-            #  kernel
-
-            i = 0
-            for edge in edges:
-                # TODO: this could be your achilles heel again
-                position = self.id % next_layer.kernel_shape[0] \
-                           + edge.pre_vertex.lower_padding
-
-                filter = 0
-                for _ in range(0, next_layer.n_filters):
-                    idx = position * next_layer.n_channels + filter
-
-                    next_layer_weights[i:i+self.layer.n_filters] = \
-                        weights[idx:idx+self.layer.n_filters]
-
-                    filter += next_layer_kernel_size
-                    i += self.layer.n_filters
-
-        spec.reserve_memory_region(
-            region=DataRegions.NEXT_LAYER_WEIGHTS.value,
-            size=self.next_layer_weights_container_size,
-            label="next_layer_weights")
-
-        spec.switch_write_focus(
-            region=DataRegions.NEXT_LAYER_WEIGHTS.value)
-        spec.write_array(next_layer_weights, data_type=DataType.FLOAT_32)
+        # 2 (but only one dense layer neuron from which i receive 2
+        # times)
+        n_errors = len(edges) * next_layer.n_filters \
+                              * self.layer.n_filters
 
         spec.switch_write_focus(
             region=DataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
-        spec.write_value(n_errors)
+        #spec.write_value(n_errors)
         spec.write_value(kernel_update_key)
         spec.write_value(min_layer_key)
         spec.write_value(self.layer.n_neurons)
-        spec.write_value(n_next_layer_weights)
+        #spec.write_value(n_next_layer_weights)
         spec.write_value(len(edges))
+        spec.write_value(self.id)
 
         self.trainable_params.write_to_spec(spec)
 

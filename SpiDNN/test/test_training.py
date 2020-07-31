@@ -134,9 +134,9 @@ def test_training_conv1d_with_known_weights():
     y = np.array([[1.]])
 
     weights = [
-        np.array([[[.1, .4]],
-                  [[.2, .5]],
-                  [[.3, .6]]]), np.array([.0, .0]),
+        #np.array([[[.1, .4]],
+        #          [[.2, .5]],
+        #          [[.3, .6]]]), np.array([.0, .0]),
         np.array([[[ .7, 1.3],
                    [ .8, 1.4]],
                   [[ .9, 1.5],
@@ -151,7 +151,7 @@ def test_training_conv1d_with_known_weights():
     c2 = KConv1D(2, 3, padding="same")
 
     kmodel = Sequential()
-    kmodel.add(c1)
+    #kmodel.add(c1)
     kmodel.add(c2)
     kmodel.add(Flatten())
     kmodel.add(KDense(1))
@@ -164,7 +164,7 @@ def test_training_conv1d_with_known_weights():
 
     model = Model()
     model.add(Input(*input_shape))
-    model.add(Conv1D(2, (3,), padding="same"))
+    #model.add(Conv1D(2, (3,), padding="same"))
     model.add(Conv1D(2, (3,), padding="same"))
     model.add(Dense(1))
 
@@ -179,7 +179,6 @@ def test_training_conv1d_with_known_weights():
               learning_rate=1.0)
 
     print(kmodel.get_weights())
-
     print(model.get_weights())
 
 

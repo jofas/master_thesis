@@ -291,6 +291,7 @@ class Model:
 
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
+        # TODO: not going to work with multichannel stuff
         extractor_manager = util.PingPongExtractionManager(
             epochs, len(X), len(receive_labels) * X.shape[1])
 
@@ -299,6 +300,9 @@ class Model:
 
             if extractor_manager.received_all:
                 if extractor_manager.simulation_finished:
+                    # sleep to give last layer time to update its
+                    # weights for the last time
+                    time.sleep(2)
                     gfe.stop_run()
                 else:
                     with barrier:

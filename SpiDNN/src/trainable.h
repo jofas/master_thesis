@@ -5,18 +5,17 @@
 #define BATCH_COMPLETE (batch_counter == batch_size) \
                        || (backward_passes_counter % epoch_size == 0)
 #define FIT_COMPLETE (backward_passes_counter == epoch_size * epochs)
-#define CONNECTION_OFFSET (n_next_layer_weights / n_next_layer_connections)
+
 
 //! definitions of each element in the trainable_params region
 typedef struct trainable_params_region {
   uint32_t backward_key;
   uint32_t min_next_key;
-  uint32_t n_errors;
+  //uint32_t n_errors;
   uint32_t kernel_update_key; // Only used by Conv layers
   uint32_t min_layer_key;     // Only used by Conv layers
   uint32_t layer_size;        // Only used by Conv layers
-  uint32_t n_next_layer_weights;
-  uint32_t n_next_layer_connections;
+  uint32_t n_next_layer_conns;
   uint32_t id;
   uint32_t epochs;
   uint32_t epoch_size;
@@ -31,14 +30,14 @@ trainable_params_region_t *trainable_params_sdram;
 
 uint backward_key;
 uint min_next_key;
+
 uint n_errors;
 
 uint kernel_update_key;
 uint min_layer_key;
 uint layer_size;
 
-uint n_next_layer_weights;
-uint n_next_layer_connections;
+uint n_next_layer_conns;
 
 uint epochs;
 uint epoch_size;
@@ -75,7 +74,7 @@ void reset_gradient_receive(void) {
 }
 
 void reset_received_errors(void) {
-  for (uint i = 0; i < n_next_layer_weights; i++)
+  for (uint i = 0; i < n_next_layer_conns; i++)
     received_errors[i] = 0;
 }
 
@@ -89,7 +88,9 @@ void receive_backward(
 
   received_errors[idx]++;
 
-  if (received_errors[idx] == (id + 1)) {
+  if (id * n_filters < received_errors[idx] &&
+      received_errors[idx] <= id * n_filters + n_filters)
+  {
     for (uint i = 0; i < n_filters; i++)
       errors[i] += payload;
     received_errors_counter++;
@@ -217,17 +218,19 @@ void trainable_init(uint n_weights, uint n_filters) {
 
   backward_key = trainable_params_sdram->backward_key;
   min_next_key = trainable_params_sdram->min_next_key;
-  n_errors = trainable_params_sdram->n_errors;
+  //n_errors = trainable_params_sdram->n_errors;
   kernel_update_key = trainable_params_sdram->kernel_update_key;
   min_layer_key = trainable_params_sdram->min_layer_key;
   layer_size = trainable_params_sdram->layer_size;
-  n_next_layer_weights = trainable_params_sdram->n_next_layer_weights;
-  n_next_layer_connections = trainable_params_sdram->n_next_layer_connections;
+  //n_next_layer_weights = trainable_params_sdram->n_next_layer_weights;
+  n_next_layer_conns = trainable_params_sdram->n_next_layer_conns;
   id = trainable_params_sdram->id;
   epochs = trainable_params_sdram->epochs;
   epoch_size = trainable_params_sdram->epoch_size;
   batch_size = trainable_params_sdram->batch_size;
   learning_rate = trainable_params_sdram->learning_rate;
+
+  n_errors = n_filters * n_next_layer_conns;
 
   neuron_gradients = (float *)malloc(sizeof(float) * n_weights);
   kernel_gradients = (float *)malloc(sizeof(float) * n_weights);
@@ -235,7 +238,7 @@ void trainable_init(uint n_weights, uint n_filters) {
   errors = (float *)malloc(sizeof(float) * n_filters);
 
   received_errors = (uint *)malloc(
-    sizeof(uint) * n_next_layer_weights);
+    sizeof(uint) * n_next_layer_conns);
   reset_received_errors();
 
   // TODO: try removing if statement
