@@ -220,8 +220,8 @@ def test_same_padding_with_stride4():
     neuron0 = model._layers[1].neurons[0]
     neuron1 = model._layers[1].neurons[1]
 
-    assert neuron0.lower_padding == 1 and neuron0.upper_padding == 0
-    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 0
+    assert neuron0.lower_padding == 0 and neuron0.upper_padding == 0
+    assert neuron1.lower_padding == 0 and neuron1.upper_padding == 1
 
 
 if __name__ == "__main__":

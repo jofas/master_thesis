@@ -77,11 +77,13 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
-        if type(source_layer) == Conv1D:
-            self._connect_incoming_conv1d(source_layer, partition)
-        else:
+        from . import Dense
+
+        if type(source_layer) == Dense:
             super(Conv1D, self).connect_incoming(
                 source_layer, partition)
+        else:
+            self._connect_incoming_conv1d(source_layer, partition)
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):
