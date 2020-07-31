@@ -17,18 +17,18 @@ LEARNING_RATE = 0.1
 
 def compare_against_keras(X, y, loss):
     kmodel = Sequential()
-    kmodel.add(KDense(32, activation="relu", input_shape=(X.shape[1],)))
-    kmodel.add(KDense(32, activation="tanh"))
-    kmodel.add(KDense(32, activation="softmax"))
+    kmodel.add(KDense(64, activation="relu", input_shape=(X.shape[1],)))
+    kmodel.add(KDense(64, activation="tanh"))
+    kmodel.add(KDense(64, activation="softmax"))
     kmodel.add(KDense(y.shape[1], activation="sigmoid"))
 
     kmodel.compile(loss=loss, optimizer=SGD(learning_rate=LEARNING_RATE))
 
     model = Model()
     model.add(Input(X.shape[1]))
-    model.add(Dense(32, activation="relu"))
-    model.add(Dense(32, activation="tanh"))
-    model.add(Dense(32, activation="softmax"))
+    model.add(Dense(64, activation="relu"))
+    model.add(Dense(64, activation="tanh"))
+    model.add(Dense(64, activation="softmax"))
     model.add(Dense(y.shape[1], activation="sigmoid"))
 
     model.set_weights(kmodel.get_weights())
@@ -53,7 +53,7 @@ def compare_against_keras(X, y, loss):
     for e in error:
         e_max = np.amax(np.absolute(e))
         print(e_max)
-        #assert e_max < 0.1
+        assert e_max < 0.2
 
     """
     p = model.predict(X)

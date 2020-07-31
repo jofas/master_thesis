@@ -2,7 +2,7 @@ from spinn_front_end_common.utilities.constants import NOTIFY_PORT
 
 machine_time_step = 500
 time_scale_factor = 10
-cores_per_chip = 17
+cores_per_chip = 15
 
 forward_partition = "PARTITION_FORWARD"
 backward_partition = "PARTITION_BACKWARD"

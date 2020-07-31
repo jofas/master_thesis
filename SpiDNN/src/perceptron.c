@@ -148,6 +148,7 @@ void update(uint ticks, uint b) {
     for (uint i; i < N_POTENTIALS; i++) {
       float error = errors[0] * weights[i];
       send(backward_key, (void *)&error);
+      spin1_delay_us(12);
     }
 
     if (BATCH_COMPLETE) {
