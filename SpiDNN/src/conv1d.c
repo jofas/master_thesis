@@ -174,6 +174,7 @@ void update(uint ticks, uint b) {
     backward_passes_counter++;
     batch_counter++;
 
+    log_error("backward complete!");
 
     update_neuron_gradients(
       activation_function_id, n_filters, N_KERNEL_ELEMENTS,
@@ -187,6 +188,19 @@ void update(uint ticks, uint b) {
   }
 
   if (gradient_pass_complete(N_WEIGHTS)) {
+
+    for (uint filter = 0; filter < n_filters; filter++) {
+      for (uint i = 0; i< N_KERNEL_ELEMENTS; i++) {
+        float error = errors[filter] * weights[FILTER_OFFSET + i];
+        send(backward_key, (void *)&error);
+        spin1_delay_us(20);
+        log_error("sent error backwards!");
+      }
+    }
+
+    log_error("gradient pass complete!");
+    //rt_error(RTE_SWERR);
+
     if (BATCH_COMPLETE) {
       update_kernel_weights(N_WEIGHTS, weights);
       if (FIT_COMPLETE) {
@@ -194,17 +208,6 @@ void update(uint ticks, uint b) {
           sizeof(float) * N_WEIGHTS);
       }
       reset_batch(N_WEIGHTS);
-    }
-
-    // connection to dense working, now make it work for conv-conv
-    //
-    // for this a different model than the id seems to be necessary
-    //
-    for (uint filter = 0; filter < n_filters; filter++) {
-      for (uint i = 0; i< N_KERNEL_ELEMENTS; i++) {
-        float error = errors[filter] * weights[FILTER_OFFSET + i];
-        send(backward_key, (void *)&error);
-      }
     }
   }
 #endif

@@ -55,7 +55,7 @@ class Conv1DNeuron(
 
         if self.trainable_params is not None:
             self.trainable_params_data_size = \
-                (7 + self.trainable_params.n_elements) * BYTES_PER_WORD
+                (12 + self.trainable_params.n_elements) * BYTES_PER_WORD
             executable = "trainable_{}".format(executable)
         else:
             self.trainable_params_data_size = 0
@@ -214,8 +214,37 @@ class Conv1DNeuron(
                 edge.pre_vertex, globals.backward_partition)
             for edge in edges])
 
-        next_layer = edges[0].pre_vertex.layer
-        kernel_container = edges[0].pre_vertex
+        first_neuron = edges[0].pre_vertex
+        next_layer = first_neuron.layer
+
+        first_neuron_backward_partition = \
+            machine_graph.get_outgoing_edge_partition_starting_at_vertex(
+                first_neuron, globals.backward_partition)
+
+        min_id = next(iter(first_neuron_backward_partition.edges)) \
+            .post_vertex.id
+
+        next_layer_is_dense = type(next_layer) == Dense
+
+        if next_layer_is_dense:
+            next_layer_stride = 1
+            next_layer_kernel_size = self.layer.n_neurons
+            pos = 0
+        else:
+            next_layer_stride = next_layer.stride
+            next_layer_kernel_size = next_layer.kernel_shape[0]
+            pos = self.id - min_id + first_neuron.lower_padding
+
+        # TODO: connection to dense layer are different, pos = id for
+        #       ALL of them
+        #
+        # next_layer_is_dense attribute and id onto board as well
+        #
+        # now only question is how to handle multiple filters of
+        # next layer?
+        #
+        # by providing next_layer_kernel_size
+
 
         # so I need to know how many neurons am I connected to
         # len(edges) = 1 (=> received_errors_counter)
@@ -234,12 +263,18 @@ class Conv1DNeuron(
             region=DataRegions.TRAINABLE_PARAMS.value)
         spec.write_value(backward_key)
         spec.write_value(min_next_key)
-        #spec.write_value(n_errors)
+
+        # for intra-layer kernel gradients update
         spec.write_value(kernel_update_key)
         spec.write_value(min_layer_key)
         spec.write_value(self.layer.n_neurons)
-        #spec.write_value(n_next_layer_weights)
+
         spec.write_value(len(edges))
+        spec.write_value(next_layer.n_filters)
+        spec.write_value(int(next_layer_is_dense))
+        spec.write_value(next_layer_kernel_size)
+        spec.write_value(next_layer_stride)
+        spec.write_value(pos)
         spec.write_value(self.id)
 
         self.trainable_params.write_to_spec(spec)

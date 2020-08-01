@@ -11,12 +11,19 @@
 typedef struct trainable_params_region {
   uint32_t backward_key;
   uint32_t min_next_key;
-  //uint32_t n_errors;
-  uint32_t kernel_update_key; // Only used by Conv layers
-  uint32_t min_layer_key;     // Only used by Conv layers
-  uint32_t layer_size;        // Only used by Conv layers
+
+  uint32_t kernel_update_key;
+  uint32_t min_layer_key;
+  uint32_t layer_size;
+
   uint32_t n_next_layer_conns;
+  uint32_t n_next_layer_filters;
+  uint32_t next_layer_is_dense;
+  uint32_t next_layer_kernel_size;
+  uint32_t next_layer_stride;
+  uint32_t pos;
   uint32_t id;
+
   uint32_t epochs;
   uint32_t epoch_size;
   uint32_t batch_size;
@@ -37,7 +44,12 @@ uint kernel_update_key;
 uint min_layer_key;
 uint layer_size;
 
+uint next_layer_is_dense;
+
 uint n_next_layer_conns;
+uint n_next_layer_filters;
+uint next_layer_kernel_size;
+uint next_layer_stride;
 
 uint epochs;
 uint epoch_size;
@@ -59,7 +71,7 @@ uint batch_counter = 0;
 
 uint *received_errors;
 uint id;
-
+uint pos;
 
 /* functions */
 
@@ -86,15 +98,32 @@ void receive_backward(
 
   uint idx = key - min_next_key;
 
-  received_errors[idx]++;
+  if (next_layer_is_dense) {
+    if (id * n_filters <= received_errors[idx] &&
+        received_errors[idx] < id * n_filters + n_filters)
+    {
+      for (uint i = 0; i < n_filters; i++)
+        errors[i] += payload;
+      received_errors_counter++;
+      log_error("received correct error");
+    }
+  } else {
 
-  if (id * n_filters < received_errors[idx] &&
-      received_errors[idx] <= id * n_filters + n_filters)
-  {
-    for (uint i = 0; i < n_filters; i++)
-      errors[i] += payload;
-    received_errors_counter++;
+    uint pos_ = pos - idx * next_layer_stride;
+    uint c = received_errors[idx] % (next_layer_kernel_size * n_filters);
+
+    // this is wrong for first neuron otherwise all's fine
+    log_error("received %dth error from: %d %d %d",
+      received_errors[idx], idx, c, pos_);
+
+    if ((pos_ * n_filters) <= c && c < (pos_ * n_filters + n_filters)) {
+      for (uint i = 0; i < n_filters; i++)
+        errors[i] += payload;
+      received_errors_counter++;
+      log_error("received correct error");
+    }
   }
+  received_errors[idx]++;
 }
 
 void receive_gradient(uint key, float payload) {
@@ -218,19 +247,25 @@ void trainable_init(uint n_weights, uint n_filters) {
 
   backward_key = trainable_params_sdram->backward_key;
   min_next_key = trainable_params_sdram->min_next_key;
-  //n_errors = trainable_params_sdram->n_errors;
+
   kernel_update_key = trainable_params_sdram->kernel_update_key;
   min_layer_key = trainable_params_sdram->min_layer_key;
   layer_size = trainable_params_sdram->layer_size;
-  //n_next_layer_weights = trainable_params_sdram->n_next_layer_weights;
+
   n_next_layer_conns = trainable_params_sdram->n_next_layer_conns;
+  n_next_layer_filters = trainable_params_sdram->n_next_layer_filters;
+  next_layer_is_dense = trainable_params_sdram->next_layer_is_dense;
+  next_layer_kernel_size = trainable_params_sdram->next_layer_kernel_size;
+  next_layer_stride = trainable_params_sdram->next_layer_stride;
+  pos = trainable_params_sdram->pos;
   id = trainable_params_sdram->id;
+
   epochs = trainable_params_sdram->epochs;
   epoch_size = trainable_params_sdram->epoch_size;
   batch_size = trainable_params_sdram->batch_size;
   learning_rate = trainable_params_sdram->learning_rate;
 
-  n_errors = n_filters * n_next_layer_conns;
+  n_errors = n_filters * n_next_layer_conns * n_next_layer_filters;
 
   neuron_gradients = (float *)malloc(sizeof(float) * n_weights);
   kernel_gradients = (float *)malloc(sizeof(float) * n_weights);
@@ -241,10 +276,8 @@ void trainable_init(uint n_weights, uint n_filters) {
     sizeof(uint) * n_next_layer_conns);
   reset_received_errors();
 
-  // TODO: try removing if statement
-  if (!layer_size == 0) // perceptron has layer_size of 0
-    received_gradients_from_neuron_counter = (uint *)malloc(
-      sizeof(uint) * layer_size);
+  received_gradients_from_neuron_counter = (uint *)malloc(
+    sizeof(uint) * layer_size);
 
   reset_batch(n_weights);
 }
