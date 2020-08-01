@@ -27,15 +27,12 @@ class AbstractLayerBase(LayerInterface):
                 gfe.add_machine_edge_instance(
                     source_neuron, neuron, partition)
 
-    @overrides(LayerInterface.connect_incoming_unique)
-    def connect_incoming_unique(self, source_layer, base_name):
-        for neuron in self.neurons:
-            for source_neuron in source_layer.neurons:
-                partition = "{}_{}_to_{}".format(
-                    base_name, source_neuron.label, neuron.label)
-
+    @overrides(LayerInterface.connect_outgoing)
+    def connect_outgoing(self, dest_layer, partition):
+        for dest_neuron in dest_layer.neurons:
+            for neuron in self.neurons:
                 gfe.add_machine_edge_instance(
-                    source_neuron, neuron, partition)
+                    neuron, dest_neuron, partition)
 
     @overrides(LayerInterface.reset)
     def reset(self):

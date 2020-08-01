@@ -106,6 +106,7 @@ class Model:
         # backward pass
         self._connect_layers_backward()
         self._layers[-1].connect_incoming(
+
             loss_layer, globals.backward_partition)
         pong.connect_incoming(
             self._layers[1], globals.backward_partition)
@@ -163,12 +164,15 @@ class Model:
         Builds the backward connection between each layer in self._layer
         (except Input layer).
         """
-        i = 2
-        for layer in self._layers[1:-1]:
-            source_layer = self._layers[i]
-            layer.connect_incoming(
-                source_layer, globals.backward_partition)
-            i += 1
+        for i, layer in enumerate(self._layers[1:]):
+            dest_layer = self._layers[i]
+            layer.connect_outgoing(dest_layer, globals.backward_partition)
+        #i = 2
+        #for layer in self._layers[1:-1]:
+        #    source_layer = self._layers[i]
+        #    layer.connect_incoming(
+        #        source_layer, globals.backward_partition)
+        #    i += 1
 
     def _extract_weights(self):
         i = 0
