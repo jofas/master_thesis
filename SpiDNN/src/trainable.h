@@ -102,25 +102,22 @@ void receive_backward(
     if (id * n_filters <= received_errors[idx] &&
         received_errors[idx] < id * n_filters + n_filters)
     {
-      for (uint i = 0; i < n_filters; i++)
-        errors[i] += payload;
+      //log_info("received error: %d", payload);
+      //for (uint i = 0; i < n_filters; i++)
+      errors[received_errors[idx] - id * n_filters] += payload;
       received_errors_counter++;
-      log_error("received correct error");
     }
   } else {
 
     uint pos_ = pos - idx * next_layer_stride;
     uint c = received_errors[idx] % (next_layer_kernel_size * n_filters);
 
-    // this is wrong for first neuron otherwise all's fine
-    log_error("received %dth error from: %d %d %d",
-      received_errors[idx], idx, c, pos_);
-
     if ((pos_ * n_filters) <= c && c < (pos_ * n_filters + n_filters)) {
-      for (uint i = 0; i < n_filters; i++)
-        errors[i] += payload;
+
+      //for (uint i = 0; i < n_filters; i++)
+      //  errors[i] += payload;
+      errors[c - pos_ * n_filters] += payload;
       received_errors_counter++;
-      log_error("received correct error");
     }
   }
   received_errors[idx]++;

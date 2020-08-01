@@ -160,11 +160,13 @@ void update(uint ticks, uint b) {
       for (uint i = 0; i < n_filters; i++) {
         filter_results[i] = filter_results[i] / softmax_denom;
         send(forward_keys[i], (void *)&filter_results[i]);
+        spin1_delay_us(10);
       }
     } else {
       for (uint i = 0; i < n_filters; i++) {
         activate(i);
         send(forward_keys[i], (void *)&filter_results[i]);
+        spin1_delay_us(10);
       }
     }
   }
@@ -173,8 +175,6 @@ void update(uint ticks, uint b) {
   if (backward_pass_complete()) {
     backward_passes_counter++;
     batch_counter++;
-
-    log_error("backward complete!");
 
     update_neuron_gradients(
       activation_function_id, n_filters, N_KERNEL_ELEMENTS,
@@ -193,13 +193,9 @@ void update(uint ticks, uint b) {
       for (uint i = 0; i< N_KERNEL_ELEMENTS; i++) {
         float error = errors[filter] * weights[FILTER_OFFSET + i];
         send(backward_key, (void *)&error);
-        spin1_delay_us(20);
-        log_error("sent error backwards!");
+        spin1_delay_us(10);
       }
     }
-
-    log_error("gradient pass complete!");
-    //rt_error(RTE_SWERR);
 
     if (BATCH_COMPLETE) {
       update_kernel_weights(N_WEIGHTS, weights);

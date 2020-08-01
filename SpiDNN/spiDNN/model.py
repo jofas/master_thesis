@@ -4,7 +4,7 @@ from spinn_front_end_common.utilities.connections import \
 import spiDNN.gfe as gfe
 import spiDNN.util as util
 import spiDNN.globals as globals
-from spiDNN.layers import Input, Extractor, Loss
+from spiDNN.layers import Input, Extractor, Loss, Dense
 
 import time
 from threading import Condition
@@ -291,9 +291,16 @@ class Model:
 
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
-        # TODO: not going to work with multichannel stuff
+        if type(self._layers[1]) == Dense:
+            n_receive = len(receive_labels) * X.shape[1]
+        else:
+            n_receive = len(receive_labels) \
+                      * self._layers[1].kernel_shape[0] \
+                      * self._layers[1].n_channels \
+                      * self._layers[1].n_filters
+
         extractor_manager = util.PingPongExtractionManager(
-            epochs, len(X), len(receive_labels) * X.shape[1])
+            epochs, len(X), n_receive)
 
         def extractor_callback(label, _0, _1):
             extractor_manager.receive()
