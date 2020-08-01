@@ -209,6 +209,16 @@ class Conv1DNeuron(
             machine_graph.get_edges_ending_at_vertex_with_partition_name(
                 self, globals.backward_partition))
 
+        partition = machine_graph \
+            .get_outgoing_edge_partition_starting_at_vertex(
+                self, globals.forward_partition)
+
+        assert len(partition.edges) == len(edges)
+
+        for forward, backward in zip(list(partition.edges), edges):
+            assert forward.post_vertex == backward.pre_vertex
+            assert forward.pre_vertex == backward.post_vertex
+
         min_next_key = min([
             routing_info.get_first_key_from_pre_vertex(
                 edge.pre_vertex, globals.backward_partition)

@@ -11,6 +11,7 @@ from .weights_interface import WeightsInterface
 import spiDNN.globals as globals
 import spiDNN.gfe as gfe
 from spiDNN.machine_vertices import Conv1DNeuron
+import spinnaker_graph_front_end as front_end
 
 
 class Conv1D(AbstractLayerBase, WeightsInterface):
@@ -97,7 +98,7 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
     @overrides(LayerInterface.connect_outgoing)
     def connect_outgoing(self, dest_layer, partition):
-        growing_down = self._get_growing_down(source_layer)
+        growing_down = self._get_growing_down(dest_layer)
 
         i = -growing_down
         for neuron in self.neurons:
@@ -105,8 +106,22 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
                     i + neuron.lower_padding,
                     i + self.kernel_shape[0] - neuron.upper_padding):
                 gfe.add_machine_edge_instance(
-                    neuron,  dest_layer.neurons[j], partition)
+                    neuron, dest_layer.neurons[j], partition)
             i += self.stride
+
+        """
+        for dest_neuron in dest_layer.neurons:
+            for neuron in self.neurons:
+                in_lower_bound = \
+                    neuron.id - neuron.lower_padding <= dest_neuron.id
+
+                in_upper_bound = dest_neuron.id < \
+                    neuron.id + self.kernel_shape[0] - neuron.upper_padding
+
+                if in_upper_bound and in_lower_bound:
+                    gfe.add_machine_edge_instance(
+                        neuron, dest_neuron, partition)
+        """
 
     def _get_growing_down(self, other_layer):
         if self.padding == "valid":
@@ -121,7 +136,6 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         else:
             raise KeyError(
                 "Unexpected padding: {}".format(padding))
-
 
     @overrides(WeightsInterface.generate_weights)
     def generate_weights(self, source_layer):

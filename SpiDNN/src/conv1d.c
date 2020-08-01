@@ -160,13 +160,13 @@ void update(uint ticks, uint b) {
       for (uint i = 0; i < n_filters; i++) {
         filter_results[i] = filter_results[i] / softmax_denom;
         send(forward_keys[i], (void *)&filter_results[i]);
-        spin1_delay_us(10);
+        spin1_delay_us(50);
       }
     } else {
       for (uint i = 0; i < n_filters; i++) {
         activate(i);
         send(forward_keys[i], (void *)&filter_results[i]);
-        spin1_delay_us(10);
+        spin1_delay_us(50);
       }
     }
   }
@@ -183,6 +183,7 @@ void update(uint ticks, uint b) {
     for (uint i = 0; i < N_WEIGHTS; i++) {
       send(kernel_update_key, (void *)&neuron_gradients[i]);
       neuron_gradients[i] = .0;
+      spin1_delay_us(50);
     }
     return;
   }
@@ -193,7 +194,7 @@ void update(uint ticks, uint b) {
       for (uint i = 0; i< N_KERNEL_ELEMENTS; i++) {
         float error = errors[filter] * weights[FILTER_OFFSET + i];
         send(backward_key, (void *)&error);
-        spin1_delay_us(10);
+        spin1_delay_us(50);
       }
     }
 

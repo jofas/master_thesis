@@ -87,15 +87,15 @@ def test_categorical_xor():
 def test_training_conv1d():
     loss = "mean_squared_error"
     kernel_size = 3
-    input_shape = (50, 3)
+    input_shape = (10, 3)
 
     X = np.random.rand(500, *input_shape)
     y = np.random.rand(500, 4)
 
     kmodel = Sequential()
     kmodel.add(KConv1D(1, 3, padding="same", input_shape=input_shape))
-    kmodel.add(KConv1D(1, kernel_size * 4, padding="same", strides=1, activation="tanh"))
-    kmodel.add(KConv1D(1, kernel_size, padding="same", strides=1, activation="sigmoid"))
+    kmodel.add(KConv1D(2, kernel_size - 1, padding="same"))
+    kmodel.add(KConv1D(2, kernel_size + 2, padding="same"))
     #kmodel.add(KConv1D(16, kernel_size + 3, padding="same", activation="softmax"))
     #kmodel.add(KConv1D(5, kernel_size + 1))
     kmodel.add(Flatten())
@@ -105,9 +105,9 @@ def test_training_conv1d():
 
     model = Model()
     model.add(Input(*input_shape))
-    model.add(Conv1D(1, (3,), padding="same", activation="relu"))
-    model.add(Conv1D(1, (kernel_size * 4,), padding="same", stride=1, activation="tanh"))
-    model.add(Conv1D(1, (kernel_size,), padding="same", stride=1, activation="sigmoid"))
+    model.add(Conv1D(1, (3,), padding="same"))
+    model.add(Conv1D(2, (kernel_size - 1,), padding="same"))
+    model.add(Conv1D(2, (kernel_size + 2,), padding="same"))
     #model.add(Conv1D(16, (kernel_size + 3,), padding="same", activation="softmax"))
     #model.add(Conv1D(5, (kernel_size + 1,)))
     model.add(Dense(y.shape[1]))
@@ -208,7 +208,7 @@ def test_training_conv1d_with_known_weights():
 
 if __name__ == "__main__":
     # test_binary_xor()
-    test_categorical_xor()
-    #test_training_conv1d()
+    #test_categorical_xor()
+    test_training_conv1d()
     #test_training_conv1d_with_known_weights()
     print("SUCCESS.")
