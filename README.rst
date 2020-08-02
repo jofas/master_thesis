@@ -81,6 +81,20 @@ Optimizations and features
   than just using init_neurons)
 
 
+Dependencies
+------------
+
+* SpiNNaker toolchain (`GraphFrontEnd`)
+
+* `numpy`
+
+* `keras`
+
+* `tensorflow`
+
+* `mnist`
+
+
 Links
 -----
 

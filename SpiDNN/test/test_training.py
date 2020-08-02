@@ -96,8 +96,6 @@ def test_training_conv1d():
     kmodel.add(KConv1D(1, 3, padding="same", input_shape=input_shape))
     kmodel.add(KConv1D(2, kernel_size - 1, padding="same"))
     kmodel.add(KConv1D(2, kernel_size + 2, padding="same"))
-    #kmodel.add(KConv1D(16, kernel_size + 3, padding="same", activation="softmax"))
-    #kmodel.add(KConv1D(5, kernel_size + 1))
     kmodel.add(Flatten())
     kmodel.add(KDense(y.shape[1]))
 
@@ -108,8 +106,6 @@ def test_training_conv1d():
     model.add(Conv1D(1, (3,), padding="same"))
     model.add(Conv1D(2, (kernel_size - 1,), padding="same"))
     model.add(Conv1D(2, (kernel_size + 2,), padding="same"))
-    #model.add(Conv1D(16, (kernel_size + 3,), padding="same", activation="softmax"))
-    #model.add(Conv1D(5, (kernel_size + 1,)))
     model.add(Dense(y.shape[1]))
 
     model.set_weights(kmodel.get_weights())
@@ -206,9 +202,48 @@ def test_training_conv1d_with_known_weights():
         assert e_max < 0.1
 
 
+def test_mnist():
+    import mnist
+
+    y_train = mnist.train_labels()
+    y_test = mnist.test_labels()
+
+    X_train_ = mnist.train_images()
+    X_test_ = mnist.test_images()
+
+    y_train = np.array(
+        [[0 if i != x else 1 for i in range(0,10)] for x in y_train],
+        dtype=np.float32)
+    y_test = np.array(
+        [[0 if i != x else 1 for i in range(0,10)] for x in y_test],
+        dtype=np.float32)
+
+    X_train = np.empty((X_train_.shape[0], 28 * 28), dtype=np.float32)
+    for i, img in enumerate(X_train_):
+        X_train[i] = img.flatten()
+
+    X_test = np.empty((X_test_.shape[0], 28 * 28), dtype=np.float32)
+    for i, img in enumerate(X_test_):
+        X_train[i] = img.flatten()
+
+    print(X_train.shape)
+    print(y_train.shape)
+
+    print(X_test.shape)
+    print(y_test.shape)
+
+    model = Model()
+    model.add(Input(X_train.shape[1]))
+    model.add(Dense(y_train.shape[1]))
+
+    model.fit(X_train, y_train, "mean_squared_error", epochs=20, batch_size=20000,
+        learning_rate=1e-2)
+
+
 if __name__ == "__main__":
     # test_binary_xor()
     #test_categorical_xor()
-    test_training_conv1d()
+    #test_training_conv1d()
     #test_training_conv1d_with_known_weights()
+    test_mnist()
     print("SUCCESS.")
