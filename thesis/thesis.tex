@@ -1185,20 +1185,38 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 \section{Deep Learning on SpiNNaker}
 \label{sec:SpiDNN}
 
+\subsection{The SpiNNaker Programming Model}
+
+\begin{itemize}
+  \item global view (host, machine and what runs where)
+  \item MC-packets
+  \item partitions
+  \item workings of a neuron (event-based programming model)
+  \item IO (RIPTMCS and LPG and LiveEventConnection)
+\end{itemize}
+
+\subsection{Architecture of the Prototype}
+
 \begin{itemize}
   \item concepts (layers, neurons, \dots)
-  \item partitions and how that allows me to use min keys to discern
-    between what I have received
   \item communication structure (partitions and global partition manager)
   \item ping-pong
+  \item forward pass
   \item graph structure (especially focused on edge and host--SpiNN
     communication)
+  \item backward pass
+\end{itemize}
+
+
+\subsection{Problems}
+
+\begin{itemize}
+
   \item interpreting neurons as domain decomposition over linear algebra
     compute graph
   \item backward pass: gradients computed two times so comm fabric is
     not overly used by unique partitions/lots of unused packages
-  \item How I crushed $n$d-kernels into a single blog of weights (same
-    for 2D convolutions even though less interesting)
+  \item How I crushed $n$d-kernels into a single blog of weights
   \item backprop design change (shared weights $\rightarrow$ redundant
     packets (easier and nicer to implement))
 \end{itemize}
@@ -1212,8 +1230,9 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 \begin{itemize}
   \item space used inefficiently (cores and memory) $\rightarrow$ better
     domain decomposition
-  \item batch normalization and their implications for
-    vanishing/exploding gradients
+  \item with this streaming model I have no easy way to do batch
+    normalization---implications for vanishing/exploding gradients
+    during training
 \end{itemize}
 
 \section{Conclusion}
