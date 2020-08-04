@@ -1210,7 +1210,9 @@ development process.
 \label{subsec:spinn_toolchain}
 
 \begin{itemize}
-  \item global view (host, machine and what runs where)
+  \item global view (host, machine, what runs where and steps until it
+    runs)
+  \item graphs
   \item MC-packets
   \item partitions
   \item workings of a neuron (event-based programming model)
@@ -1248,7 +1250,16 @@ development process.
     not overly used by unique partitions/lots of unused packages
   \item How I crushed $n$d-kernels into a single blog of weights
   \item backprop design change (shared weights $\rightarrow$ redundant
-    packets (easier and nicer to implement))
+    packets (easier and nicer to implement)).
+    Really stress this point and present all three things tried
+    (e-mail).
+  \item resource invariance (first prototype, deemed too difficult
+    to put resources into it as well (just three months time))
+  \item bottlenecks (one layer much higher
+    computational effort but even less resources (10--1024--20)
+  \item conv neurons of resnet way too big and are horrific scalers
+    (small spatial input but big channels computationally much more
+    effort but again, less resources)
 \end{itemize}
 
 % }}}
@@ -1263,6 +1274,7 @@ development process.
 \label{sec:discussion}
 
 \begin{itemize}
+  \item present possible solutions for problems encountered
   \item space used inefficiently (cores and memory) $\rightarrow$ better
     domain decomposition
   \item with this streaming model I have no easy way to do batch
