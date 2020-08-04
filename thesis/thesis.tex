@@ -211,9 +211,7 @@ degree or professional qualification except as specified.
 
 \pagenumbering{arabic}
 
-% fancy page (maybe above arabic -- depends on page numbers)
-
-\section{Introduction}
+\section{Introduction} % {{{
 \label{sec:intro}
 
 Deep learning is revolutionizing the world.
@@ -323,56 +321,60 @@ Section~\ref{sec:next_steps} outlines the next steps for further
 increasing the performance of SpiNNaker by enhancing the
 prototype.
 
+% }}}
+
 
 \section{Background} % {{{
 \label{sec:background}
 
-This section summarizes the background knowledge needed in the
+This section summarizes the background knowledge needed for the
 following sections.
 First a short introduction to deep learning is given in
 Section~\ref{subsec:intro_dl}.
-The main focus lies on the basic concepts and those important for
-computer vision.
+The main focus lies on the basic concepts and those concepts important
+for computer vision.
 Next, Section~\ref{subsec:intro_bench} outlines the context of the
 conducted benchmark presented in Section~\ref{sec:benchmark}.
-Lastly the SpiNNaker neuromorphic computer architecture is described
+Lastly, the SpiNNaker neuromorphic computer architecture is described
 in Section~\ref{subsec:intro_spinn}.
 SpiNNaker is also compared against the two state-of-the-art hardware
-solutions for deep learning which currently produce the best
-performance in training and inference, namely general purpose
-graphical processing units (GPGPUs) and Google's tensor processing
-unit (TPU).
+solutions for deep learning that currently produce the best
+performance in training and inference.
+Namely general purpose graphical processing units (GPGPUs) and
+Google's tensor processing unit (TPU).
 
 \subsection{An Introduction to Deep Learning} % {{{
 \label{subsec:intro_dl}
 
 While it may seem that deep learning is a recent development in the
-field of artificial intelligence---due to all the hype and all
-the announced breakthroughs---it is actually around since the 1940s
+field of artificial intelligence---due to all the recently announced
+breakthroughs \citep{senior_et_al_2020, vinyals_et_al_2019,
+  openai_2019, margi_2019}---it has actually existed since the 1940s
 \citep{goodfellow_et_al_2016}.
 \citet{mcculloch_et_al_1943} first described the McCulloch-Pitts
 neuron as a simple mathematical model of a biological neuron, which
-should mark the origin of what today is known as deep learning.
+marks the origin of what is known today as deep learning.
 
 Even though deep learning models today are still called
-\textit{artificial neural networks}, due to their historical context,
+\textit{artificial neural networks} (due to their historical context),
 they are quite different from \textit{spiking neural networks}
 (which SpiNNaker was designed to run efficiently).
 While the former has been described as ``just nonlinear statistical
 models'' \citep{hastie_et_al_2009}, the latter incorporated findings
-about biological neurons and is therefore closer related to how the
-nervous system works \citep{maass1997}.
-Spiking neural networks are mostly used for simulation rather than
-inference like deep learning models.
+about biological neurons and is therefore more closely related to how
+the nervous system works \citep{maass1997}.
+Spiking neural networks are mostly used for simulation, unlike deep
+learning models, which are mostly used for inference.
 
 The history of deep learning can be broken down into three distinct
-phases and only during the last phase the methodology is
-called deep learning \citep{goodfellow_et_al_2016};
-arguably the reason why deep learning seems to be a new development.
+phases.
+Only during the last of these phases was the methodology
+called deep learning \citep{goodfellow_et_al_2016}.
+Arguably the reason why deep learning seems to be a new development.
 The first phase, where deep learning was known as cybernetics, ranged
 from the 1940s to the 1960s \citep{goodfellow_et_al_2016}.
-Like stated above, it was the time where the first biologically
-inspired representations of neurons where developed.
+As stated above, it was the time when the first biologically
+inspired representations of neurons were developed.
 \citet{rosenblatt_1958} presents the first model, a single trainable
 artificial neuron known as the perceptron (see
 Figure~\ref{fig:perceptron}).
@@ -384,7 +386,7 @@ $\mathbf{x}\cdot\mathbf{w} = \sum_{i=1}^{n}x_iw_i$.
 The \textit{bias} $b$ is added to the dot product.
 $\mathbf{x} \cdot \mathbf{w} + b$ is then passed to the
 \textit{activation function} $g$---some fixed transformation function
-appropriate for the application domain---and
+appropriate for the application domain.
 $y = g(\mathbf{x} \cdot \mathbf{w} + b)$ is the output of the
 perceptron.
 
@@ -401,7 +403,7 @@ We can describe a perceptron as the mathematical function
 \end{align}
 $f(\mathbf{x};\mathbf{w}, b)$ is known as a
 \textit{(statistical) model} with
-$\mathbf{w}$ and $b$ as its \textit{trainable parameters}
+$\mathbf{w}$ and $b$ as its \textit{trainable parameters},
 which are trained/learned in order to approximate $f^*$ with $f$.
 How a network of perceptrons---a more complex statistical model better
 suited for real world applications---is trained via backpropagation
@@ -430,12 +432,12 @@ and gradient descent, will be explained below.
 
 The second historical phase of deep learning is known as
 connectionism (1980s-1990s) \citep{goodfellow_et_al_2016}.
-Its main contributions to today's knowledge was the backpropagation
+Its main contributions to today's knowledge were the backpropagation
 algorithm \citep{rumelhart_et_al_1986} and the approach of parallel
 distributed processing
 \citep{rumelhart_et_al_1986a, rumelhart_et_al_1986b}, which provided a
 mathematical framework around the idea that a large number of simple
-computational units (e.g.\ the perceptron) can achieve intelligent
+computational units (e.g.\ the perceptron) could achieve intelligent
 behavior when connected together \citep{goodfellow_et_al_2016}.
 Backpropagation enabled the training of networks of
 perceptrons---artificial neural networks.
@@ -445,12 +447,14 @@ perceptron} (MLP), also called a \textit{feedforward neural network}
 (see Figure~\ref{fig:mlp}) \citep{goodfellow_et_al_2016}.
 The MLP consists of multiple perceptrons organized in \textit{layers}.
 Layers are connected successively such that the output of each of its
-perceptrons reaches all perceptrons in the next layer it is connected
-to. Such a layer is known to be \textit{fully-connected} or
+perceptrons reaches all perceptrons in the next layer.
+Such a layer is known to be \textit{fully-connected} or
 \textit{dense}. No cycle exists between perceptrons; the MLP is a
 directed acyclic graph.
 Unlike the single layer perceptron, the MLP has at least one
 \textit{hidden layer}.
+A hidden layer is a layer between the input and output layers (see
+Figure~\ref{fig:mlp}).
 
 \begin{figure}
 \begin{center}
@@ -523,7 +527,7 @@ $f^{(i)}, i < l$ being a hidden layer and $f^{(l)}$ being the output
 layer.
 The perceptron has the weight vector $\mathbf{w}$ and the bias
 $b$ as its parameters (see Equation~\ref{eq:perceptron}).
-The parameters of a layer is the combination of
+The parameters of a layer are the combination of
 $\mathbf{w}$ and $b$ for each of its perceptrons.
 For example, if the first hidden layer contains $m$ perceptrons and
 $\mathbf{x}$ is a $n$-vector, then the parameters of $f^{(1)}$ would
@@ -545,8 +549,10 @@ MLP (or other deep learning models) so that it approximates the
 unknown function $f^*$ which generates the labels of the examples
 we have in our data set.
 The data set used for training a model is called the \textit{training
-set}. Additionally to the training set there normally exists a
-\textit{test set} with examples the model has not seen before.
+set}.
+In addition to the training set there normally exists a
+\textit{test set} with examples the model has not seen before
+(examples not in the training set).
 The test set is used to determine the generalization performance of
 the model.
 Backpropagation is an algorithm that allows to train a deep learning
@@ -614,10 +620,11 @@ they were not the reason for the resurrected interest in this
 methodology.
 The two most important factors are the increase of available data
 and computation.
-The former enables better generalization while the latter allows
+The former enables better generalization
+\citep{goodfellow_et_al_2016}, while the latter allows
 training bigger models (more hidden layers---the \textit{depth} of the
 neural networks increased) which can solve more complex problems
-\citep{goodfellow_et_al_2016}.
+\citep{bengio_et_al_2007, goodfellow_et_al_2016}.
 
 Like the perceptron, ``neurons'' in a \textit{convolutional layer}
 are inspired by findings of neuroscientists.
@@ -641,17 +648,18 @@ Equation~\ref{eq:conv} is not really a convolution but is referred to
 as \textit{cross-correlation}.
 Unlike true convolution, cross-correlation is not commutative
 \citep{goodfellow_et_al_2016}.
-But commutativity is not a factor in practice, so many deep learning
-libraries, like Keras \citep{keras} or the prototype developed for
-this thesis implement cross-correlation rather than true convolution.
-Below convolution will refer to cross-correlation.
+However, commutativity is not a factor in practice, so many deep
+learning libraries, like Keras \citep{keras} or the prototype
+developed for this thesis implement cross-correlation rather than true
+convolution.
+Convolution will refer to cross-correlation below.
 
 In the case of deep learning, $x$ is a $n$D array called the
 \textit{input} and $w$ is another $n$D array referred to as the
 \textit{kernel}. The kernel elements are the trainable parameters
 \citep{goodfellow_et_al_2016}.
 In Equation~\ref{eq:conv}, $x$ and $w$ are one dimensional.
-If we say $x$ to be a $m$-vector, the function $x(i)$ is defined as:
+If we let $x$ be a $m$-vector, the function $x(i)$ is defined as:
 \begin{align}
   \label{eq:valid_conv}
   x(i) = \begin{cases}
@@ -738,8 +746,8 @@ Normally a convolutional layer does not consist of a single
 convolution, but applies multiple kernels to the output of the
 previous layer.
 A single convolution is called a \textit{filter} and a layer
-consists of a predefined amount of filters, each with its own kernel
-\citep{brownlee_2019}.
+consists of a predefined number of filters, each with its own kernel
+(and optionally a bias) \citep{brownlee_2019}.
 The output of a convolutional layer is often called a
 \textit{feature map} \citep{goodfellow_et_al_2016}.
 Even though an image may seem to be a two dimensional structure of
@@ -763,16 +771,16 @@ The former refers to skipping convolutions in order to reduce the
 computational cost at the expense of less exact feature extraction
 (patterns may not be detected by the model due to the increased
 inaccuracy).
-The latter is a way of dealing with vanishing spacial dimensions of
+The latter is a way of dealing with vanishing spatial dimensions of
 the feature map if we only perform convolutions on ``valid'' inputs
 ($1 \leq i \leq m$ in Equation~\ref{eq:valid_conv}).
-``valid'' padding refers to the fact that the input has no padding,
-which means the feature map of the convolutional layer will have
+``Valid'' padding refers to the fact that the input has no padding.
+The feature map of the convolutional layer will have
 its kernel size minus one less neurons than its input
 (see Figure~\ref{fig:cnn}).
 ``Same'' padding would be to add enough zeros evenly above and below
-the valid input (along each spacial dimension) so that the feature map
-of the convolutional layer will have the same spacial dimensions as
+the valid input (along each spatial dimension) so that the feature map
+of the convolutional layer will have the same spatial dimensions as
 its input (see Figure~\ref{fig:padding} \citep{goodfellow_et_al_2016}.
 
 \begin{figure}
@@ -810,13 +818,13 @@ A pooling layer summarizes locally with the goal of making the
 CNN invariant to small translations of the input
 \citep{goodfellow_et_al_2016}, making the model less prone to
 \textit{overfitting}---the state a model is in if it performs well
-on the training set but does not generalize well to unseen examples
-(bad performance on the test set).
+on the training set but does not generalize well to unseen examples.
 \textit{Max pooling}, for example, takes some local neighborhood of
 the input, exactly like a convolutional layer, and returns the
 maximum value of that neighborhood.
 
 % }}}
+
 
 \subsection{Benchmarking Deep Learning Systems for Computer Vision} % {{{
 \label{subsec:intro_bench}
@@ -840,7 +848,7 @@ a test set of 150,000 images and winner is the model with the highest
 top-1 accuracy.
 
 While a benchmark like the ILSVRC produces new insights into computer
-vision and keeps the community up-to-date on what is possible,
+vision and keeps the community up to date on what is possible,
 deep learning has another issue on which a benchmark can shed light:
 training/inference speed of hardware and software systems.
 The MLPerf benchmark was developed to tackle this problem, so
@@ -856,12 +864,12 @@ benchmarked system \citep{mattson_et_al_2019}.
 Currently the fastest solution, from the latest MLPerf training
 benchmark v0.6, is Google's cloud system based on Tensorflow and
 one TPUv3 pod (1024 TPUv3s) \citep{mlperf_2019, stone_2019}.
-Our benchmark presented in Section~\ref{sec:benchmark} will be based
+Our benchmark, presented in Section~\ref{sec:benchmark}, is based
 on the image classification task of the MLPerf training benchmark,
 making it easy to compare SpiNNaker and our prototype to other
 state-of-the-art deep learning systems.
 
-Winner of the image classification task of the ILSVRC 2015 was an
+The winner of the image classification task of the ILSVRC 2015 was an
 ensemble of residual nets (ResNets) introduced in
 \citet{he_et_al_2015}.
 The ensemble generated a top-5 accuracy (true label in the five
@@ -885,8 +893,8 @@ Only the negligible operation where $\mathbf{x}$ is added to the
 output of the residual block must be performed during the forward
 pass.
 \citet{he_et_al_2015} shows comprehensive tests on how residual blocks
-decrease degradation impact by comparing ResNets against their
-counterpart with the same architecture, but without shortcut
+decrease degradation by comparing ResNets against their
+counterparts with the same architecture, but without shortcut
 connections.
 The models without shortcut connections show a higher training error
 than their ResNet counterpart.
@@ -915,7 +923,7 @@ than their ResNet counterpart.
   \label{fig:shortcut_conn}
 \end{figure}
 
-Like stated above, the image classification task of the MLPerf
+As stated above, the image classification task of the MLPerf
 training benchmark is to train ResNet-50 (50, because it has 50
 layers) until it reaches a top-1 accuracy of 74.9 percent on the test
 set and to measure the wallclock time it took to reach that goal.
@@ -925,7 +933,7 @@ architecture.
 The model takes a $224\times224\times3$ image as its input and first
 passes it through a convolutional layer with a relatively big kernel
 of $7\times7$ and a max pooling layer.
-Both times the spacial dimensions are halved by applying a stride of
+Both times the spatial dimensions are halved by applying a stride of
 two, so the first residual block receives a $56 \times 56 \times 64$
 feature map as its input.
 The model consists of multiple residual blocks.
@@ -1020,7 +1028,7 @@ This should keep computational cost the same for each block
     The first number shows the amount of filters the first two layers
     of a block have, while the second number shows the filters of the
     last layer of the block. $/2$ indicates that a stride of two is
-    applied (spacial dimensions are halved---each convolutional and
+    applied (spatial dimensions are halved---each convolutional and
     pooling layer has ``same'' padding). Whenever the filters are
     doubled (indicated by the varying grey scales), the shortcut layer
     is linearly projected to match the higher channels.}
@@ -1029,6 +1037,7 @@ This should keep computational cost the same for each block
 
 % }}}
 
+
 \subsection{SpiNNaker as a Neuromorphic Computer Architecture} % {{{
 \label{subsec:intro_spinn}
 
@@ -1036,15 +1045,15 @@ Spiking Neural Network Architecture (SpiNNaker, for short) is a
 massively parallel neuromorphic computer system designed to run
 spiking neural networks with up to one billion neurons (and a trillion
 synapses) in real-time \citep{painkras_et_al_2013}.
-Like stated in Section~\ref{sec:intro}, neuromorphic computing is
+As stated in Section~\ref{sec:intro}, neuromorphic computing is
 the approach of developing hardware inspired by the biological
 nervous system \citep{mead_1989}.
-Neuromorphic computer architectures today range from very fast and
+Today, neuromorphic computer architectures range from very fast and
 energy efficient but inflexible direct electronic models
 (neurons in hardware) \citep{indiveri_et_al_2011} to very flexible but
-energy demanding systems based on common consumer hard-/and software
-(neurons in software) \citep{plesser_et_al_2007}.
-SpiNNaker sits somewhere in-between.
+energy demanding systems based on common consumer hardware and
+software (neurons in software) \citep{plesser_et_al_2007}.
+SpiNNaker sits somewhere in between.
 On the one hand, flexibility is achieved by implementing neurons in
 software.
 On the other hand, speed is achieved by massive-parallelism and
@@ -1059,9 +1068,9 @@ Each core can run up to 1000 spiking neurons, which communicate with
 each other over spikes---small packages with a maximum size of 72 bits
 which are send over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
 
-For today's standards 18 cores do not qualify for being a
-massively-parallel system.
-Therefore a SpiNNaker machine consists of multiple chips connected
+By today's standards 18 cores do not qualify as a massively-parallel
+system.
+Therefore, a SpiNNaker machine consists of multiple chips connected
 together in a 2D triangular (six edges per router instead of four)
 torus \citep{furber_et_al_2020}.
 The biggest SpiNNaker machine is the SpiNNaker1M supercomputer in
@@ -1076,16 +1085,16 @@ Common deep learning libraries like Tensorflow
 deep learning on a layer basis, which means by multiplying
 \textit{tensors} ($n$D arrays), rather than implementing deep learning
 on a neuron level \citep{goodfellow_et_al_2016}.
-Therefore the common industry approach to building hardware
+Therefore, the common industry approach to building hardware
 accelerators for deep learning is to facilitate fast matrix
 multiplication, which represents the majority of computation needed
 for training and inference.
 The leading systems, when it comes to throughput and speed according
 to the MLPerf training benchmark \citep{mlperf_2019}, are Google's
 TPU \citep{jouppi_et_al_2017} and NVIDIA's GPU architecture
-Volta \citep{durant_et_al_2017}, with the successor Ampere released in
-2020, which, according to NVIDIA, is much more powerful
-\citep{krashinsky_et_al_2020}.
+Volta \citep{durant_et_al_2017}.
+Volta's successor Ampere was released in 2020, which, according to
+NVIDIA, is much more powerful \citep{krashinsky_et_al_2020}.
 Both architectures leverage instruction level parallelism, sacrificing
 significant chip space for specialized units performing a
 fused multiply-add-accumulate matrix operation (MAC).
@@ -1100,17 +1109,18 @@ The TPUv2 added support for mixed precision floating point operations
 tensor core of the Volta architecture)
 \citep{kennedy_2017, markidis_et_al_2018}.
 The SpiNNaker cores do not have a MAC unit, being designed to run
-spiking neurons efficiently rather than lots of matrix
+spiking neurons efficiently, rather than lots of matrix
 multiplications.
 That means the prototype presented in Section~\ref{sec:SpiDNN} must
-put more focus on leveraging SpiNNaker's massive parallelism rather
-than relying on fast instruction level parallelism, for example with
-optimized domain decomposition and smarter algorithms than matrix
-multiplication.
+put more focus on leveraging SpiNNaker's massive parallelism, rather
+than relying on fast instruction level parallelism.
+For example with optimized domain decomposition and smarter algorithms
+than matrix multiplication.
 
 % }}}
 
 % }}}
+
 
 \section{Related Work} % {{{
 \label{sec:related_work}
@@ -1182,10 +1192,11 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 % }}}
 
 
-\section{Deep Learning on SpiNNaker}
+\section{Deep Learning on SpiNNaker} % {{{
 \label{sec:SpiDNN}
 
-\subsection{The SpiNNaker Programming Model}
+
+\subsection{The SpiNNaker Programming Model} % {{{
 
 \begin{itemize}
   \item global view (host, machine and what runs where)
@@ -1195,7 +1206,10 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
   \item IO (RIPTMCS and LPG and LiveEventConnection)
 \end{itemize}
 
-\subsection{Architecture of the Prototype}
+% }}}
+
+
+\subsection{Architecture of the Prototype} % {{{
 
 \begin{itemize}
   \item concepts (layers, neurons, \dots)
@@ -1207,8 +1221,10 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
   \item backward pass
 \end{itemize}
 
+% }}}
 
-\subsection{Problems}
+
+\subsection{Problems} % {{{
 
 \begin{itemize}
 
@@ -1220,6 +1236,11 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
   \item backprop design change (shared weights $\rightarrow$ redundant
     packets (easier and nicer to implement))
 \end{itemize}
+
+% }}}
+
+% }}}
+
 
 \section{Benchmark}
 \label{sec:benchmark}
