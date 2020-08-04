@@ -536,7 +536,7 @@ The output of layer $f^{(1)}$ would be a $m$-vector computed as
 follows:
 \begin{align}
   f^{(1)}(\mathbf{x}; \mathbf{W}, \mathbf{b}) =
-  g(\mathbf{x}^\top \mathbf{W} + \mathbf{b})^\top.
+  g(\mathbf{W}^\top\mathbf{x} + \mathbf{b}).
 \end{align}
 The second layer takes the output of the first and so forth.
 The forward pass of the MLP is computed as:
@@ -570,7 +570,7 @@ $w_{ij}$ in $\mathbf{W}$ with the chain rule:
     \frac{\delta g}{\delta h}
     \frac{\delta h}{\delta w_{ij}},
 \end{align}
-$h$ being $f^{(l-1)\top}\mathbf{W} + \mathbf{b}$.
+$h$ being $\mathbf{W}^\top f^{(l-1)} + \mathbf{b}$.
 $w_{ij}$ is updated by performing the stochastic gradient descent%
 \footnote{Or (batch) gradient descent. With gradient descend the whole
   training set is passed through the MLP before the weights
@@ -597,7 +597,7 @@ $f^{(l-1)}_i$ being the $i$-th perceptron of the hidden layer $l-1$.
 
 \citet{hornik_et_al_1989} demonstrated that a non-linear MLP
 (the activation functions are non-linear transformations of
-$h(x) = \mathbf{x}^\top \mathbf{W} + \mathbf{b}$) can overcome the
+$h(x) = \mathbf{W}^\top\mathbf{x} + \mathbf{b}$) can overcome the
 famous XOR problem of a single layer perceptron demonstrated in
 \citet{minsky_et_al_1969}.
 Another major contribution of the phase of connectionism was the
