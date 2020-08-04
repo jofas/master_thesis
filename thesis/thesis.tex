@@ -1195,8 +1195,19 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 \section{Deep Learning on SpiNNaker} % {{{
 \label{sec:SpiDNN}
 
+This section will describe the developed deep learning prototype in
+detail.
+First, a short introduction to the SpiNNaker software toolchain and
+programming model is given in Section~\ref{subsec:spinn_toolchain}.
+Section~\ref{subsec:SpiDNN_arch} will present the architecture of the
+prototype.
+Lastly, Section~\ref{subsec:problems} will shine light onto the
+hardships and problems encountered and mistakes made during the
+development process.
+
 
 \subsection{The SpiNNaker Programming Model} % {{{
+\label{subsec:spinn_toolchain}
 
 \begin{itemize}
   \item global view (host, machine and what runs where)
@@ -1210,6 +1221,8 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 
 
 \subsection{Architecture of the Prototype} % {{{
+\label{subsec:SpiDNN_arch}
+
 
 \begin{itemize}
   \item concepts (layers, neurons, \dots)
@@ -1225,6 +1238,7 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 
 
 \subsection{Problems} % {{{
+\label{subsec:problems}
 
 \begin{itemize}
 
