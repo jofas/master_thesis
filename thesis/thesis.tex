@@ -624,7 +624,7 @@ The former enables better generalization
 \citep{goodfellow_et_al_2016}, while the latter allows
 training bigger models (more hidden layers---the \textit{depth} of the
 neural networks increased) which can solve more complex problems
-\citep{bengio_et_al_2007, goodfellow_et_al_2016}.
+\citep{bengio_et_al_2007a, goodfellow_et_al_2016}.
 
 Like the perceptron, ``neurons'' in a \textit{convolutional layer}
 are inspired by findings of neuroscientists.
@@ -1066,7 +1066,7 @@ Network-on-Chip (NoC) system for communication between the cores
 \citep{furber_et_al_2007, furber_et_al_2020}.
 Each core can run up to 1000 spiking neurons, which communicate with
 each other over spikes---small packages with a maximum size of 72 bits
-which are send over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
+which are sent over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
 
 By today's standards 18 cores do not qualify as a massively-parallel
 system.
@@ -1074,7 +1074,12 @@ Therefore, a SpiNNaker machine consists of multiple chips connected
 together in a 2D triangular (six edges per router instead of four)
 torus \citep{furber_et_al_2020}.
 The biggest SpiNNaker machine is the SpiNNaker1M supercomputer in
-Manchester with over one million cores \citep{furber_et_al_2020}.
+Manchester with over one million cores.
+The SpiNNaker1M consists of 10 cabinets, each with five card frames
+holding 24 SpiNN-5 boards.
+A SpiNN-5 board has 48 SpiNNaker chips, which means the SpiNNaker1M
+has 1,036,800 theoretical cores, assuming no faulty cores
+\citep{furber_et_al_2020}.
 
 SpiNNaker is quite different from common deep learning accelerators,
 like general purpose graphics processing units (GPGPUs) or Google's
@@ -1197,8 +1202,10 @@ between 1,200 and 2,600 $32\times32\times3$ images per second.
 
 This section will describe the developed deep learning prototype in
 detail.
-First, a short introduction to the SpiNNaker software toolchain and
-programming model is given in Section~\ref{subsec:spinn_toolchain}.
+While Section~\ref{subsec:intro_spinn} gave a short overview over the
+SpiNNaker hardware, Section~\ref{subsec:spinn_toolchain} will present
+a short introduction to the SpiNNaker software toolchain and
+programming model.
 Section~\ref{subsec:SpiDNN_arch} will present the architecture of the
 prototype.
 Lastly, Section~\ref{subsec:problems} will shine light onto the
@@ -1209,14 +1216,72 @@ development process.
 \subsection{The SpiNNaker Programming Model} % {{{
 \label{subsec:spinn_toolchain}
 
+Parallel programming is hard \citep{lee_2011}, especially on novel
+hardware architectures like SpiNNaker \citep{brown_et_al_2015}.
+SpiNNaker provides layers of software abstractions over the hardware
+to make programming and exploiting the capabilities of it as easy as
+possible \citep{furber_et_al_2020}.
+
+The SpiNNaker hardware is designed to tackle problems which can be
+decomposed into many small, autonomous units without a central
+computational overseer \citep{brown_et_al_2015}.
+These problems are commonly known as embarrassingly parallel problems
+\citep{foster_1995}.
+The software toolchain lets the user describe their program as a
+graph.
+Each vertex of the graph represents one unit of computation
+(e.g.\ a bunch of spiking neurons or a perceptron in our case)
+and directed edges represent the communication between the units
+\citep{furber_et_al_2020}.
+
+There are two type of graphs, application graphs and machine graphs.
+A vertex in the machine graph---a machine vertex---is directly mapped
+to a single SpiNNaker core.
+An application graph is an abstraction over a machine graph.
+Application vertices have atoms.
+Atoms are atomic units of computation.
+The atoms of an application vertex are distributed onto machine
+vertices.
+This makes programming and scaling easier and also facilitates proper
+resource exploitation, for example by mapping 1,000 small spiking
+neurons---atoms of a neuron population represented as a application
+vertex---onto a single core, instead of having them distributed across
+1,000 cores, which would be the case if they were to be implemented
+directly as machine vertices \citep{furber_et_al_2020}.
+For the prototype we used a machine graph, since it is easier to
+implement.
+The development process was guided by the UNIX rule of optimization:
+prototype before polishing \citep{raymond_2003}, or in Donald Knuth's
+words: ``premature optimization is the root of all evil''
+\citep{knuth_1974}.
+
+The toolchain is written in the Python programming language.
+The SpiNNaker machine is connected to a host device via Ethernet
+\citep{rowley_et_al_2019}.
+The toolchain---running on the host---is mainly responsible for
+the generation of the graph and its execution on the connected
+SpiNNaker machine.
+It goes through a stage of mapping the graph onto the available cores,
+before data generation (where e.g.\ parameters of the vertex are
+loaded into SDRAM) and finally running the application
+\citep{furber_et_al_2020}.
+
+% TODO: SDRAM, DTCM and shit into hardware section
+
+Each vertex is represented as a Python object---instantiated from the
+appropriate classes---and has an associated binary, the program to
+be executed by the machine \citep{furber_et_al_2020}.
+% compiler and sark/event based model with callbacks and prio
+% (maybe somewhat verbose: I want to discuss me spending too much
+% time in receive callback)
+
 \begin{itemize}
   \item global view (host, machine, what runs where and steps until it
     runs)
-  \item graphs
   \item MC-packets
   \item partitions
   \item workings of a neuron (event-based programming model)
-  \item IO (RIPTMCS and LPG and LiveEventConnection)
+  \item IO (Ethernet, SDP, RIPTMCS and LPG and LiveEventConnection)
 \end{itemize}
 
 % }}}
