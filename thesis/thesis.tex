@@ -1067,6 +1067,14 @@ Network-on-Chip (NoC) system for communication between the cores
 Each core can run up to 1000 spiking neurons, which communicate with
 each other over spikes---small packages with a maximum size of 72 bits
 which are sent over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
+Each core has a 64 Kb DTCM---data tightly-coupled memory---for the
+application data and fast access to it.
+The 32 Kb ITCM stores the instructions executed by the core
+\citep{furber_et_al_2020}.
+All cores on a chip share access to 128 Mb SDRAM---synchronous
+dynamic random access memory---which has a higher capacity than
+DTCM but is also a lot slower
+\citep{furber_et_al_2020, spinnaker_2020a}.
 
 By today's standards 18 cores do not qualify as a massively-parallel
 system.
@@ -1265,8 +1273,6 @@ It goes through a stage of mapping the graph onto the available cores,
 before data generation (where e.g.\ parameters of the vertex are
 loaded into SDRAM) and finally running the application
 \citep{furber_et_al_2020}.
-
-% TODO: SDRAM, DTCM and shit into hardware section
 
 Each vertex is represented as a Python object---instantiated from the
 appropriate classes---and has an associated binary, the program to
