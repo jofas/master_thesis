@@ -1339,11 +1339,19 @@ The packet will reach all destination vertices of the partition.
 A vertex can have multiple outgoing edge partitions
 (see Figure~\ref{fig:partitions}) \citep{furber_et_al_2020}.
 
-
-
-\begin{itemize}
-  \item IO (Ethernet, SDP, RIPTMCS and LPG and LiveEventConnection)
-\end{itemize}
+The toolchain offers support for live IO, enabling external devices
+(like robots, or in our case the host) to interact with the
+application running on SpiNNaker.
+Interaction happens, again, via MC packets and by adding extra
+vertices for input and output to the graph.
+Live input is enabled by the \texttt{ReverseIPTagMulticastSource}
+machine vertex and live output by the \texttt{LivePacketGatherer}
+\citep{furber_et_al_2020}.
+The toolchain provides a \texttt{LiveEventConnection} for the
+external device, which supplies the appropriate abstractions over the
+networking.
+Like the SpiNNaker1 API, the \texttt{LiveEventConnection} provides an
+event-based interface with callbacks.
 
 % }}}
 
@@ -1353,6 +1361,7 @@ A vertex can have multiple outgoing edge partitions
 
 
 \begin{itemize}
+  \item inspired by sequential interface of Keras
   \item concepts (layers, neurons, \dots)
   \item communication structure (partitions and global partition manager)
   \item ping-pong
