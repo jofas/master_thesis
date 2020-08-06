@@ -1277,16 +1277,71 @@ loaded into SDRAM) and finally running the application
 Each vertex is represented as a Python object---instantiated from the
 appropriate classes---and has an associated binary, the program to
 be executed by the machine \citep{furber_et_al_2020}.
-% compiler and sark/event based model with callbacks and prio
-% (maybe somewhat verbose: I want to discuss me spending too much
-% time in receive callback)
+The source code of the binary to be executed on the machine is written
+in the C programming language and compiled with the gcc compiler from
+the GNU ARM embedded toolchain \citep{arm_2020, rowley_et_al_2019}.
+Machine vertices are not common C programs.
+They do not own the control flow but instead are event-based, like
+the ECMAScript programming language \citep{ecma_2020}.
+The SpiNNaker1 API provides the operating system executing the vertex
+and serves the mechanism for registering software callback functions,
+triggered when a certain event occurs \citep{furber_et_al_2020}.
+The two events used by the vertices of this prototype were:
+(\romannumeral 1) receiving a packet and (\romannumeral 2) a
+periodical update event, called every $x$ cycles.
+
+\begin{figure}
+\begin{center}
+  \begin{tikzpicture}[dot/.style={circle, draw, minimum size=1.25cm}]
+    \node[dot] at (0, 0) (source) {source};
+
+    \node[dot] at (4, 3.25) (dest1) {};
+    \node[dot] at (4, 1.25) (dest2) {};
+    \node[dot] at (4, -1.25) (dest3) {};
+    \node[dot] at (4, -3.25) (dest4) {};
+
+    \draw[->] (source) |-
+      node[above]{key: 0, identifier: ``foo''} (dest1);
+    \draw[->] (source) |- (dest2);
+
+    \draw[->, dashed] (source) |- (dest3);
+    \draw[->, dashed] (source) |-
+      node[below]{key: 1, identifier: ``bar''} (dest4);
+  \end{tikzpicture}
+\end{center}
+\caption{Example of a machine vertex ``source'' connected to four
+  other machine vertices over two outgoing edge partitions. If the
+  source vertex sends a MC packet with zero as key, the two upper
+  vertices will receive the packet, whereas with one as key the two
+  lower vertices would receive the packet.}
+\label{fig:partitions}
+\end{figure}
+
+Machine vertices communicate with each other via MC (multicast)
+packets.
+A MC packet has two or three segments:
+(\romannumeral 1) one control byte, (\romannumeral 2) 4 byte key
+and (\romannumeral 3) optionally 4 byte payload.
+This makes a MC packet either 40 or 72 bits long
+\citep{furber_et_al_2020}.
+A MC packet is send via the directed edges between vertices.
+Each edge has an associated outgoing edge partition.
+An outgoing edge partition has one source vertex and $n$ destination
+vertices and---in the case of the machine graph---one unique
+routing key (allocated by the toolchain).
+The routing key---a 32 bit unsigned integer---is unique in the sense
+that no other outgoing edge partition will have the same key.
+Otherwise routing would fail in the sense that packets will be send
+to the wrong destinations.
+If the source vertex sends a MC packet it uses the key of the
+outgoing edge partition.
+The packet will reach all destination vertices of the partition.
+A vertex can have multiple outgoing edge partitions
+(see Figure~\ref{fig:partitions}) \citep{furber_et_al_2020}.
+
+
 
 \begin{itemize}
-  \item global view (host, machine, what runs where and steps until it
-    runs)
-  \item MC-packets
-  \item partitions
-  \item workings of a neuron (event-based programming model)
   \item IO (Ethernet, SDP, RIPTMCS and LPG and LiveEventConnection)
 \end{itemize}
 
@@ -1314,7 +1369,7 @@ be executed by the machine \citep{furber_et_al_2020}.
 \label{subsec:problems}
 
 \begin{itemize}
-
+  \item Too much time spend in receive callback
   \item interpreting neurons as domain decomposition over linear algebra
     compute graph
   \item backward pass: gradients computed two times so comm fabric is
