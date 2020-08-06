@@ -207,6 +207,10 @@ degree or professional qualification except as specified.
 
 \newpage
 
+\lstlistoflistings
+
+\newpage
+
 % listoftables
 
 \pagenumbering{arabic}
@@ -1371,13 +1375,55 @@ implements deep learning as a computational graph
 \citep{goodfellow_et_al_2016}.
 Problems with this assumption are discussed in
 Section~\ref{subsec:problems}.
-
-% TODO: listing
-
-The API of the prototype was designed to resemble the sequential
-model of the Keras deep learning library \citep{keras}.
+The API of the prototype was designed to resemble the API of the Keras
+deep learning library \citep{keras}.
 An example comparison can be seen in
 Listing~\ref{lst:spiDNN_vs_keras}.
+
+
+\begin{figure}
+\begin{lstlisting}[language=Python, caption={Example code comparing
+  Keras to the prototype. The code would result in a model akin to the
+  one shown in Figure~\ref{fig:spiDNN_arch}.}, captionpos=b,
+  label=lst:spiDNN_vs_keras]
+import tensorflow as tf
+import numpy as np
+
+# prototype library
+from spiDNN import Model
+from spiDNN.layers import Input, Dense
+
+# random test set
+X = np.random.rand(500, 64)
+
+# the keras model
+keras_model = tf.keras.Sequential()
+keras_model.add(tf.keras.layers.Dense(128, input_shape=(64,)))
+keras_model.add(tf.keras.layers.Dense(128, activation="relu"))
+keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
+
+# the equivalent model for SpiNNaker
+spinn_model = Model()
+spinn_model.add(Input(64))
+spinn_model.add(Dense(128))
+spinn_model.add(Dense(128, activation="relu"))
+spinn_model.add(Dense(10, activation="softmax"))
+
+# this call ensures both models have the same parameters
+model.set_weights(keras_model.get_weights())
+
+# predict the results for the random test set
+# (with random weights)
+p_ = kmodel.predict(X)
+p = model.predict(X)
+
+error = np.absolute(p - p_)
+
+# difference in prediction can happen,
+# due to floating point errors
+assert np.amax(error) < 1e-4
+\end{lstlisting}
+\end{figure}
 
 \begin{figure}
   \begin{center}
@@ -1504,14 +1550,15 @@ Listing~\ref{lst:spiDNN_vs_keras}.
 
 
 \begin{itemize}
-  \item inspired by sequential interface of Keras
-  \item concepts (layers, neurons, \dots)
+  \item concepts (layers, interfaces (weight\_interface,
+    layer\_interface), neurons, \dots)
   \item communication structure (partitions and global partition manager)
   \item ping-pong
   \item forward pass
   \item graph structure (especially focused on edge and host--SpiNN
     communication)
   \item backward pass
+  \item Conv1D
 \end{itemize}
 
 % }}}
