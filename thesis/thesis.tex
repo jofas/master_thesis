@@ -1345,19 +1345,162 @@ application running on SpiNNaker.
 Interaction happens, again, via MC packets and by adding extra
 vertices for input and output to the graph.
 Live input is enabled by the \texttt{ReverseIPTagMulticastSource}
-machine vertex and live output by the \texttt{LivePacketGatherer}
-\citep{furber_et_al_2020}.
-The toolchain provides a \texttt{LiveEventConnection} for the
+(RIPTMCS) machine vertex and live output by the
+\texttt{LivePacketGatherer} (LPG) \citep{furber_et_al_2020}.
+The toolchain provides a \texttt{LiveEventCon\-nection} for the
 external device, which supplies the appropriate abstractions over the
 networking.
-Like the SpiNNaker1 API, the \texttt{LiveEventConnection} provides an
-event-based interface with callbacks.
+Like the SpiNNaker1 API, the \texttt{Live\-Event\-Con\-nection}
+provides an event-based interface with callbacks.
 
 % }}}
 
 
 \subsection{Architecture of the Prototype} % {{{
 \label{subsec:SpiDNN_arch}
+
+The underlying assumption made for developing the prototype was,
+that because SpiNNaker was designed to run spiking neurons, it would
+be a natural fit to implement deep learning on a neuron level as well.
+Besides that, neurons are an easy-to-understand abstraction over the
+mechanisms of deep learning and rather straight-forward to implement.
+This design decision was made against the trend of both deep learning
+research and state-of-the-art deep learning libraries.
+The former more commonly abstracts over layers while the latter
+implements deep learning as a computational graph
+\citep{goodfellow_et_al_2016}.
+Problems with this assumption are discussed in
+Section~\ref{subsec:problems}.
+
+% TODO: listing
+
+The API of the prototype was designed to resemble the sequential
+model of the Keras deep learning library \citep{keras}.
+An example comparison can be seen in
+Listing~\ref{lst:spiDNN_vs_keras}.
+
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[
+      elem/.style={rectangle, draw},
+      dot/.style={circle, draw},
+      layer/.style={minimum width=2.6cm},
+      container/.style={minimum width=\linewidth,
+                         minimum height=3cm}
+    ]
+      \node[elem, container]
+        at (0, 0) (model) {};
+      \node[above right] at (model.north west) {model};
+
+      \node[elem, layer, label=input layer]
+        (layer_input) at ($(model.west) + (2, 0)$) {64 Input};
+      \node[elem, layer, label=1st hidden layer, right=1.1 of layer_input]
+        (layer_hidden1) {128 Dense};
+      \node[elem, layer, label=2nd hidden layer, right=1.1 of layer_hidden1]
+        (layer_hidden2) {128 Dense};
+      \node[elem, layer, label=output layer, right=1.1 of layer_hidden2]
+        (layer_output) {10 Dense};
+
+      \draw[->] (layer_input) -- (layer_hidden1);
+      \draw[->] (layer_hidden1) -- (layer_hidden2);
+      \draw[->] (layer_hidden2) -- (layer_output);
+
+
+      \draw[dashed] ($(model.south west) - (0, 1)$)
+        node[above right] {prototype}
+        node[below right] {SpiNNaker toolchain} --
+        ($(model.south east) - (0, 1)$);
+
+      \node[elem, container, below=2 of model] (machine_graph) {};
+      \node[below right] at (machine_graph.south west)
+        {machine graph};
+
+      \node[dot, below=3.8 of layer_input.south west]
+        (input0) {};
+      \node[dot, below=.1 of input0]
+        (input1) {};
+      \node[dot, below=.1 of input1]
+        (input2) {};
+      \node[below=.001 of input2] {\vdots};
+
+      \node[dot, below=3.8 of layer_hidden1.south west]
+        (hidden00) {};
+      \node[dot, below=.1 of hidden00]
+        (hidden01) {};
+      \node[dot, below=.1 of hidden01]
+        (hidden02) {};
+      \node[below=.001 of hidden02] {\vdots};
+
+      \node[dot, below=3.8 of layer_hidden2.south west]
+        (hidden10) {};
+      \node[dot, below=.1 of hidden10]
+        (hidden11) {};
+      \node[dot, below=.1 of hidden11]
+        (hidden12) {};
+      \node[below=.001 of hidden12] {\vdots};
+
+      \node[dot, below=3.8 of layer_output.south west]
+        (output0) {};
+      \node[dot, below=.1 of output0]
+        (output1) {};
+      \node[dot, below=.1 of output1]
+        (output2) {};
+      \node[below=.001 of output2] {\vdots};
+
+
+      \node[dot, dashed, right=2.25 of output1] (lpg) {};
+
+
+      \draw[->] (model) -- node[above right]
+        {\texttt{.fit}, \texttt{.predict}} (machine_graph);
+
+      \draw[->] (input0.east) -- (hidden00.west);
+      \draw (input0.east) -- (hidden01.west);
+      \draw (input0.east) -- (hidden02.west);
+
+      \draw (input1.east) -- (hidden00.west);
+      \draw[->] (input1.east) -- (hidden01.west);
+      \draw (input1.east) -- (hidden02.west);
+
+      \draw (input2.east) -- (hidden00.west);
+      \draw (input2.east) -- (hidden01.west);
+      \draw[->] (input2.east) -- (hidden02.west);
+
+      \draw[->] (hidden00.east) -- (hidden10.west);
+      \draw (hidden00.east) -- (hidden11.west);
+      \draw (hidden00.east) -- (hidden12.west);
+
+      \draw (hidden01.east) -- (hidden10.west);
+      \draw[->] (hidden01.east) -- (hidden11.west);
+      \draw (hidden01.east) -- (hidden12.west);
+
+      \draw (hidden02.east) -- (hidden10.west);
+      \draw (hidden02.east) -- (hidden11.west);
+      \draw[->] (hidden02.east) -- (hidden12.west);
+
+      \draw[->] (hidden10.east) -- (output0.west);
+      \draw (hidden10.east) -- (output1.west);
+      \draw (hidden10.east) -- (output2.west);
+
+      \draw (hidden11.east) -- (output0.west);
+      \draw[->] (hidden11.east) -- (output1.west);
+      \draw (hidden11.east) -- (output2.west);
+
+      \draw (hidden12.east) -- (output0.west);
+      \draw (hidden12.east) -- (output1.west);
+      \draw[->] (hidden12.east) -- (output2.west);
+
+      \draw (output0.east) -- (lpg.west);
+      \draw[->] (output1.east) -- (lpg.west);
+      \draw (output2.east) -- (lpg.west);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Illustration of how a machine graph is generated by the
+    prototype. The dashed circle represents an auxiliary machine
+    vertex, in this case the LPG. This machine graph would be
+    generated when the predict method of the model is called.}
+  \label{fig:spiDNN_arch}
+\end{figure}
 
 
 \begin{itemize}
