@@ -1701,6 +1701,52 @@ model and for training the \texttt{fit} method.
 % here describe what happens during predict
 Algorithm~\ref{alg:pred} shows what happens during the
 \texttt{predict} method.
+First, an auxiliary layer for the live IO is created, the extractor
+layer.
+The extractor layer has a single machine vertex, a LPG instance
+(see Section~\ref{subsec:spinn_toolchain}) for streaming the
+predictions off of SpiNNaker, back to the host.
+The first layer---which must always be an input layer---handles
+streaming the data onto the machine.
+Neurons of a input layer are simple wrappers around the RIPTMCS
+machine vertices provided by the SpiNNaker toolchain (see
+Section~\ref{subsec:spinn_toolchain}).
+
+The layer interface specifies a \texttt{reset} method, which is
+called for each layer in Algorithm~\ref{alg:pred}, line 2.
+This method resets the neurons of a layer (simply deletes them).
+If, for example, the model was trained before the call to the
+\texttt{predict} method---probably the most common workflow in deep
+learning---the neurons from the training graph would still exist.
+Beyond the training these neurons are meaningless, because they were
+part of a different run on SpiNNaker and must be deleted (when the
+toolchain is resetted it deletes its machine graph instance, but the
+vertex objects remain).
+They could be deleted right before the \texttt{fit} or
+\texttt{predict} method exits, but for unit testing it is convenient
+to still have the neurons beyond a run on SpiNNaker.
+
+After the machine and the SpiNNaker toolchain are set up, the
+machine vertices (neurons) are initialized
+(see Algorithm~\ref{alg:pred}, line 4).
+The layer interface always sits between the model and the neurons.
+The model only ever calls methods of the layers.
+This is a design pattern in software engineering called the layered
+pattern (not to be confused with the layers provided by our
+prototype) \citep{morlion_2018}.
+This design pattern is a common way to abstract---e.g.\ TCP/IP or the
+OSI model \citep{tanenbaum_et_al_2013}---and holds code complexity
+down, makes ownership clear and helps writing well-defined interfaces.
+For the initialization of the neurons, the layer interface provides
+a method \texttt{init\_neurons}.
+This method generates the neurons, which are stored in the
+\texttt{neurons} property of each layer (a Python list).
+The \texttt{init\_neurons} method furthermore adds the neurons to
+the machine graph of the SpiNNaker toolchain.
+
+% forward pass
+
+% live io and what it does
 
 \begin{algorithm} % {{{
   \caption{: \texttt{predict} method}
@@ -1722,8 +1768,6 @@ Algorithm~\ref{alg:pred} shows what happens during the
     \COMMENT{predictions collected by live IO}
   \end{algorithmic}
 \end{algorithm} % }}}
-
-% here forward pass and predict
 
 % then paragraph softmax
 
