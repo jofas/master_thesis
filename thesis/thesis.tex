@@ -413,7 +413,7 @@ How a network of perceptrons---a more complex statistical model better
 suited for real world applications---is trained via backpropagation
 and gradient descent, will be explained below.
 
-\begin{figure}
+\begin{figure} % {{{
 	\begin{center}
 	\begin{tikzpicture}[dot/.style={circle,draw}]
 		\node at (3,0) (out) {$y$};
@@ -432,7 +432,7 @@ and gradient descent, will be explained below.
 	\end{center}
 	\caption {Schema of a perceptron.}
 	\label{fig:perceptron}
-\end{figure}
+\end{figure} % }}}
 
 The second historical phase of deep learning is known as
 connectionism (1980s-1990s) \citep{goodfellow_et_al_2016}.
@@ -460,7 +460,7 @@ Unlike the single layer perceptron, the MLP has at least one
 A hidden layer is a layer between the input and output layers (see
 Figure~\ref{fig:mlp}).
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{center}
 	\begin{tikzpicture}[dot/.style={circle,draw,minimum size = .5cm}]
 		\node at(-4,5) {input layer};
@@ -520,7 +520,7 @@ Figure~\ref{fig:mlp}).
 \end{center}
 \caption {Schema of a MLP or feedforward neural network.}
 \label{fig:mlp}
-\end{figure}
+\end{figure} % }}}
 
 A MLP can also be represented as a statistical model
 $f(\mathbf{x};\mathbf{\theta})$.
@@ -641,7 +641,7 @@ grid-like topology, like time-series (1D), images (2D) or videos (3D)
 \citep{goodfellow_et_al_2016}.
 
 Unlike dense layers of perceptrons, convolutional layers do not apply
-a full matrix multiplication $\mathbf{x}^\top\mathbf{W}$ but instead
+a full matrix multiplication $\mathbf{W}^\top\mathbf{x}$ but instead
 a linear operation $*$ called convolution.
 A one dimensional discrete convolution can be described as:
 \begin{align}
@@ -679,7 +679,7 @@ layer performing the operation from Figure~\ref{fig:conv_op}.
 The result of a convolution can be transformed by an activation
 function like the perceptron and the concept of the bias applies also.
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{center}
 \begin{tikzpicture}[box/.style={rectangle,draw, minimum size=.5cm}]
   \node[box] at (0,0) (a) {a};
@@ -706,9 +706,9 @@ function like the perceptron and the concept of the bias applies also.
   size of three, a single channel, a single filter, a stride of one
   and valid padding.}
 \label{fig:conv_op}
-\end{figure}
+\end{figure} % }}}
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{center}
 	\begin{tikzpicture}[rotate=90, dot/.style={circle,draw,minimum size = .75cm}]
 		\node at (0,2) [dot] (h2) {};
@@ -744,7 +744,7 @@ function like the perceptron and the concept of the bias applies also.
   there are much less edges compared to a dense layer shown in
   Figure~\ref{fig:mlp}.}
 \label{fig:cnn}
-\end{figure}
+\end{figure} % }}}
 
 Normally a convolutional layer does not consist of a single
 convolution, but applies multiple kernels to the output of the
@@ -787,7 +787,7 @@ the valid input (along each spatial dimension) so that the feature map
 of the convolutional layer will have the same spatial dimensions as
 its input (see Figure~\ref{fig:padding} \citep{goodfellow_et_al_2016}.
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{center}
 	\begin{tikzpicture}[rotate=90, dot/.style={circle,draw,minimum size = .75cm}]
 		\node at (0,4) [dot] (h1) {};
@@ -815,7 +815,7 @@ its input (see Figure~\ref{fig:padding} \citep{goodfellow_et_al_2016}.
 \caption {Example showing a layer with same padding and a
   stride of two.}
 \label{fig:padding}
-\end{figure}
+\end{figure} % }}}
 
 Along convolutional layers, CNNs often have \textit{pooling layers}.
 A pooling layer summarizes locally with the goal of making the
@@ -1294,7 +1294,7 @@ The two events used by the vertices of this prototype were:
 (\romannumeral 1) receiving a packet and (\romannumeral 2) a
 periodical update event, called every $x$ cycles.
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{center}
   \begin{tikzpicture}[dot/.style={circle, draw, minimum size=1.25cm}]
     \node[dot] at (0, 0) (source) {source};
@@ -1319,7 +1319,7 @@ periodical update event, called every $x$ cycles.
   vertices will receive the packet, whereas with one as key the two
   lower vertices would receive the packet.}
 \label{fig:partitions}
-\end{figure}
+\end{figure} % }}}
 
 Machine vertices communicate with each other via MC (multicast)
 packets.
@@ -1381,7 +1381,7 @@ An example comparison can be seen in
 Listing~\ref{lst:spiDNN_vs_keras}.
 
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{lstlisting}[language=Python, caption={Example code comparing
   Keras to the prototype. The code would result in a model akin to the
   one shown in Figure~\ref{fig:spiDNN_arch}.}, captionpos=b,
@@ -1423,7 +1423,7 @@ error = np.absolute(p - p_)
 # due to floating point errors
 assert np.amax(error) < 1e-4
 \end{lstlisting}
-\end{figure}
+\end{figure} % }}}
 
 The prototype exposes the \texttt{Model} class to the user.
 The model is the main interface to SpiNNaker and---as the name
@@ -1479,7 +1479,7 @@ prototype, and compare their outputs against each other
 The same goes for testing backpropagation, where we could simply train
 both models and compare the updated weights.
 
-\begin{figure}
+\begin{figure} % {{{
   \begin{center}
     \begin{tikzpicture}[
       elem/.style={rectangle, draw},
@@ -1598,9 +1598,10 @@ both models and compare the updated weights.
   \caption{Illustration of how a machine graph is generated by the
     prototype. The dashed circle represents an auxiliary machine
     vertex, in this case the LPG. This machine graph would be
-    generated when the predict method of the model is called.}
+    generated when the \texttt{predict} method of the model is
+    called.}
   \label{fig:spiDNN_arch}
-\end{figure}
+\end{figure} % }}}
 
 Supported layers are: (\romannumeral 1) input,
 (\romannumeral 2) dense and (\romannumeral 3) 1D convolutional layers.
@@ -1623,7 +1624,7 @@ for deep learning \citep{goodfellow_et_al_2016}.
 1D convolutional layers have support for same and valid (default)
 padding and they can be strided (see Section~\ref{subsec:intro_dl}).
 
-\begin{figure}
+\begin{figure} % {{{
 \begin{lstlisting}[language=Python, caption={Example code comparing
   1D CNNs in Keras to the prototype.}, captionpos=b,
   label=lst:spiDNN_vs_keras_cnns, numbers=left]
@@ -1671,7 +1672,62 @@ error = np.absolute(p - p_)
 # due to floating point errors
 assert np.amax(error) < 1e-4
 \end{lstlisting}
-\end{figure}
+\end{figure} % }}}
+
+Like stated above, a deep learning model is decomposed into neurons
+in order to execute it on SpiNNaker.
+Neurons are part of the internal APIs of the prototype and not exposed
+to the user.
+The neuron of a dense layer can be seen in
+Figure~\ref{fig:perceptron}.
+Each neuron of a convolutional layer performs one single convolution
+operation with all filters of the layer.
+For example, when we look at Figure~\ref{fig:conv_op}, $ax + by + cz$
+would be one convolution with one filter.
+If the layer has a second filter with a kernel $w, v, u$, the neuron
+would produce a second value $aw + bv + cu$.
+The input $a, b, c$ stays the same.
+A convolutional layer is schematized in Figure~\ref{fig:cnn}.
+
+Figure~\ref{fig:spiDNN_arch} shows how to operate the prototype.
+The user defines the sequential deep learning model, like described
+above.
+Only when the inference or training operations are called is the
+model translated into a SpiNNaker machine graph and executed on the
+connected machine.
+For inference one has to call the \texttt{predict} method of the
+model and for training the \texttt{fit} method.
+
+% here describe what happens during predict
+Algorithm~\ref{alg:pred} shows what happens during the
+\texttt{predict} method.
+
+\begin{algorithm} % {{{
+  \caption{: \texttt{predict} method}
+  \label{alg:pred}
+
+  \begin{algorithmic}[1]
+    \STATE{create extractor layer}
+    \STATE{reset layers}
+    \STATE{setup SpiNNaker}
+    \STATE{initialize machine vertices}
+    \STATE{establish forward pass connections}
+    \STATE{establish connection between output layer and extractor}
+    \STATE{setup live IO}
+    \STATE{execute model on SpiNNaker (run forever)}
+    \COMMENT{the live IO connection stops the execution}
+    \STATE{stop the SpiNNaker machine}
+    \STATE{close live IO}
+    \RETURN{predictions}
+    \COMMENT{predictions collected by live IO}
+  \end{algorithmic}
+\end{algorithm} % }}}
+
+% here forward pass and predict
+
+% then paragraph softmax
+
+% softmax -> difficulties with partitions -> own partition manager
 
 % then go into detail on how all is implemented (neurons, connections,
 % blah blah blah)
