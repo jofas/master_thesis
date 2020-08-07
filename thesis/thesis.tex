@@ -1360,7 +1360,7 @@ provides an event-based interface with callbacks.
 % }}}
 
 
-\subsection{Architecture of the Prototype} % {{{
+\subsection{The Prototype} % {{{
 \label{subsec:SpiDNN_arch}
 
 The underlying assumption made for developing the prototype was,
@@ -1385,7 +1385,7 @@ Listing~\ref{lst:spiDNN_vs_keras}.
 \begin{lstlisting}[language=Python, caption={Example code comparing
   Keras to the prototype. The code would result in a model akin to the
   one shown in Figure~\ref{fig:spiDNN_arch}.}, captionpos=b,
-  label=lst:spiDNN_vs_keras]
+  label=lst:spiDNN_vs_keras, numbers=left]
 import tensorflow as tf
 import numpy as np
 
@@ -1424,6 +1424,60 @@ error = np.absolute(p - p_)
 assert np.amax(error) < 1e-4
 \end{lstlisting}
 \end{figure}
+
+The prototype exposes the \texttt{Model} class to the user.
+The model is the main interface to SpiNNaker and---as the name
+clearly suggests---functions as the representation of a deep learning
+model.
+It is designed to be used the same way as Keras's \texttt{Sequential}
+model (see Listing~\ref{lst:spiDNN_vs_keras}).
+The second user interface are the layers---the building blocks of
+a model.
+Layers are added sequentially to a model instance by calling the
+model's \texttt{add} method.
+A layer has at most one preceding and one succeeding layer
+(see Figure~\ref{fig:spiDNN_arch}).
+While this suits most common needs, modern deep learning models,
+like the inception nets \citep{szegedy_et_al_2014}, have layers
+connected to multiple preceding and succeeding layers.
+Also the shortcut connections of the ResNets (see
+Section~\ref{subsec:intro_bench}) are not straight forward to
+implement with the sequential API.
+Keras therefore exposes another API, its functional API.
+The prototype was not developed so far and only supports sequential
+models.
+
+The model stores the trainable parameters (the weights of the layers),
+which can be accessed via the \texttt{set\_weights} and
+\texttt{get\_weights} methods of the model class.
+The parameters are generated during the \texttt{add} call by the
+added layer, since weights are different for different layer types
+and can depend on the preceding layer.
+For example, a dense layer generates the weight matrix
+$\mathbf{W}: n \times m$ and the bias $m$-vector.
+$n$ is the amount of neurons in the preceding layer, $m$ the amount of
+neurons of the dense layer.
+Convolutional layers do not depend on the previous layer for their
+weights.
+For example a 1D convolutional layer generates a $3$D array
+$\mathbf{W}: \text{\textit{kernel size}} \times channels \times
+filters$ and a bias $filters$-vector.
+$\mathbf{W}$ are the kernels for each filter (see
+Section~\ref{subsec:intro_dl}).
+The kernel of a 2D convolutional layer simply has one more spatial
+dimension, so the 2D layer would generate a 4D array as weights.
+The input layer does not generate any weights.
+The formats of the weights is again inspired by Keras and enables
+seamless interoperability between a SpiNNaker deep learning model and
+the subset of the Keras API supported by the prototype
+(see Listing~\ref{lst:spiDNN_vs_keras}, line 25).
+Having our prototype so closely resemble Keras had the great advantage
+of enabling precise integration testing.
+We could simply build two equal models, one in Keras and one with our
+prototype, and compare their outputs against each other
+(see Listing~\ref{lst:spiDNN_vs_keras}, lines 29ff).
+The same goes for testing backpropagation, where we could simply train
+both models and compare the updated weights.
 
 \begin{figure}
   \begin{center}
@@ -1548,10 +1602,81 @@ assert np.amax(error) < 1e-4
   \label{fig:spiDNN_arch}
 \end{figure}
 
+Supported layers are: (\romannumeral 1) input,
+(\romannumeral 2) dense and (\romannumeral 3) 1D convolutional layers.
+A flatten layer (used for flattening a feature map into a one
+dimensional vector so it can be processed by a dense layer) is
+implicitly implemented (see Listing~\ref{lst:spiDNN_vs_keras_cnns}).
+Besides layers, the prototype supports the following activation
+functions:
+\begin{itemize}
+  \item identity (default when activation unspecified): $f(x) = x$.
+  \item tanh: $f(x) = tanh(x)$
+  \item sigmoid: $f(x) = \frac{1}{1 + \exp(-x)}$
+  \item relu (rectified linear unit): $f(x) = max(0, x)$
+  \item softmax: $f(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N}\exp(x_j)}$
+\end{itemize}
+The only supported optimizer (algorithm for training the weights) is
+gradient descent with a constant learning rate.
+Gradient descend is probably the most common optimization algorithm
+for deep learning \citep{goodfellow_et_al_2016}.
+1D convolutional layers have support for same and valid (default)
+padding and they can be strided (see Section~\ref{subsec:intro_dl}).
+
+\begin{figure}
+\begin{lstlisting}[language=Python, caption={Example code comparing
+  1D CNNs in Keras to the prototype.}, captionpos=b,
+  label=lst:spiDNN_vs_keras_cnns, numbers=left]
+import tensorflow as tf
+import numpy as np
+
+# prototype library
+from spiDNN import Model
+from spiDNN.layers import Input, Dense, Conv1D
+
+# 64 features, each with 4 channels
+input_shape = (64, 4)
+
+# random test set
+X = np.random.rand(500, *input_shape)
+
+# the keras model
+keras_model = tf.keras.Sequential()
+# this layer has 20 filters and a kernel size of 3
+keras_model.add(tf.keras.layers.Conv1D(20, 3, input_shape=input_shape))
+keras_model.add(tf.keras.layers.Conv1D(5, 3, activation="relu"))
+keras_model.add(tf.keras.layers.Flatten())
+keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
+
+# the equivalent model for SpiNNaker
+spinn_model = Model()
+spinn_model.add(Input(*input_shape))
+spinn_model.add(Conv1D(20, (3,)))
+# The feature map of this layer is implicitly flattened,
+# because the next layer is a dense layer
+spinn_model.add(Conv1D(5, (3,), activation="relu"))
+spinn_model.add(Dense(10, activation="softmax"))
+
+# this call ensures both models have the same parameters
+model.set_weights(keras_model.get_weights())
+
+# predict the results for the random test set
+# (with random weights)
+p_ = kmodel.predict(X)
+p = model.predict(X)
+
+error = np.absolute(p - p_)
+
+# difference in prediction can happen,
+# due to floating point errors
+assert np.amax(error) < 1e-4
+\end{lstlisting}
+\end{figure}
+
+% then go into detail on how all is implemented (neurons, connections,
+% blah blah blah)
 
 \begin{itemize}
-  \item concepts (layers, interfaces (weight\_interface,
-    layer\_interface), neurons, \dots)
   \item communication structure (partitions and global partition manager)
   \item ping-pong
   \item forward pass
@@ -1568,6 +1693,7 @@ assert np.amax(error) < 1e-4
 \label{subsec:problems}
 
 \begin{itemize}
+  \item what is all missing (2D, Pooling and Shortcut connections)
   \item Too much time spend in receive callback
   \item interpreting neurons as domain decomposition over linear algebra
     compute graph
