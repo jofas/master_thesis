@@ -1744,6 +1744,27 @@ This method generates the neurons, which are stored in the
 The \texttt{init\_neurons} method furthermore adds the neurons to
 the machine graph of the SpiNNaker toolchain.
 
+After the neurons are created and initialized, the connections for
+the forward pass are generated (see Algorithm~\ref{alg:pred}, lines 5
+and 6).
+The layer interface offers the \texttt{connect\_incoming} and
+\texttt{connect\_outgoing} functions for this.
+Incoming and outgoing refer to the called layer, respectively.
+For example, the forward pass is built with calling
+\texttt{connect\_incoming} for each hidden layer, the output layer
+and the auxiliary layer for extracting the predictions.
+Each of these layers is connected with the preceding layer.
+All layers except convolutional layers connect every of their neurons
+with every neuron of the layer connected with.
+Connecting convolutional layers is more complicated, because they
+also need to take care of stride and padding.
+
+Last thing to be set up, before execution can start, is the live IO
+connection for streaming the observations onto the board and the
+predictions off it.
+
+% ping pong protocol
+
 % forward pass
 
 % live io and what it does
