@@ -1698,7 +1698,6 @@ connected machine.
 For inference one has to call the \texttt{predict} method of the
 model and for training the \texttt{fit} method.
 
-% here describe what happens during predict
 Algorithm~\ref{alg:pred} shows what happens during the
 \texttt{predict} method.
 First, an auxiliary layer for the live IO is created, the extractor
@@ -1761,13 +1760,33 @@ also need to take care of stride and padding.
 
 Last thing to be set up, before execution can start, is the live IO
 connection for streaming the observations onto the board and the
-predictions off it.
+predictions off it (see Algorithm~\ref{alg:pred}, line 7).
+The communication protocol chosen was the most naive possible
+solution, staying true to our development principle (see above).
+We called the protocol ping-pong protocol, because the communication
+pattern resembles table tennis, the host being one player, the
+SpiNNaker machine the other.
+The host always sends data onto the board (ping) and receives some
+sort of result (pong).
+After receiving the pong, another ping is sent by the host or the
+execution is stopped when no more data is there to send.
+During inference the observations are streamed onto the board as the
+ping events.
+The deep learning model processes each observation and returns the
+predictions of the output layer as the pong event.
+Each prediction is collected by the live IO callback function for
+receiving data and returned from the \texttt{predict} method
+(see Algorithm~\ref{alg:pred}, line 11).
 
-% ping pong protocol
-
-% forward pass
-
-% live io and what it does
+The ping-pong protocol is easy to implement and easy to reason about.
+Its main disadvantage is performance.
+One can easily see the problem.
+Only a single layer is processing an observation at a time.
+All other layers wait.
+This is a huge waste of time, especially for very deep model
+architectures.
+A possible solution to this problem is discussed in
+Section~\ref{sec:discussion}.
 
 \begin{algorithm} % {{{
   \caption{: \texttt{predict} method}
@@ -1790,21 +1809,21 @@ predictions off it.
   \end{algorithmic}
 \end{algorithm} % }}}
 
+% who da fuck owns the weights
+
+% then from there to how I use the min_prev_key to put the data in
+% its right place (and partitions)
+
 % then paragraph softmax
 
 % softmax -> difficulties with partitions -> own partition manager
 
-% then go into detail on how all is implemented (neurons, connections,
-% blah blah blah)
-
 \begin{itemize}
   \item communication structure (partitions and global partition manager)
-  \item ping-pong
-  \item forward pass
+  \item backward pass
   \item graph structure (especially focused on edge and host--SpiNN
     communication)
-  \item backward pass
-  \item Conv1D
+  \item (Conv1D)
 \end{itemize}
 
 % }}}
@@ -1814,6 +1833,8 @@ predictions off it.
 \label{subsec:problems}
 
 \begin{itemize}
+  \item time
+  \item mention problem with LPG
   \item what is all missing (2D, Pooling and Shortcut connections)
   \item Too much time spend in receive callback
   \item interpreting neurons as domain decomposition over linear algebra
@@ -1852,6 +1873,7 @@ predictions off it.
   \item with this streaming model I have no easy way to do batch
     normalization---implications for vanishing/exploding gradients
     during training
+  \item Ping-pong protocol sucks performance wise
 \end{itemize}
 
 \section{Conclusion}
