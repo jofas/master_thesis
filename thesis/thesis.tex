@@ -1864,10 +1864,61 @@ its corresponding connection.
 The channel counter is then additionally used to determine the correct
 index of the weight the payload of the packet must be multiplied with.
 
-% pseudo code for update and receive methods of the perceptron machine
-% vertex
+Algorithm~\ref{alg:receive_forward} shows the receive event of a
+perceptron machine vertex.
+Unlike stated above, the payload is stored in an array signals,
+instead of multiplying it directly with its corresponding weight and
+summing it up in the perceptron's potential
+(see Algorithm~\ref{alg:update}, lines 2ff).
+If only inference is done with the deep learning model, this could
+be optimized to save precious memory.
+Unfortunately, the received signals must be stored for computing the
+gradients during the backward pass.
+To keep development simple, plain machine vertices for inference and
+their trainable counterparts were kept as close to each other as
+possible.
+Another point in favor of storing the signals, rather than processing
+them directly in the receive event, is the fact that SpiNNaker
+supports floats only in software and floating point operations are
+therefore expensive (they take a lot of cycles)
+\citep{furber_et_al_2020}.
+Receive events must be processed as fast as possible to keep pressure
+off the router, which queues its messages.
+Too many messages and the queue overflows, which leads to packet loss
+(discussed below).
 
+\begin{algorithm} % {{{
+  \caption{: \texttt{receive\_forward}(key, payload) event of a
+    perceptron machine vertex}
+  \label{alg:receive_forward}
 
+  \begin{algorithmic}[1]
+    \STATE{index := key - minimum key}
+    \STATE{signals[index] := payload}
+    \STATE{receive counter += 1}
+  \end{algorithmic}
+\end{algorithm} % }}}
+
+\begin{algorithm} % {{{
+  \caption{: \texttt{update}() event of a perceptron machine vertex}
+  \label{alg:update}
+
+  \begin{algorithmic}[1]
+    \IF {receive counter == N}
+      \STATE{potential := 0}
+      \FOR{(i = 0; i < N; i++)}
+        \STATE{potential += signals[i] $\cdot$ weights[i]}
+      \ENDFOR
+      \STATE{potential += weights[N]}
+      \COMMENT{add the bias}
+      \STATE{potential := $g$(potential)}
+      \COMMENT{apply activation function}
+      \STATE{send(forward key, potential)}
+      \COMMENT{send potential to next layer}
+      \STATE{receive counter := 0}
+    \ENDIF
+  \end{algorithmic}
+\end{algorithm} % }}}
 
 % then paragraph softmax
 
@@ -1878,7 +1929,7 @@ index of the weight the payload of the packet must be multiplied with.
   \item backward pass
   \item graph structure (especially focused on edge and host--SpiNN
     communication)
-  \item (Conv1D)
+  \item (Conv1D): at least n keys for flattening I think
 \end{itemize}
 
 % }}}
