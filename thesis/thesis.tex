@@ -1809,10 +1809,65 @@ Section~\ref{sec:discussion}.
   \end{algorithmic}
 \end{algorithm} % }}}
 
-% who da fuck owns the weights
+Like stated above, weights are actually owned by the model, not
+the layer objects.
+The weights are directly injected into the neurons during their
+generation and initialization.
+Conceptually, a perceptron (neuron of a dense layer) owns the weights
+associated with its incoming connections.
+The filters of the convolutional layers are simply shared between
+all neurons of the layer, so each neuron has a copy.
 
-% then from there to how I use the min_prev_key to put the data in
-% its right place (and partitions)
+How are received packets matched to the correct weight?
+All packets send by the different components of the prototype are
+with payload, so 72 bit big.
+Each packet consists of a control byte and two words, key and payload
+(see Section~\ref{subsec:spinn_toolchain}).
+Each neuron knows how many neurons in the previous layer it is
+connected to and knows their keys within a certain partition.
+The simple MLP shown in Figure~\ref{fig:spiDNN_arch} only has a
+single partition the ``forward'' partition\footnote{Not actually one
+  partition, but lots of outgoing edge partitions with the same
+  identifier (see Section~\ref{subsec:spinn_toolchain}).}.
+During data generation (see Section~\ref{subsec:spinn_toolchain})
+the SpiNNaker toolchain can be queried and the machine graph traversed
+in order to find out the corresponding routing keys.
+The routing keys of the outgoing edge partitions of all the neurons
+from the previous layer, connected to the neuron which is creating its
+mapping between packets and weights, are collected.
+The keys are guaranteed to be consecutive.
+For example, the first neuron of the input layer of the MLP from
+Figure~\ref{fig:spiDNN_arch} would have zero as its key.
+The second neuron one.
+The first neuron of the first hidden layer would have 64 as key and so
+forth.
+How we changed the key allocation process to make this guarantee will
+be discussed below.
+
+After having collected the keys of the neurons from the previous
+layer, the \textit{minimum key} is determined and passed as argument
+to the machine vertex running on SpiNNaker.
+The weights of the neuron are also passed as an argument to the
+machine vertex.
+The weights are a simple array of floats.
+Now if a packet is received, the weight corresponding to the
+connection is simply determined by indexing the weight array with the
+index being the key of the received packet minus the minimum key.
+The same procedure works for the backward pass as well.
+For convolutional neurons it is somewhat more difficult, because they
+receive multiple channels from their preceding neurons.
+The index is therefore determined with an additional array of channel
+counters.
+For each connection a channel counter is created.
+A channel counter is incremented each time a value is received from
+its corresponding connection.
+The channel counter is then additionally used to determine the correct
+index of the weight the payload of the packet must be multiplied with.
+
+% pseudo code for update and receive methods of the perceptron machine
+% vertex
+
+
 
 % then paragraph softmax
 
