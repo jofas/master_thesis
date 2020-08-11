@@ -586,6 +586,7 @@ $w_{ij}$ is updated by performing the stochastic gradient descent%
   whole training set is called an \textit{epoch}.
 }:
 \begin{align}
+  \label{eq:sgd}
   w_{ij}^+ = w_{ij} - \mu \frac{\delta L}{\delta w_{ij}},
 \end{align}
 with $\mu$ as the \textit{learning rate}.
@@ -2101,6 +2102,32 @@ layers.
 % epochs finished? -> write weights back to sdram
 %
 % weight extraction
+
+% TODO: batch gradient descent as equation in intro to dl
+
+\begin{algorithm} % {{{
+  \caption{: high-level overview of training a deep learning model on
+    SpiNNaker}
+  \label{alg:backprop}
+
+  \begin{algorithmic}[1]
+    \FOR{1,\dots,epochs}
+      \FOR{$\mathbf{x}_i \in \mathbf{X}, i=1,\dots,|\mathbf{X}|$}
+        \STATE{forward pass $\mathbf{x}_i$}
+        \STATE{compute loss}
+        \STATE{pass error backwards and compute gradients}
+        \IF{$i \mod$ batch size == 0 || epoch complete}
+          \STATE{update weights with some form of (\ref{eq:sgd})}
+          \COMMENT{depending on the batch size (gradients as sum over
+            $\frac{L_i}{w_{jk}}$)}
+        \ENDIF
+        \IF{last epoch complete}
+          \STATE{write weights back to SDRAM}
+        \ENDIF
+      \ENDFOR
+    \ENDFOR
+  \end{algorithmic}
+\end{algorithm} % }}}
 
 % comm structure (to be discussed in depth in the next section)
 
