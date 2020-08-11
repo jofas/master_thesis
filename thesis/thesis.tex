@@ -1611,11 +1611,27 @@ implicitly implemented (see Listing~\ref{lst:spiDNN_vs_keras_cnns}).
 Besides layers, the prototype supports the following activation
 functions:
 \begin{itemize}
-  \item identity (default when activation unspecified): $f(x) = x$.
-  \item tanh: $f(x) = tanh(x)$
-  \item sigmoid: $f(x) = \frac{1}{1 + \exp(-x)}$
-  \item relu (rectified linear unit): $f(x) = max(0, x)$
-  \item softmax: $f(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N}\exp(x_j)}$
+  \item identity (default when activation unspecified):
+    \begin{align}
+      f(x) = x
+    \end{align}
+  \item tanh:
+    \begin{align}
+      f(x) = tanh(x)
+    \end{align}
+  \item sigmoid:
+    \begin{align}
+      f(x) = \frac{1}{1 + \exp(-x)}
+    \end{align}
+  \item relu (rectified linear unit):
+    \begin{align}
+      f(x) = max(0, x)
+    \end{align}
+  \item softmax:
+    \begin{align}
+      \label{eq:softmax}
+      f(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N}\exp(x_j)}
+    \end{align}
 \end{itemize}
 The only supported optimizer (algorithm for training the weights) is
 gradient descent with a constant learning rate.
@@ -1866,7 +1882,8 @@ index of the weight the payload of the packet must be multiplied with.
 
 Algorithm~\ref{alg:receive_forward} shows the receive event of a
 perceptron machine vertex.
-Unlike stated above, the payload is stored in an array signals,
+Unlike stated above, the payload is stored in an array called
+``signals'',
 instead of multiplying it directly with its corresponding weight and
 summing it up in the perceptron's potential
 (see Algorithm~\ref{alg:update}, lines 2ff).
@@ -1920,7 +1937,57 @@ Too many messages and the queue overflows, which leads to packet loss
   \end{algorithmic}
 \end{algorithm} % }}}
 
-% then paragraph softmax
+The prototype must support multiple partitions.
+For basic inference---without a softmax layer (see below)---it is only
+one partition, like stated above.
+For the backward pass during training on the other hand, neurons are
+not only connected to the neurons of the succeeding layer, but also
+to the ones of the preceding layer.
+If these backward connections were also part of the ``forward''
+outgoing edge partition of the neuron, the potential would reach the
+neurons in the preceding layer as well.
+In the other direction, the error passed backwards would reach the
+neurons in the succeeding layer.
+It would be hard to determine if a packet is a potential (meant to
+send forward) or an error (meant to send backward).
+Furthermore this would mean that a lot of MC packets would simply
+be dropped by the receiving vertex, because only one set of neurons
+handles potentials while the other only handles errors.
+This would put unnecessary strain onto the communication fabric.
+
+Not only does the backward pass needs its own partition, there is
+also an activation function which behaves differently than the other
+activation functions implemented.
+The activation function is the softmax activation function
+(see Equation~\ref{eq:softmax}).
+Softmax depends on the output of the other neurons of the same layer,
+producing a normalized version of the potential.
+Softmax is a common activation function for the output layer, making
+the output a probability distribution over the $K$ output neurons
+\citep{goodfellow_et_al_2016}.
+
+The first implementation of the machine vertices handled softmax
+in the next layer or on the host, if the output layer had softmax as
+activation.
+Most certainly faster than the current version, it led to awkward
+code with more branches.
+The amount of overhead in the code and the fact that now information
+of one layer (its activation function) has to be shared with another
+layer was deemed too complex at this stage of the prototype.
+The softmax activation function was implemented early in the
+development process where we tried to avoid code complexity at all
+cost.
+The current version of the prototype handles softmax via an
+intra-layer partition, the ``softmax'' partition.
+The neurons of a softmax layer are fully connected.
+Instead of passing the potential forward (see
+Algorithm~\ref{alg:update}, line 8) it is passed sideways to all
+neurons in the same layer.
+The potentials received on the softmax partition are summed in a
+variable ``denominator'' and when all packets from one pass on the
+softmax partition are received (all potentials from the neurons in the
+same layer), the potential of the neuron is divided through the
+denominator and passed forward to the neurons of the next layer.
 
 % softmax -> difficulties with partitions -> own partition manager
 
