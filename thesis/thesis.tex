@@ -1983,11 +1983,12 @@ The neurons of a softmax layer are fully connected.
 Instead of passing the potential forward (see
 Algorithm~\ref{alg:update}, line 8) it is passed sideways to all
 neurons in the same layer.
-The potentials received on the softmax partition are summed in a
-variable ``denominator'' and when all packets from one pass on the
-softmax partition are received (all potentials from the neurons in the
-same layer), the potential of the neuron is divided through the
-denominator and passed forward to the neurons of the next layer.
+The potentials received on the connections of the softmax partition
+are summed in a variable ``denominator''.
+When all packets from one pass on the softmax partition are received
+(all potentials from the neurons in the same layer), the potential of
+the neuron is divided through the denominator and passed forward to
+the neurons of the next layer (or the host, respectively).
 
 % softmax -> difficulties with partitions -> own partition manager
 
