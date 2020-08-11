@@ -2007,9 +2007,17 @@ global partition key allocator.
 Everytime a directed edge is added to the machine graph (e.g.\ as
 is done in Algorithm~\ref{alg:pred}, lines 5 and 6) it is mapped to
 its place in the key space, such that partitions continue to be
-consecutive.
-First touch means that the first partition will have the lower keys
-in the key space.
+consecutive (global partition over the outgoing edge partitions of
+each neuron).
+First-touch has two meanings.
+On the one hand it means that the first partition will have the lower
+keys in the key space.
+On the other hand the source neuron of the directed edge added will
+have the next biggest key of that partition.
+This way we guarantee that, if the connections from the first neuron
+of a layer are created before those of the second neuron, the second
+neuron will have the key of the first neuron plus one.
+
 The intra-layer connections for the softmax partition are established
 during initialization of the neurons (see Algorithm~\ref{alg:pred},
 line 4).
@@ -2039,10 +2047,63 @@ convolutional layer during the backward pass, since the weights of
 the convolutional layer are shared between its neurons
 (see Section~\ref{subsec:intro_dl}).
 
+After implementation of the forward pass and the activation functions,
+the backward pass was implemented, enabling training a MLP.
+The forward pass of trainable neurons works the same with plain
+inference neurons, thanks to our development choices (see above).
+Training a deep learning model on SpiNNaker is done via the
+\texttt{fit} method.
+The method takes a training set and its labels as two input
+parameters.
+Furthermore one has to define the parameters of the training session.
+These parameters are: (\romannumeral 1) the loss function to be
+optimized, (\romannumeral 2) the amount of iterations over the whole
+training set (the epochs), (\romannumeral 3) the batch size for
+gradient descent and (\romannumeral 4) the learning rate
+(see Section~\ref{subsec:intro_dl}).
+The parameters of the training session are passed to the trainable
+neurons on the board.
+The training set and its labels is streamed onto the board, same as
+inference (without the labels).
+
+The structure of the machine graph for a trainable deep learning
+model is more complicated than simple inference models.
+Not only due to the added backward connections, but also the
+auxiliary layers are more complex.
+First, besides the training data, the labels have to be streamed onto
+the board as well.
+This is simply done by adding another input layer to the layer
+representation of the model.
+But what are the labels connected to?
+The labels are needed to compute the loss.
+In order to compute the loss, another layer type was implemented.
+The loss layer.
+An instance of a loss layer is connected to the output layer and the
+label input layer.
+The loss layer only has a single neuron which computes the loss,
+based on the outputs and the labels, and passes its derivatives
+backwards to the neurons of the output layer.
+The overall loss is also streamed off the board.
+The loss is displayed to the user in the console, together with a
+progress bar.
+The input layer has no parameters.
+Therefore it can be excluded in the backward pass.
+The first hidden layer is connected---backwards---to the LPG used
+for streaming data off of SpiNNaker.
+Its outputs are used as the pong event, so the next example can be
+streamed onto the board.
+All the other layers are connected backwards to their preceding
+layers.
+
+% overall algorithm: forward, backward, batch full? -> update weights
+% epochs finished? -> write weights back to sdram
+%
+% weight extraction
+
+% comm structure (to be discussed in depth in the next section)
+
 \begin{itemize}
   \item backward pass
-  \item graph structure (especially focused on edge and host--SpiNN
-    communication)
   \item (Conv1D): at least n keys for flattening I think
 \end{itemize}
 
