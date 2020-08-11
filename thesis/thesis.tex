@@ -1968,7 +1968,7 @@ the output a probability distribution over the $K$ output neurons
 
 The first implementation of the machine vertices handled softmax
 in the next layer or on the host, if the output layer had softmax as
-activation.
+activation function.
 Most certainly faster than the current version, it led to awkward
 code with more branches.
 The amount of overhead in the code and the fact that now information
@@ -1990,10 +1990,56 @@ When all packets from one pass on the softmax partition are received
 the neuron is divided through the denominator and passed forward to
 the neurons of the next layer (or the host, respectively).
 
-% softmax -> difficulties with partitions -> own partition manager
+When we first made the change to add a second partition (softmax
+was implemented before backpropagation) we realized that the
+SpiNNaker toolchain does allocate its keys per machine vertex.
+For example, if we assume the first hidden layer of the deep learning
+model in Figure~\ref{fig:spiDNN_arch} to have softmax as its
+activation function, the keys for the two partitions of the first
+neuron would be 64 (forward partition) and 65 (softmax partition).
+The problem with this is that we need our partitions to be
+consecutive (see above).
+Luckily the toolchain provides a way to override the default key
+allocator.
+
+We have overridden the default key allocator with a first-touch
+global partition key allocator.
+Everytime a directed edge is added to the machine graph (e.g.\ as
+is done in Algorithm~\ref{alg:pred}, lines 5 and 6) it is mapped to
+its place in the key space, such that partitions continue to be
+consecutive.
+First touch means that the first partition will have the lower keys
+in the key space.
+The intra-layer connections for the softmax partition are established
+during initialization of the neurons (see Algorithm~\ref{alg:pred},
+line 4).
+This means they are touched by the toolchain prior to the connections
+of the forward partition (see Algorithm~\ref{alg:pred}, lines 5 and
+6).
+If we look at our example from above, where the first hidden layer
+of the deep learning model shown in Figure~\ref{fig:spiDNN_arch} has
+softmax as its activation function, the keys of the softmax partition
+would range from 0 to 127, inclusively (one key per neuron in the
+first hidden layer).
+The forward keys for the input layer would be 128 to 191, the
+forward keys for the first hidden layer would be 192 to 319 and so
+forth.
+Our first-touch global partition key allocator scales up to an
+arbitrary amount of partitions (partitions are obvioulsy bound by the
+key space being $2^{32}$ items big), so it is no problem to handle all
+four parititions of the prototype:
+(\romannumeral 1) the forward partition, (\romannumeral 2) the
+softmax partition, (\romannumeral 3) the backward partition and
+(\romannumeral 4) the previously unmentioned ``kernel update''
+partition.
+The kernel update partition works the same way as the softmax
+partition.
+It is an intra-layer partition to update the filters of a
+convolutional layer during the backward pass, since the weights of
+the convolutional layer are shared between its neurons
+(see Section~\ref{subsec:intro_dl}).
 
 \begin{itemize}
-  \item communication structure (partitions and global partition manager)
   \item backward pass
   \item graph structure (especially focused on edge and host--SpiNN
     communication)
