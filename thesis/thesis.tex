@@ -1900,8 +1900,8 @@ supports floats only in software and floating point operations are
 therefore expensive (they take a lot of cycles)
 \citep{furber_et_al_2020}.
 Receive events must be processed as fast as possible to keep pressure
-off the router, which queues its messages.
-Too many messages and the queue overflows, which leads to packet loss
+off the router, which blocks until the packet is received.
+Blocking the router causes backpressure, which leads to packet loss
 (discussed below).
 
 \begin{algorithm} % {{{
