@@ -2090,8 +2090,10 @@ The input layer has no parameters.
 Therefore it can be excluded in the backward pass.
 The first hidden layer is connected---backwards---to the LPG used
 for streaming data off of SpiNNaker.
-Its outputs are used as the pong event, so the next example can be
-streamed onto the board.
+Its outputs are used as the pong event.
+Once the first hidden layer has computed its gradients the backward
+pass is complete and the next forward pass can begin, so the next
+example is streamed onto the board.
 All the other layers are connected backwards to their preceding
 layers.
 
