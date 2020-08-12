@@ -1701,7 +1701,7 @@ Like stated above, a deep learning model is decomposed into neurons
 in order to execute it on SpiNNaker.
 Neurons are part of the internal APIs of the prototype and not exposed
 to the user.
-The neuron of a dense layer can be seen in
+The neuron of a dense layer is a perceptron, which can be seen in
 Figure~\ref{fig:perceptron}.
 Each neuron of a convolutional layer performs one single convolution
 operation with all filters of the layer.
@@ -2074,25 +2074,25 @@ The training set and its labels is streamed onto the board, same as
 inference (without the labels).
 
 The structure of the machine graph for a trainable deep learning
-model is more complicated than simple inference models.
+model is more complicated than that of simple inference models.
 Not only due to the added backward connections, but also the
 auxiliary layers are more complex.
 First, besides the training data, the labels have to be streamed onto
 the board as well.
 This is simply done by adding another input layer to the layer
 representation of the model.
-But what are the labels connected to?
+But what is the label input layer connected to?
 The labels are needed to compute the loss.
-In order to compute the loss, another layer type was implemented.
-The loss layer.
+In order to compute the loss, another layer type was implemented,
+the loss layer.
 An instance of a loss layer is connected to the output layer and the
 label input layer.
 The loss layer only has a single neuron which computes the loss,
 based on the outputs and the labels, and passes its derivatives
 backwards to the neurons of the output layer.
 The overall loss is also streamed off the board.
-The loss is displayed to the user in the console, together with a
-progress bar.
+The overall loss is displayed to the user in the console, together
+with a progress bar.
 The input layer has no parameters.
 Therefore it can be excluded in the backward pass.
 The first hidden layer is connected---backwards---to the LPG used
@@ -2126,7 +2126,8 @@ The partial derivatives in this case are given by:
   \frac{\delta L}{\delta \hat{y}_i} = 2(\hat{y}_i - y_i).
 \end{align}
 $\delta L / \delta \hat{y}_i$ is passed backwards to the $i$th neuron
-of the output layer.
+of the output layer and the backward pass begins (see
+Algorithm~\ref{alg:backprop}, line 5).
 The $i$th output neuron then applies the chain rule in order to
 compute its gradients and the error that is passed backwards to each
 neuron of the preceding layer (see Equation~\ref{eq:chain_rule}).
@@ -2137,22 +2138,44 @@ In order to update the weights, the neuron error is multiplied by the
 partial derivation of $h$ to each weight of $\mathbf{w}$:
 $\delta h / \delta w_j = f^{(l - 1)}_j$.
 The same is done for the bias: $\delta h / \delta b = 1$.
-The error passed backward to the $j$th neuron of the previous layer
+
+The error passed backwards to the $j$th neuron of the previous layer
 is given as the neuron error multiplied by the derivation of the
 signal received by the $j$th neuron:
 $\delta h / \delta f^{(l-1)}_j = w_j$.
-The $j$th neuron of layer $f^{(l-1)}$ sums its error over all
+The $j$th neuron of layer $f^{(l-1)}$ sums its total error over all
 errors received from the neurons of the succeeding layer.
-This process is continued until the neurons of first hidden layer
+This process is continued until the neurons of the first hidden layer
 have computed their gradients and passed their errors backwards as
 the pong event to the host.
 The host knows the backward pass is complete and the next
 forward pass begins.
 
-% overall algorithm: forward, backward, batch full? -> update weights
-% epochs finished? -> write weights back to sdram
-%
-% weight extraction
+Once a batch of backward passes is complete or the epoch has
+finished---in the case that the training set size is not divisible by
+the batch size---the weights of each neuron of the deep learning model
+are updated with
+Equation~\ref{eq:sgd}---the sum over the gradients computed in each
+backward pass multiplied by the learning rate
+(see Algorithm~\ref{alg:backprop}, lines 6--8).
+Lastly, the updated weights have to be extracted from the SpiNNaker
+machine again, back to the host.
+Like stated above, the weights are passed onto the machine during the
+data generation phase of the SpiNNaker toolchain and are stored in
+SDRAM.
+Because SDRAM is slow, the weights are copied into DTCM (see
+Section~\ref{subsec:intro_spinn}).
+The fast and private DTCM memory of each SpiNNaker core can not be
+accessed from anywhere but the core itself.
+Therefore the updated weights must be written back to the parameter
+region in SDRAM, where the host can access them.
+This is a very slow operation and is only done after the last
+example of the whole training session has been processed
+(see Algorithm~\ref{alg:backprop}, lines 9--11).
+A constant latency of two seconds has been added to the host.
+The host sleeps for two seconds before it extracts the weights from
+the machine, to make sure the updated weights are all successfully
+copied back to SDRAM.
 
 \begin{algorithm} % {{{
   \caption{: high-level overview of training a deep learning model on
@@ -2176,10 +2199,11 @@ forward pass begins.
   \end{algorithmic}
 \end{algorithm} % }}}
 
-% comm structure (to be discussed in depth in the next section)
+Last phase of the implementation was spend with implementing 1D
+convolutional layers.
 
+% here make some transition towards problems
 \begin{itemize}
-  \item backward pass
   \item Conv1D: n keys for flattening, backprop, and stuff
 \end{itemize}
 
@@ -2193,6 +2217,7 @@ forward pass begins.
   \item time
   \item mention problem with LPG
   \item what is all missing (2D, Pooling and Shortcut connections)
+  \item comm structure of the backward pass
   \item Too much time spend in receive callback
   \item interpreting neurons as domain decomposition over linear algebra
     compute graph
