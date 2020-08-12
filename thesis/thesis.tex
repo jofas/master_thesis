@@ -2201,6 +2201,46 @@ copied back to SDRAM.
 
 Last phase of the implementation was spend with implementing 1D
 convolutional layers.
+Convolutional layers were determined---during the research and planing
+phase---to be the hardest part of the implementation.
+This turned out to be true, but not for the reasons why that was
+believed in the first place.
+We thought that the their general approach to multiple channels and
+filters would lead to complications on SpiNNaker.
+Rather than having troubles with mapping messages to weights and
+updating the kernel, the mapping of a convolutional layer onto neurons
+turned out to be awkward and much time was spend on getting padding
+and strides right, which were both estimated to be quick and easy to
+implement.
+
+In the end, padding and strides turned out to be easy to implement,
+once the correct formula was found.
+Unfortunately mistakes were made during development, mostly with
+calculating offsets for padded neurons, when padding was set to
+``same'' (see Section~\ref{subsec:intro_dl}).
+Instead of wasting precious resources by creating more neurons in
+the preceding layer, which only ever send zero as signal, variables
+for upper and lower offsets were calculated for each neuron.
+For example, the left-most neuron of the layer shown in
+Figure~\ref{fig:padding} has a lower offset of one, whereas the
+right-most neuron has an upper offset of one.
+An offset of one means, that the neuron does not receive
+from \textit{kernel size} many neurons from the previous layer, but
+from \textit{kernel size} minus one many neurons.
+For the left-most neuron with a lower offset of one, this means that
+its minimum key (see above) does not match to the first
+value of each kernel, but to the second.
+For the right-most neuron with an upper offset this simply means the
+counter which indicated that the forward pass has completed
+(see Algorithm~\ref{alg:pred}, line 1) must incorporate the fact
+that one neuron from the previous layer is missing (same goes for
+lower padding).
+
+% multichannel solved by counters
+
+% n keys for flattening
+
+% backprop for conv layers
 
 % here make some transition towards problems
 \begin{itemize}
