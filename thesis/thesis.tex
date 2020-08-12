@@ -2236,15 +2236,38 @@ counter which indicated that the forward pass has completed
 that one neuron from the previous layer is missing (same goes for
 lower padding).
 
-% multichannel solved by counters
-
-% n keys for flattening
+Multichannel input and multi-filter output turned out to be
+straight-forward to implement.
+Simply sending the output of each filter in succession turned out to
+be no problem.
+On the receiving side a simple counter per neuron was created
+(see above).
+Flattening a convolutional layer turned out to be no problem as well.
+Flattening means that the filter-dimension of the feature map is
+reduced, so instead of producing a matrix (in the case of 1D
+convolution), the layer actually produces a vector.
+This is needed in order to connect a convolutional layer to a dense
+layer, because perceptrons cannot handle multichannel inputs.
+The 1D convolutional layer of the prototype were flattened by
+utilizing the SpiNNaker toolchain.
+The toolchain provides the ability to give one outgoing edge partition
+multiple keys.
+In this case each outgoing edge partition between the neurons of the
+convolutional layer and the dense layer in the forward direction has
+$filters$ many keys.
+Every filter sends with its own key.
+This gives the illusion to the dense layer, that it actually is
+connected to $filters \cdot n\_neurons$ many neurons in the previous
+layer.
+In truth it is only connected to $n\_neurons$ many neurons in the
+previous layer and each one sends $filters$ many times.
 
 % backprop for conv layers
 
 % here make some transition towards problems
+
 \begin{itemize}
-  \item Conv1D: n keys for flattening, backprop, and stuff
+  \item Conv1D: backprop
 \end{itemize}
 
 % }}}
