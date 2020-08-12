@@ -569,6 +569,7 @@ In order to get the \textit{gradients} of the weights of the output
 layer we calculate the derivative of the loss according to each weight
 $w_{ij}$ in $\mathbf{W}$ with the chain rule:
 \begin{align}
+  \label{eq:chain_rule}
   \frac{\delta L}{\delta w_{ij}} =
     \frac{\delta L}{\delta g}
     \frac{\delta g}{\delta h}
@@ -2103,6 +2104,51 @@ example is streamed onto the board.
 All the other layers are connected backwards to their preceding
 layers.
 
+Algorithm~\ref{alg:backprop} gives an overview of how a deep
+learning model is trained on SpiNNaker.
+The prototype only supports streaming each example individually.
+The observation $\mathbf{x}_i$ is passed through the model and the
+loss is computed based on the outputs and the labels by the loss layer
+(see Algorithm~\ref{alg:backprop}, lines 3 and 4).
+For example, let the loss function be mean squared error:
+\begin{align}
+L = 1/k \sum_{i=1}^k(y_k - \hat{y}_k)^2,
+\end{align}
+$y$ being the $k$-vector encoding the true label and $\hat{y}$ being
+the $k$-vector result of the output layer.
+
+The loss is partially derived for each output neuron.
+The output of the $i$th neuron is computed as
+$\hat{y}_i = g(h(f^{(l-1)}))$, $g$ being the activation function,
+$h(\mathbf{x}) = \mathbf{x} \cdot \mathbf{w} + b$.
+The partial derivatives in this case are given by:
+\begin{align}
+  \frac{\delta L}{\delta \hat{y}_i} = 2(\hat{y}_i - y_i).
+\end{align}
+$\delta L / \delta \hat{y}_i$ is passed backwards to the $i$th neuron
+of the output layer.
+The $i$th output neuron then applies the chain rule in order to
+compute its gradients and the error that is passed backwards to each
+neuron of the preceding layer (see Equation~\ref{eq:chain_rule}).
+$\delta L / \delta \hat{y}_i$ is multiplied with
+$\delta \hat{y}_i / \delta h$ (the derivative of the activation
+function) to get the \textit{neuron error}.
+In order to update the weights, the neuron error is multiplied by the
+partial derivation of $h$ to each weight of $\mathbf{w}$:
+$\delta h / \delta w_j = f^{(l - 1)}_j$.
+The same is done for the bias: $\delta h / \delta b = 1$.
+The error passed backward to the $j$th neuron of the previous layer
+is given as the neuron error multiplied by the derivation of the
+signal received by the $j$th neuron:
+$\delta h / \delta f^{(l-1)}_j = w_j$.
+The $j$th neuron of layer $f^{(l-1)}$ sums its error over all
+errors received from the neurons of the succeeding layer.
+This process is continued until the neurons of first hidden layer
+have computed their gradients and passed their errors backwards as
+the pong event to the host.
+The host knows the backward pass is complete and the next
+forward pass begins.
+
 % overall algorithm: forward, backward, batch full? -> update weights
 % epochs finished? -> write weights back to sdram
 %
@@ -2134,7 +2180,7 @@ layers.
 
 \begin{itemize}
   \item backward pass
-  \item (Conv1D): at least n keys for flattening I think
+  \item Conv1D: n keys for flattening, backprop, and stuff
 \end{itemize}
 
 % }}}
