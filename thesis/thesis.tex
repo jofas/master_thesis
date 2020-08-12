@@ -565,8 +565,8 @@ For example, $\hat{y} = f(\mathbf{x})$ and $y$ is the true label
 ($y$ and $\hat{y}$ are $k$-vectors), the error of $f$ is computed
 using a \textit{loss function} $L$, for example mean squared error:
 $1/k \sum_{i=1}^{k}(y_k - \hat{y}_k)^2$.
-In order to get the gradients of the weights of the output layer
-we calculate the derivative of the loss according to each weight
+In order to get the \textit{gradients} of the weights of the output
+layer we calculate the derivative of the loss according to each weight
 $w_{ij}$ in $\mathbf{W}$ with the chain rule:
 \begin{align}
   \frac{\delta L}{\delta w_{ij}} =
@@ -575,21 +575,26 @@ $w_{ij}$ in $\mathbf{W}$ with the chain rule:
     \frac{\delta h}{\delta w_{ij}},
 \end{align}
 $h$ being $\mathbf{W}^\top f^{(l-1)} + \mathbf{b}$.
-$w_{ij}$ is updated by performing the stochastic gradient descent%
-\footnote{Or (batch) gradient descent. With gradient descend the whole
-  training set is passed through the MLP before the weights
-  are updated with the sum over the loss of each example in the
-  training set. Batch or Mini-batch gradient descent takes a subset of
-  the whole training set and updates the weights after each
-  mini-batch. Deep learning models are normally trained by passing the
-  training set multiple times through the model. Each pass over the
-  whole training set is called an \textit{epoch}.
-}:
+
+$w_{ij}$ is updated by performing some form of gradient descent:
 \begin{align}
   \label{eq:sgd}
-  w_{ij}^+ = w_{ij} - \mu \frac{\delta L}{\delta w_{ij}},
+  w_{ij}^+ = w_{ij} - \mu \sum_{k=1}^{m} \frac{\delta L_k}{\delta w_{ij}}.
 \end{align}
-with $\mu$ as the \textit{learning rate}.
+Which kind of gradient descent depends on $m$.
+$m$ represents the amount of training examples seen, before the
+weights are updated.
+If $m$ equals one, (\ref{eq:sgd}) would be called stochastic gradient
+descent.
+If $m$ would encompass the whole training set, the equation would
+be gradient descent.
+Is $m$ somewhere in-between one and the whole training set, one
+speaks of batch or mini-batch gradient descent.
+A deep learning model is normally trained by passing the whole
+training set multiple times through the model.
+Each pass over the whole training set is called an \textit{epoch}.
+$\mu$ in (\ref{eq:sgd}) is called the \textit{learning rate}.
+
 The same procedure is applied to the following hidden layers.
 The total loss of the next hidden layer is given as:
 \begin{align}
@@ -2103,8 +2108,6 @@ layers.
 %
 % weight extraction
 
-% TODO: batch gradient descent as equation in intro to dl
-
 \begin{algorithm} % {{{
   \caption{: high-level overview of training a deep learning model on
     SpiNNaker}
@@ -2116,10 +2119,8 @@ layers.
         \STATE{forward pass $\mathbf{x}_i$}
         \STATE{compute loss}
         \STATE{pass error backwards and compute gradients}
-        \IF{$i \mod$ batch size == 0 || epoch complete}
-          \STATE{update weights with some form of (\ref{eq:sgd})}
-          \COMMENT{depending on the batch size (gradients as sum over
-            $\frac{L_i}{w_{jk}}$)}
+        \IF{($i \mod$ batch size) == 0 || epoch complete}
+          \STATE{update weights with (\ref{eq:sgd})}
         \ENDIF
         \IF{last epoch complete}
           \STATE{write weights back to SDRAM}
