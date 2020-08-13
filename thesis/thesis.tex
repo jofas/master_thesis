@@ -1263,13 +1263,14 @@ and directed edges represent the communication between the units
 \citep{furber_et_al_2020}.
 
 There are two type of graphs, application graphs and machine graphs.
-A vertex in the machine graph---a machine vertex---is directly mapped
-to a single SpiNNaker core.
+A vertex in the machine graph, referred to as a machine vertex, is
+directly mapped to a single SpiNNaker core.
 An application graph is an abstraction over a machine graph.
-Application vertices have atoms.
+Application vertices have a number of atoms.
 Atoms are atomic units of computation.
 The atoms of an application vertex are distributed onto machine
-vertices.
+vertices, such that each machine vertex contains a disjunct subset
+of the atoms of the corresponding application vertex.
 This makes programming and scaling easier and also facilitates proper
 resource exploitation, for example by mapping 1,000 small spiking
 neurons---atoms of a neuron population represented as a application
@@ -1278,21 +1279,31 @@ vertex---onto a single core, instead of having them distributed across
 directly as machine vertices \citep{furber_et_al_2020}.
 For the prototype we used a machine graph, since it is easier to
 implement.
+Less code is required and the hardships of multiplexing and
+demultiplexing are avoided.
 The development process was guided by the UNIX rule of optimization:
 prototype before polishing \citep{raymond_2003}, or in Donald Knuth's
 words: ``premature optimization is the root of all evil''
 \citep{knuth_1974}.
 
-The toolchain is written in the Python programming language.
+The SpiNNaker toolchain is mostly written in the Python programming
+language.
 The SpiNNaker machine is connected to a host device via Ethernet
 \citep{rowley_et_al_2019}.
-The toolchain---running on the host---is mainly responsible for
-the generation of the graph and its execution on the connected
+In order to execute a program on SpiNNaker one writes a Python
+script which generates a graph.
+It must be either an application or a machine graph.
+Machine vertices cannot be added to an application graph and vice
+versa.
+The toolchain---running on the host which also executes the script
+generating the graph---takes a lot of boilerplate away from the user
+and takes care of the execution of the program on the connected
 SpiNNaker machine.
-It goes through a stage of mapping the graph onto the available cores,
-before data generation (where e.g.\ parameters of the vertex are
-loaded into SDRAM) and finally running the application
-\citep{furber_et_al_2020}.
+The toolchain goes through a stage of mapping the graph onto the
+available cores, before data generation (where e.g.\ parameters of the
+vertex are loaded into SDRAM, so that the vertex on the machine is
+able to access them) and finally loading and running the
+application \citep{furber_et_al_2020}.
 
 Each vertex is represented as a Python object---instantiated from the
 appropriate classes---and has an associated binary, the program to
@@ -1330,10 +1341,7 @@ periodical update event, called every $x$ cycles.
   \end{tikzpicture}
 \end{center}
 \caption{Example of a machine vertex ``source'' connected to four
-  other machine vertices over two outgoing edge partitions. If the
-  source vertex sends a MC packet with zero as key, the two upper
-  vertices will receive the packet, whereas with one as key the two
-  lower vertices would receive the packet.}
+  other machine vertices over two outgoing edge partitions.}
 \label{fig:partitions}
 \end{figure} % }}}
 
@@ -1352,17 +1360,30 @@ routing key (allocated by the toolchain).
 The routing key---a 32 bit unsigned integer---is unique in the sense
 that no other outgoing edge partition will have the same key.
 Otherwise routing would fail in the sense that packets will be send
-to the wrong destinations.
+to the wrong destinations or dropped when no matching router entry for
+the key is found.
 If the source vertex sends a MC packet it uses the key of the
 outgoing edge partition.
-The packet will reach all destination vertices of the partition.
-A vertex can have multiple outgoing edge partitions
-(see Figure~\ref{fig:partitions}) \citep{furber_et_al_2020}.
+The packet will reach all destination vertices of the outgoing edge
+partition.
+A vertex can have multiple outgoing edge partitions, as is shown in
+Figure~\ref{fig:partitions} \citep{furber_et_al_2020}.
+If the source vertex from Figure~\ref{fig:partitions} sends a MC
+packet with zero as key, the two upper vertices will receive the
+packet, whereas with one as key the two lower vertices would receive
+the packet.
 
 The toolchain offers support for live IO, enabling external devices
 (like robots, or in our case the host) to interact with the
 application running on SpiNNaker.
-Interaction happens, again, via MC packets and by adding extra
+Interaction happens, again, via MC packets\footnote{%
+  MC packets are the abstraction presented to the user. In fact,
+  communication between the host and the SpiNNaker machine are handled
+  by a protocol called SDP (SpiNNaker Datagram Protocol)
+  which sits in the application layer, on-top of UDP
+  \citep{furber_et_al_2014}.
+}
+by adding extra
 vertices for input and output to the graph.
 Live input is enabled by the \texttt{ReverseIPTagMulticastSource}
 (RIPTMCS) machine vertex and live output by the
