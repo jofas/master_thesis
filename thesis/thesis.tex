@@ -1379,8 +1379,10 @@ application running on SpiNNaker.
 Interaction happens, again, via MC packets\footnote{%
   MC packets are the abstraction presented to the user. In fact,
   communication between the host and the SpiNNaker machine are handled
-  by a protocol called SDP (SpiNNaker Datagram Protocol)
-  which sits in the application layer, on-top of UDP
+  by the EIEIO (external internal event input output) protocol
+  \citep{rast_et_al_2015}.
+  The EIEIO protocol sits on-top of the SpiNNaker-internal SDP
+  (SpiNNaker datagram protocol), which itself sits on-top of UDP
   \citep{furber_et_al_2014}.
 }
 by adding extra
