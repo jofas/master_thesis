@@ -2226,7 +2226,7 @@ Figure~\ref{fig:padding} has a lower offset of one, whereas the
 right-most neuron has an upper offset of one.
 An offset of one means, that the neuron does not receive
 from \textit{kernel size} many neurons from the previous layer, but
-from \textit{kernel size} minus one many neurons.
+from \textit{kernel size} minus offset many neurons.
 For the left-most neuron with a lower offset of one, this means that
 its minimum key (see above) does not match to the first
 value of each kernel, but to the second.
@@ -2262,13 +2262,38 @@ layer.
 In truth it is only connected to $n\_neurons$ many neurons in the
 previous layer and each one sends $filters$ many times.
 
-% backprop for conv layers
+Backpropagation for convolutional layers is more complex than it is
+for simple dense layers, for two reasons: (\romannumeral 1) each
+filter produces an error which has to be passed backwards and
+(\romannumeral 2) weights are shared between the neurons of a
+convolutional layer.
+Handling backpropagation for convolutional layers have led to the
+most complex code of the prototype.
 
-% here make some transition towards problems
+Having to deal with multiple filters in the succeeding layer, which
+all produce an error which has to be passed backwards, makes it more
+difficult to match between received packets (in the backward
+direction) and the filter of the receiving neuron which generated the
+error.
+Again the problem was solved with counters.
+Unfortunately the receiving event for the backward pass in our
+implementation has become very complex and computationally too
+expensive.
+Like stated above, the router blocks until a packet is received
+(the receive event callback finished).
+If the receive event callback takes long, the router will be blocked
+longer, which will lead to back-pressure on the communication
+fabric.
+Back-pressure will lead to dropped packets (discussed in
+Section~\ref{subsec:problems}).
 
-\begin{itemize}
-  \item Conv1D: backprop
-\end{itemize}
+Shared weights are implemented like the softmax activation function,
+with a fully-connected intra-layer partition, the kernel update
+partition (see above).
+Once the backward pass is complete, the gradients are send to the
+other neurons of the layer and simply summed up by each neuron.
+Afterwards the gradients are the same for each neuron.
+Once the gradients are shared, the errors are passed backwards.
 
 % }}}
 
@@ -2319,6 +2344,9 @@ previous layer and each one sends $filters$ many times.
     normalization---implications for vanishing/exploding gradients
     during training
   \item Ping-pong protocol sucks performance wise
+  \item optimizations from README
+  \item gradients not shared after each pass but only before weight
+    update
 \end{itemize}
 
 \section{Conclusion}
