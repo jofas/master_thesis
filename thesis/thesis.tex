@@ -1072,9 +1072,10 @@ energy efficiency by using energy efficient processors, rather than
 fast ones \citep{furber_et_al_2020}.
 
 The SpiNNaker system's basic building block is the SpiNNaker chip,
-a multiprocessor chip consisting of 18 ARM968 cores and a
+a multiprocessor chip consisting of 18 ARM968 cores
+\citep{furber_et_al_2020} and a
 Network-on-Chip (NoC) system for communication between the cores
-\citep{furber_et_al_2007, furber_et_al_2020}.
+\citep{furber_et_al_2007}.
 Each core can run up to 1000 spiking neurons, which communicate with
 each other over spikes---small packages with a maximum size of 72 bits
 which are sent over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
@@ -1098,7 +1099,10 @@ The SpiNNaker1M consists of 10 cabinets, each with five card frames
 holding 24 SpiNN-5 boards.
 A SpiNN-5 board has 48 SpiNNaker chips, which means the SpiNNaker1M
 has 1,036,800 theoretical cores, assuming no faulty cores
-\citep{furber_et_al_2020}.
+\citep{furber_et_al_2020}\footnote{During the introduction of the
+  SpiNNaker1M 1,010,285 cores were working \citep{uoecompsci_2019}.}.
+Images of the SpiNNaker hardware can be found in
+Appendix~\ref{sec:spinn_photos}.
 
 SpiNNaker is quite different from common deep learning accelerators,
 like general purpose graphics processing units (GPGPUs) or Google's
@@ -1163,11 +1167,15 @@ Its front-end supports a wide range of different input formats from
 various deep learning libraries, including Keras, Tensorflow, PyTorch
 or Caffe \citep{jia_et_al_2014}, while its back-end supports different
 spiking neural network simulators like Brian2
-\citep{stimberg_et_al_2019}, the simulator independent language PyNN
-\citep{davison_et_al_2009} or direct mappings to neuromorphic
-computers like SpiNNaker or Intel's Loihi
-\citep{davies_et_al_2018, snn_toolbox_2020}.
-It supports complex CNNs like VGG16 or Inception-v3
+\citep{stimberg_et_al_2019}.
+The back-end also supports the simulator independent language PyNN
+\citep{davison_et_al_2009}, enabling running the converted models
+on SpiNNaker, which supports PyNN as its front-end for spiking neural
+networks.
+Furthermore direct mappings to other neuromorphic
+computers like Intel's Loihi \citep{davies_et_al_2018} are supported
+as well by the back-end \citep{snn_toolbox_2020}.
+The SNN toolbox supports complex CNNs like VGG16 or Inception-v3
 \citep{szegedy_et_al_2015, rueckauer_et_al_2017}.
 \citet{rueckauer_et_al_2017} shows that using the converted version of
 LeNet \citep{lecun_et_al_1989} on the MNIST data set
@@ -1198,7 +1206,8 @@ is needed to translate the CNN in order to make it run on TrueNorth.
 SpiNNaker on the other hand, like stated above, is just a collection
 of low power ARM cores connected over a NoC.
 Spikes on SpiNNaker a communicated with small multicast packets
-(up to 72 bits, see above) \citep{furber_et_al_2020}.
+(up to 72 bits, see Section~\ref{subsec:intro_spinn})
+\citep{furber_et_al_2020}.
 These packets can be used to transfer any information from one core
 to another.
 This makes it much easier to implement deep learning on SpiNNaker,
@@ -2377,5 +2386,25 @@ Once the gradients are shared, the errors are passed backwards.
 
 \bibliography{library.bib}
 \addcontentsline{toc}{section}{References}
+
+
+\begin{appendices}
+\section{Images of the SpiNNaker hardware}
+\label{sec:spinn_photos}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{spinnakerBoard.jpg}
+  \caption{A single SpiNNaker (SpiNN-5) board.
+  Image reproduced with permission from Alan Stokes.}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]
+    {SpiNNaker_9cabinets.jpg}
+  \caption{The SpiNNaker1M machine in Manchester.
+  Image reproduced with permission from Alan Stokes.}
+\end{figure}
+
+\end{appendices}
 
 \end{document}
