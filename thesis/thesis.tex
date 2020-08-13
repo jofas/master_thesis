@@ -1385,8 +1385,7 @@ Interaction happens, again, via MC packets\footnote{%
   (SpiNNaker datagram protocol), which itself sits on-top of UDP
   \citep{furber_et_al_2014}.
 }
-by adding extra
-vertices for input and output to the graph.
+by adding extra vertices for input and output to the graph.
 Live input is enabled by the \texttt{ReverseIPTagMulticastSource}
 (RIPTMCS) machine vertex and live output by the
 \texttt{LivePacketGatherer} (LPG) \citep{furber_et_al_2020}.
@@ -1419,11 +1418,11 @@ deep learning library \citep{keras}.
 An example comparison can be seen in
 Listing~\ref{lst:spiDNN_vs_keras}.
 
-
 \begin{figure} % {{{
 \begin{lstlisting}[language=Python, caption={Example code comparing
-  Keras to the prototype. The code would result in a model akin to the
-  one shown in Figure~\ref{fig:spiDNN_arch}.}, captionpos=b,
+  inference with Keras to inference with the prototype. The code would
+  result in a model akin to the one shown in
+  Figure~\ref{fig:spiDNN_arch}.}, captionpos=b,
   label=lst:spiDNN_vs_keras, numbers=left]
 import tensorflow as tf
 import numpy as np
@@ -1451,29 +1450,29 @@ spinn_model.add(Dense(10, activation="softmax"))
 # this call ensures both models have the same parameters
 model.set_weights(keras_model.get_weights())
 
-# predict the results for the random test set
-# (with random weights)
+# predict the results for the random test set (with random weights)
 p_ = kmodel.predict(X)
 p = model.predict(X)
 
 error = np.absolute(p - p_)
 
-# difference in prediction can happen,
-# due to floating point errors
+# difference in prediction can happen, due to floating point errors
 assert np.amax(error) < 1e-4
 \end{lstlisting}
 \end{figure} % }}}
 
-The prototype exposes the \texttt{Model} class to the user.
+The prototype exposes the \texttt{Model} class to the user
+(see Listing~\ref{lst:spiDNN_vs_keras}, line 5 and 18).
 The model is the main interface to SpiNNaker and---as the name
 clearly suggests---functions as the representation of a deep learning
 model.
 It is designed to be used the same way as Keras's \texttt{Sequential}
-model (see Listing~\ref{lst:spiDNN_vs_keras}).
+model (see Listing~\ref{lst:spiDNN_vs_keras}, line 12).
 The second user interface are the layers---the building blocks of
 a model.
 Layers are added sequentially to a model instance by calling the
-model's \texttt{add} method.
+model's \texttt{add} method (see Listing~\ref{lst:spiDNN_vs_keras},
+lines 19--22).
 A layer has at most one preceding and one succeeding layer
 (see Figure~\ref{fig:spiDNN_arch}).
 While this suits most common needs, modern deep learning models,
@@ -1485,38 +1484,6 @@ implement with the sequential API.
 Keras therefore exposes another API, its functional API.
 The prototype was not developed so far and only supports sequential
 models.
-
-The model stores the trainable parameters (the weights of the layers),
-which can be accessed via the \texttt{set\_weights} and
-\texttt{get\_weights} methods of the model class.
-The parameters are generated during the \texttt{add} call by the
-added layer, since weights are different for different layer types
-and can depend on the preceding layer.
-For example, a dense layer generates the weight matrix
-$\mathbf{W}: n \times m$ and the bias $m$-vector.
-$n$ is the amount of neurons in the preceding layer, $m$ the amount of
-neurons of the dense layer.
-Convolutional layers do not depend on the previous layer for their
-weights.
-For example a 1D convolutional layer generates a $3$D array
-$\mathbf{W}: \text{\textit{kernel size}} \times channels \times
-filters$ and a bias $filters$-vector.
-$\mathbf{W}$ are the kernels for each filter (see
-Section~\ref{subsec:intro_dl}).
-The kernel of a 2D convolutional layer simply has one more spatial
-dimension, so the 2D layer would generate a 4D array as weights.
-The input layer does not generate any weights.
-The formats of the weights is again inspired by Keras and enables
-seamless interoperability between a SpiNNaker deep learning model and
-the subset of the Keras API supported by the prototype
-(see Listing~\ref{lst:spiDNN_vs_keras}, line 25).
-Having our prototype so closely resemble Keras had the great advantage
-of enabling precise integration testing.
-We could simply build two equal models, one in Keras and one with our
-prototype, and compare their outputs against each other
-(see Listing~\ref{lst:spiDNN_vs_keras}, lines 29ff).
-The same goes for testing backpropagation, where we could simply train
-both models and compare the updated weights.
 
 \begin{figure} % {{{
   \begin{center}
@@ -1642,6 +1609,94 @@ both models and compare the updated weights.
   \label{fig:spiDNN_arch}
 \end{figure} % }}}
 
+The model stores the trainable parameters (the weights of the layers),
+which can be accessed via the \texttt{set\_weights} and
+\texttt{get\_weights} methods of the model class
+(see Listing~\ref{lst:spiDNN_vs_keras}, line 25).
+The parameters are generated during the \texttt{add} call by the
+added layer, since weights are different for different layer types
+and can depend on the preceding layer.
+For example, a dense layer (see Section~\ref{subsec:intro_dl})
+generates the weight matrix $\mathbf{W}: n \times m$ and the bias
+$m$-vector.
+$n$ is the amount of neurons in the preceding layer, $m$ the amount of
+neurons of the dense layer.
+Convolutional layers do not depend on the previous layer for their
+weights.
+For example a 1D convolutional layer generates a $3$D array
+$\mathbf{W}: \text{\textit{kernel size}} \times channels \times
+filters$ and a bias $filters$-vector.
+$\mathbf{W}$ are the kernels for each filter (see
+Section~\ref{subsec:intro_dl}).
+The kernel of a 2D convolutional layer simply has one more spatial
+dimension, so the 2D layer would generate a 4D array as weights.
+The input layer does not generate any weights.
+The formats of the weights is again inspired by Keras and enables
+seamless interoperability between a SpiNNaker deep learning model and
+the subset of the Keras API supported by the prototype
+(see Listing~\ref{lst:spiDNN_vs_keras}, line 25).
+Having our prototype so closely resemble Keras had the great advantage
+of enabling precise integration testing.
+We could simply build two equal models, one in Keras and one with our
+prototype, and compare their outputs against each other
+(see Listing~\ref{lst:spiDNN_vs_keras}, lines 29--36).
+The same goes for testing backpropagation, where we could simply train
+both models and compare the updated weights
+(see Listing~\ref{lst:backprop}).
+
+\begin{figure} % {{{
+\begin{lstlisting}[language=Python, caption={Example code comparing
+  training with Keras to training with the prototype. The code would
+  result in a model (not the machine graph) akin to the one shown in
+  Figure~\ref{fig:spiDNN_arch}.}, captionpos=b,
+  label=lst:backprop, numbers=left]
+import tensorflow as tf
+import numpy as np
+
+# prototype library
+from spiDNN import Model
+from spiDNN.layers import Input, Dense
+
+# random training set
+X = np.random.rand(500, 64)
+y = np.random.rand(500, 10)
+
+# the keras model
+keras_model = tf.keras.Sequential()
+keras_model.add(tf.keras.layers.Dense(128, input_shape=(64,)))
+keras_model.add(tf.keras.layers.Dense(128, activation="relu"))
+keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
+
+# the equivalent model for SpiNNaker
+spinn_model = Model()
+spinn_model.add(Input(64))
+spinn_model.add(Dense(128))
+spinn_model.add(Dense(128, activation="relu"))
+spinn_model.add(Dense(10, activation="softmax"))
+
+# this call ensures both models have the same parameters
+model.set_weights(keras_model.get_weights())
+
+# train both models
+#
+# unlike the prototype, Keras compiles its models, before they can be trained.
+# Since the prototype does not offer a optimizer interface yet, it does not
+# have a compile method
+kmodel.compile(loss="mean_squared_error",
+               optimizer=tf.keras.optimizers.SGD(learning_rate=0.01))
+kmodel.fit(X, y, epochs=5, batch_size=32, shuffle=False)
+
+model.fit(
+  X, y, loss="mean_squared_error", epochs=5, batch_size=32, learning_rate=0.01)
+
+error = [x - x_ for x, x_ in zip(model.get_weights(), kmodel.get_weights())]
+
+# difference in weights can happen, due to floating point errors
+for e in error:
+  assert np.amax(np.absolute(e)) < 0.1
+\end{lstlisting}
+\end{figure} % }}}
+
 Supported layers are: (\romannumeral 1) input,
 (\romannumeral 2) dense and (\romannumeral 3) 1D convolutional layers.
 A flatten layer (used for flattening a feature map into a one
@@ -1677,12 +1732,13 @@ gradient descent with a constant learning rate.
 Gradient descend is probably the most common optimization algorithm
 for deep learning \citep{goodfellow_et_al_2016}.
 1D convolutional layers have support for same and valid (default)
-padding and they can be strided (see Section~\ref{subsec:intro_dl}).
+padding and they can be strided (see Section~\ref{subsec:intro_dl}
+and Listing~\ref{lst:spiDNN_vs_keras_cnns}, lines 30 and 31).
 
 \begin{figure} % {{{
 \begin{lstlisting}[language=Python, caption={Example code comparing
-  1D CNNs in Keras to the prototype.}, captionpos=b,
-  label=lst:spiDNN_vs_keras_cnns, numbers=left]
+  inference with 1D CNNs in Keras to inference with the prototype.},
+  captionpos=b, label=lst:spiDNN_vs_keras_cnns, numbers=left]
 import tensorflow as tf
 import numpy as np
 
@@ -1698,9 +1754,11 @@ X = np.random.rand(500, *input_shape)
 
 # the keras model
 keras_model = tf.keras.Sequential()
-# this layer has 20 filters and a kernel size of 3
+# this layer has 20 filters and a kernel size of 3. Valid padding and a
+# stride of 1 are default
 keras_model.add(tf.keras.layers.Conv1D(20, 3, input_shape=input_shape))
-keras_model.add(tf.keras.layers.Conv1D(5, 3, activation="relu"))
+keras_model.add(tf.keras.layers.Conv1D(5, 3, activation="relu",
+                                       padding="same", strides=2))
 keras_model.add(tf.keras.layers.Flatten())
 keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
 
@@ -1710,21 +1768,20 @@ spinn_model.add(Input(*input_shape))
 spinn_model.add(Conv1D(20, (3,)))
 # The feature map of this layer is implicitly flattened,
 # because the next layer is a dense layer
-spinn_model.add(Conv1D(5, (3,), activation="relu"))
+spinn_model.add(Conv1D(5, (3,), activation="relu",
+                       padding="same", stride=2))
 spinn_model.add(Dense(10, activation="softmax"))
 
 # this call ensures both models have the same parameters
 model.set_weights(keras_model.get_weights())
 
-# predict the results for the random test set
-# (with random weights)
+# predict the results for the random test set (with random weights)
 p_ = kmodel.predict(X)
 p = model.predict(X)
 
 error = np.absolute(p - p_)
 
-# difference in prediction can happen,
-# due to floating point errors
+# difference in prediction can happen, due to floating point errors
 assert np.amax(error) < 1e-4
 \end{lstlisting}
 \end{figure} % }}}
@@ -1750,8 +1807,31 @@ above.
 Only when the inference or training operations are called is the
 model translated into a SpiNNaker machine graph and executed on the
 connected machine.
-For inference one has to call the \texttt{predict} method of the
-model and for training the \texttt{fit} method.
+For inference one has to call the \texttt{predict} method of the model
+(see Listing~\ref{lst:spiDNN_vs_keras}, line 29)
+and for training the \texttt{fit} method
+(see Listing~\ref{lst:backprop}, lines 37 and 38).
+
+\begin{algorithm} % {{{
+  \caption{: \texttt{predict} method}
+  \label{alg:pred}
+
+  \begin{algorithmic}[1]
+    \STATE{create extractor layer}
+    \STATE{reset layers}
+    \STATE{setup SpiNNaker}
+    \STATE{initialize machine vertices}
+    \STATE{establish forward pass connections}
+    \STATE{establish connection between output layer and extractor}
+    \STATE{setup live IO}
+    \STATE{execute model on SpiNNaker (run forever)}
+    \COMMENT{the live IO connection stops the execution}
+    \STATE{stop the SpiNNaker machine}
+    \STATE{close live IO}
+    \RETURN{predictions}
+    \COMMENT{predictions collected by live IO}
+  \end{algorithmic}
+\end{algorithm} % }}}
 
 Algorithm~\ref{alg:pred} shows what happens during the
 \texttt{predict} method.
@@ -1760,6 +1840,8 @@ layer.
 The extractor layer has a single machine vertex, a LPG instance
 (see Section~\ref{subsec:spinn_toolchain}) for streaming the
 predictions off of SpiNNaker, back to the host.
+The LPG is also shown as the auxiliary vertex in
+Figure~\ref{fig:spiDNN_arch}.
 The first layer---which must always be an input layer---handles
 streaming the data onto the machine.
 Neurons of a input layer are simple wrappers around the RIPTMCS
@@ -1843,27 +1925,6 @@ architectures.
 A possible solution to this problem is discussed in
 Section~\ref{sec:discussion}.
 
-\begin{algorithm} % {{{
-  \caption{: \texttt{predict} method}
-  \label{alg:pred}
-
-  \begin{algorithmic}[1]
-    \STATE{create extractor layer}
-    \STATE{reset layers}
-    \STATE{setup SpiNNaker}
-    \STATE{initialize machine vertices}
-    \STATE{establish forward pass connections}
-    \STATE{establish connection between output layer and extractor}
-    \STATE{setup live IO}
-    \STATE{execute model on SpiNNaker (run forever)}
-    \COMMENT{the live IO connection stops the execution}
-    \STATE{stop the SpiNNaker machine}
-    \STATE{close live IO}
-    \RETURN{predictions}
-    \COMMENT{predictions collected by live IO}
-  \end{algorithmic}
-\end{algorithm} % }}}
-
 Like stated above, weights are actually owned by the model, not
 the layer objects.
 The weights are directly injected into the neurons during their
@@ -1873,8 +1934,9 @@ associated with its incoming connections.
 The filters of the convolutional layers are simply shared between
 all neurons of the layer, so each neuron has a copy.
 
-How are received packets matched to the correct weight?
-All packets send by the different components of the prototype are
+The received packets have to be matched somehow to the weights
+the payload of the packet is multiplied with.
+All packets sent by the different components of the prototype are
 with payload, so 72 bit big.
 Each packet consists of a control byte and two words, key and payload
 (see Section~\ref{subsec:spinn_toolchain}).
@@ -1883,16 +1945,20 @@ connected to and knows their keys within a certain partition.
 The simple MLP shown in Figure~\ref{fig:spiDNN_arch} only has a
 single partition the ``forward'' partition\footnote{Not actually one
   partition, but lots of outgoing edge partitions with the same
-  identifier (see Section~\ref{subsec:spinn_toolchain}).}.
+  identifier (see Section~\ref{subsec:spinn_toolchain}).
+  Below, a partition will always refer to a set of outgoing edge
+  partitions with the same identifier.}.
 During data generation (see Section~\ref{subsec:spinn_toolchain})
-the SpiNNaker toolchain can be queried and the machine graph traversed
-in order to find out the corresponding routing keys.
+the data structured generated by the SpiNNaker toolchain can be
+queried and the machine graph traversed in order to find out the
+corresponding routing keys.
 The routing keys of the outgoing edge partitions of all the neurons
 from the previous layer, connected to the neuron which is creating its
 mapping between packets and weights, are collected.
 The keys are guaranteed to be consecutive.
 For example, the first neuron of the input layer of the MLP from
-Figure~\ref{fig:spiDNN_arch} would have zero as its key.
+Figure~\ref{fig:spiDNN_arch} (64 neurons big) would have zero as its
+key.
 The second neuron one.
 The first neuron of the first hidden layer would have 64 as key and so
 forth.
@@ -1909,7 +1975,7 @@ Now if a packet is received, the weight corresponding to the
 connection is simply determined by indexing the weight array with the
 index being the key of the received packet minus the minimum key.
 The same procedure works for the backward pass as well.
-For convolutional neurons it is somewhat more difficult, because they
+For convolutional neurons it is somewhat more complex, because they
 receive multiple channels from their preceding neurons.
 The index is therefore determined with an additional array of channel
 counters.
@@ -1919,13 +1985,25 @@ its corresponding connection.
 The channel counter is then additionally used to determine the correct
 index of the weight the payload of the packet must be multiplied with.
 
+\begin{algorithm} % {{{
+  \caption{: \texttt{receive\_forward}(key, payload) event of a
+    perceptron machine vertex}
+  \label{alg:receive_forward}
+
+  \begin{algorithmic}[1]
+    \STATE{index := key - minimum key}
+    \STATE{signals[index] := payload}
+    \STATE{receive counter += 1}
+  \end{algorithmic}
+\end{algorithm} % }}}
+
 Algorithm~\ref{alg:receive_forward} shows the receive event of a
 perceptron machine vertex.
 Unlike stated above, the payload is stored in an array called
 ``signals'',
 instead of multiplying it directly with its corresponding weight and
 summing it up in the perceptron's potential
-(see Algorithm~\ref{alg:update}, lines 2ff).
+(see Algorithm~\ref{alg:update}, lines 2--6).
 If only inference is done with the deep learning model, this could
 be optimized to save precious memory.
 Unfortunately, the received signals must be stored for computing the
@@ -1940,20 +2018,8 @@ therefore expensive (they take a lot of cycles)
 \citep{furber_et_al_2020}.
 Receive events must be processed as fast as possible to keep pressure
 off the router, which blocks until the packet is received.
-Blocking the router causes backpressure, which leads to packet loss
-(discussed below).
-
-\begin{algorithm} % {{{
-  \caption{: \texttt{receive\_forward}(key, payload) event of a
-    perceptron machine vertex}
-  \label{alg:receive_forward}
-
-  \begin{algorithmic}[1]
-    \STATE{index := key - minimum key}
-    \STATE{signals[index] := payload}
-    \STATE{receive counter += 1}
-  \end{algorithmic}
-\end{algorithm} % }}}
+Blocking the router causes back-pressure, which leads to packet loss
+(discussed in Section~\ref{subsec:problems}).
 
 \begin{algorithm} % {{{
   \caption{: \texttt{update}() event of a perceptron machine vertex}
@@ -2113,7 +2179,6 @@ First, besides the training data, the labels have to be streamed onto
 the board as well.
 This is simply done by adding another input layer to the layer
 representation of the model.
-But what is the label input layer connected to?
 The labels are needed to compute the loss.
 In order to compute the loss, another layer type was implemented,
 the loss layer.
@@ -2135,6 +2200,28 @@ pass is complete and the next forward pass can begin, so the next
 example is streamed onto the board.
 All the other layers are connected backwards to their preceding
 layers.
+
+\begin{algorithm} % {{{
+  \caption{: high-level overview of training a deep learning model on
+    SpiNNaker}
+  \label{alg:backprop}
+
+  \begin{algorithmic}[1]
+    \FOR{1,\dots,epochs}
+      \FOR{$\mathbf{x}_i \in \mathbf{X}, i=1,\dots,|\mathbf{X}|$}
+        \STATE{forward pass $\mathbf{x}_i$}
+        \STATE{compute loss}
+        \STATE{pass error backwards and compute gradients}
+        \IF{($i \mod$ batch size) == 0 || epoch complete}
+          \STATE{update weights with (\ref{eq:sgd})}
+        \ENDIF
+        \IF{last epoch complete}
+          \STATE{write weights back to SDRAM}
+        \ENDIF
+      \ENDFOR
+    \ENDFOR
+  \end{algorithmic}
+\end{algorithm} % }}}
 
 Algorithm~\ref{alg:backprop} gives an overview of how a deep
 learning model is trained on SpiNNaker.
@@ -2209,28 +2296,6 @@ The host sleeps for two seconds before it extracts the weights from
 the machine, to make sure the updated weights are all successfully
 copied back to SDRAM.
 
-\begin{algorithm} % {{{
-  \caption{: high-level overview of training a deep learning model on
-    SpiNNaker}
-  \label{alg:backprop}
-
-  \begin{algorithmic}[1]
-    \FOR{1,\dots,epochs}
-      \FOR{$\mathbf{x}_i \in \mathbf{X}, i=1,\dots,|\mathbf{X}|$}
-        \STATE{forward pass $\mathbf{x}_i$}
-        \STATE{compute loss}
-        \STATE{pass error backwards and compute gradients}
-        \IF{($i \mod$ batch size) == 0 || epoch complete}
-          \STATE{update weights with (\ref{eq:sgd})}
-        \ENDIF
-        \IF{last epoch complete}
-          \STATE{write weights back to SDRAM}
-        \ENDIF
-      \ENDFOR
-    \ENDFOR
-  \end{algorithmic}
-\end{algorithm} % }}}
-
 Last phase of the implementation was spend with implementing 1D
 convolutional layers.
 Convolutional layers were determined---during the research and planing
@@ -2238,7 +2303,7 @@ phase---to be the hardest part of the implementation.
 This turned out to be true, but not for the reasons why that was
 believed in the first place.
 We thought that the their general approach to multiple channels and
-filters would lead to complications on SpiNNaker.
+filters would lead to a complicated implementation.
 Rather than having troubles with mapping messages to weights and
 updating the kernel, the mapping of a convolutional layer onto neurons
 turned out to be awkward and much time was spend on getting padding
