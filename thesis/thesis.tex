@@ -2498,6 +2498,57 @@ Finishing the implementation of Conway's game of life took another
 half week off the dissertation phase.
 The issue and its solution can be found at \citep{fassbender_2020a}.
 
+The interface changes made for the next release of the toolchain
+were easily fixable.
+The SpiNNaker core team removed the direct support for RIPTMCS
+in a machine graph.
+Only a single parameter was changed in order to restore the direct
+support again (instead of having to use constructs only used in
+application graphs).
+The change made to the toolchain can be found at
+\citet{fassbender_2020b}.
+
+The same goes for the discovered bug during the key allocation
+process, once a outgoing edge partition has more than one key,
+as is the case with flattened convolutional layers (see
+Section~\ref{subsec:SpiDNN_arch}).
+For example, a flattened convolutional layer has five filters.
+Each neuron therefore has five keys.
+The allocation process of the toolchain was overridden by providing
+a constraint that tells the toolchain which key to allocate
+(a fixed key constraint).
+For the flattened layer, five fixed key constraints were passed to
+the toolchain, which should return a list with five keys (unsigned
+integers).
+Let the first neuron of the convolutional layer have the constraints
+for keys one to five.
+What the toolchain returned was: \texttt{[1, 5, 0, 0, 0]}.
+As it turned out, the keys are put into a pre-allocated numpy
+array \citep{van_der_walt_2011} of size five.
+The constraints are iterated.
+A fixed key constraint can return multiple keys, depending on its
+mask \citep{furber_et_al_2020}.
+We only ever used \texttt{0xFFFFFFFF} as mask, which, in combination
+with the fixed key, will only return the fixed key.
+So for each iterated constraint, an offset is calculated, depending
+on how many keys it has generated.
+Unfortunately it was forgotten to sum the offsets up.
+So the first key (one) generates an offset of one.
+The next key (two) is written to the numpy array at the index of
+the offset.
+The second constraint generates an offset of one, again.
+But instead of adding it to the previous offset, the previous offset
+is overwritten.
+The offset stays one.
+Therefore the third constraint (key is three) is written again to
+index one, overwriting the key two.
+This continues all the way to five.
+Adding two lines that add up the offset instead of overwriting it
+solved the problem.
+The solution can be found at \citet{fassbender_2020c}.
+Both, the interface change and the bug together, could be solved in
+a single day.
+
 % here discuss minor deviations
 
 % then the big packet thing
