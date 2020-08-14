@@ -2414,7 +2414,7 @@ domain knowledge of deep learning, the effort such an endeavor would
 take was underestimated.
 Without complications, the work plan developed during the research and
 planning phase, would have sufficed.
-In retrospect it was a naive assumption to not encounter
+In retrospect it was a naive assumption, that we would not encounter
 complications with the power of stalling implementation progress
 and this project has been another example of Hofstadter's Law.%
 \footnote{%
@@ -2438,11 +2438,11 @@ The minor deviations encountered during the development process
   \item A bug discovered during the key generation process for more
     than one key (as is the case for flattened convolutional layers,
     see Section~\ref{subsec:SpiDNN_arch})
-  \item Underestimation of the difficulties of implementing strides
-    and ``same'' padding for convolutional layers
   \item Problems with sockets when trying to establish a second live
     IO session (e.g.\ when calling \texttt{predict} after
     \texttt{fit})
+  \item Underestimation of the difficulties of implementing strides
+    and ``same'' padding for convolutional layers
 \end{enumerate}
 
 The first problem encountered was a bug in the LPG.
@@ -2470,8 +2470,9 @@ chip with the LPG showed strange warnings of dropped packets.
 These warnings were strange because the amount of dropped packets
 reported far exceeded the total amount of packets sent during the
 whole execution.
-SpiNNaker has no memory protection (no segmentation faults), any
-machine vertex can override data owned by other vertices in SDRAM
+SpiNNaker has no memory protection (no segmentation faults when
+trying to access memory not owned by the accessing machine vertex).
+Any machine vertex can override data owned by other vertices in SDRAM
 and we rightfully thought that the LPG is writing to memory owned by
 the router.
 After reducing the code of the LPG, we could determine strange
@@ -2479,7 +2480,7 @@ behavior in the buffer that stores received packets for sending them
 to the host.
 Once the LPG has sent its first EIEIO message to the host
 (see Section~\ref{subsec:SpiDNN_arch}) the buffer showed that its
-full, even though it did not contain any packets anymore.
+full, even though it did not contain packets anymore.
 While we could isolate the problem to the generation and sending
 process of the EIEIO message, we could not find the bug in there
 and had to rely on the SpiNNaker core team to find the bug and fix it.
@@ -2495,8 +2496,9 @@ Further interfaces and mechanisms we had to learn were how to
 tell SpiNNaker to run forever (see Algorithm~\ref{alg:pred}, line 8)
 and how to stop it from the live IO callbacks.
 Finishing the implementation of Conway's game of life took another
-half week off the dissertation phase.
-The issue and its solution can be found at \citep{fassbender_2020a}.
+half week of the dissertation phase.
+The issue, a description and a link to the solution can be found at
+\citep{fassbender_2020a}.
 
 The interface changes made for the next release of the toolchain
 were easily fixable.
@@ -2509,7 +2511,7 @@ The change made to the toolchain can be found at
 \citet{fassbender_2020b}.
 
 The same goes for the discovered bug during the key allocation
-process, once a outgoing edge partition has more than one key,
+process, once an outgoing edge partition has more than one key,
 as is the case with flattened convolutional layers (see
 Section~\ref{subsec:SpiDNN_arch}).
 For example, a flattened convolutional layer has five filters.
@@ -2533,10 +2535,10 @@ with the fixed key, will only return the fixed key.
 So for each iterated constraint, an offset is calculated, depending
 on how many keys it has generated.
 Unfortunately it was forgotten to sum the offsets up.
-So the first key (one) generates an offset of one.
+The first key (one) generates an offset of one.
 The next key (two) is written to the numpy array at the index of
-the offset.
-The second constraint generates an offset of one, again.
+the offset, so to index one.
+The second constraint generates an offset of one again.
 But instead of adding it to the previous offset, the previous offset
 is overwritten.
 The offset stays one.
@@ -2546,10 +2548,120 @@ This continues all the way to five.
 Adding two lines that add up the offset instead of overwriting it
 solved the problem.
 The solution can be found at \citet{fassbender_2020c}.
-Both, the interface change and the bug together, could be solved in
+Both, the interface change and the bug together, was solved in
 a single day.
 
-% here discuss minor deviations
+Not really an issue during development but during testing was the
+fact that we were unable to get a second live IO session running in
+the same Python script, after the first one was properly closed.
+This made it impossible to call \texttt{predict} after \texttt{fit},
+which is a necessary feature for a working deep learning library for
+SpiNNaker.
+Otherwise the user would need to export the updated weights to file
+and start a new script which loads the weights, before using the
+model for inference.
+The problem arises due to a socket not being properly closed, or
+rather not properly deallocated by the operating system of the host.
+In order to fix this problem we tried to tell the operating system to
+reuse the socket.
+While this removed the error, unfortunately it led to inconsistent
+behavior of the second live IO session.
+With the reused socket, the second live IO session sometimes sent
+packets to the machine and sometimes did not.
+The fact that we were unable to get a second working live IO session
+limited our testing abilities in two ways.
+First, we could not \texttt{predict} with a trained model (except by
+exporting the updated weights to file first, as described above).
+Second, we could never execute the whole test suite, but had to
+call each function, from every test script, by hand.
+While this has been an inconvenience, the overall time lost by trying
+out the workaround described above and for having to execute the test
+suite by hand has not exceeded a whole working day.
+The issue can be found at \citep{fassbender_2020d}.
+
+The four issues discussed above were all dealing with the SpiNNaker
+toolchain.
+They have led to approximately two weeks of lost time during the
+dissertation phase.
+The last of the minor deviations does not concern itself with the
+toolchain, but has its source in mistakes made during the
+implementation of the prototype.
+Like stated in Section~\ref{subsec:SpiDNN_arch}, the time and effort
+it would take to get the stride and padding of a convolutional layer
+to work was underestimated.
+The problem has two sides: (\romannumeral 1) the time it took to find
+the right solution and (\romannumeral 2) how difficult it would be
+to integrate strides and padding into the machine vertex.
+The former could have been prevented by spending more time
+on finding the right formula.
+Too much time was wasted by trying to be fast.
+Convolutional layers were implemented after forward and backward pass
+of the MLP.
+With already one and two weeks behind schedule precious time was
+wasted by having to debug cases, where padding and offset were
+computed wrongfully.
+Getting the formula for computing the offset for strided convolutional
+layers with ``same'' padding right took another week.
+The difficulties of having to integrate padding into the machine
+vertices have been discussed in Section~\ref{subsec:SpiDNN_arch}
+(integrating the offset into the forward pass).
+The problem with strides arise during the backward pass, where we
+have to match the key a packet is sent with to its correct position,
+so the errors arrive at their proper place (where they have actually
+happened).
+In order to get the matching mechanism right, the stride of the
+succeeding layer has to be known.
+Sharing information between layers is costly concerning code
+complexity.
+Backpropagation with convolutional layers has been the most complex
+task (and the last) implemented in the prototype and it is the main
+cause of the major problem limiting supported size of deep learning
+models by the prototype: dropped packets.
+
+While we have discussed the general backpropagation mechanism of the
+prototype in Section~\ref{subsec:SpiDNN_arch}, we have not looked at
+the communication structure of the backward pass.
+The reason for that is, that there were three different
+communication structures implemented.
+All three trying to somehow avoid dropped packets or, in one case,
+to avoid code complexity, which made another solution unmaintainable.
+
+The problem of dropped packets has been known since the implementation
+of the live IO version of Conway's game of life.
+The execution of the game of life stopped with an error, once too many
+vertices were used.
+The problem is that, while the SpiNNaker communication fabric is great
+at handling lots of packets, the peek of packets being on the fabric
+at the same time is not high.
+Too many packets on the fabric at the same time causes back-pressure
+and the routers simply drops packets.
+Therefore packets must be distributed across time.
+
+The SpiNNaker1 API provides a function to the machine vertex called
+\texttt{spin1\_set\_timer\_tick\_\-and\_phase}, which allows the user to
+define a timer offset.
+The timer offset tells the machine vertex when to start its first
+update event.
+Without the timer offset, the update events of all vertices on the
+machine are called at the same time.
+During the update event, a cell of Conway's game of life shares its
+state with its neighbors.
+A perceptron, during the forward pass, may send its potential during
+its update event, depending on whether it has received all signals
+from the previous layer (see Algorithm~\ref{alg:update}).
+If all vertices send at the same time, the peek amount of packets on
+the communication fabric is obviously high.
+With the timer offset one can distribute the peek across time.
+% TODO: how the prototype computes the timer offset
+
+% TODO: figure showing how weights are conceptually bound to
+%       connections and how each connection has its own weight(s)
+%       (for both cnns and mlp)
+
+% also don't forget the offset between sending successive packets
+
+% and the time spend in receive... god, all the time spend in
+% receive
 
 % then the big packet thing
 
