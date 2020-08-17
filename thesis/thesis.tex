@@ -2613,7 +2613,9 @@ happened).
 In order to get the matching mechanism right, the stride of the
 succeeding layer has to be known.
 Sharing information between layers is costly concerning code
-complexity.
+complexity (something we have learned early during the development
+phase while implementing softmax, see
+Section~\ref{subsec:SpiDNN_arch}).
 Backpropagation with convolutional layers has been the most complex
 task (and the last) implemented in the prototype and it is the main
 cause of the major problem limiting supported size of deep learning
@@ -2625,17 +2627,17 @@ the communication structure of the backward pass.
 The reason for that is, that there were three different
 communication structures implemented.
 All three trying to somehow avoid dropped packets or, in one case,
-to avoid code complexity, which made another solution unmaintainable.
+to avoid code complexity which made another solution unmaintainable.
 
 The problem of dropped packets has been known since the implementation
 of the live IO version of Conway's game of life.
 The execution of the game of life stopped with an error, once too many
 vertices were used.
 The problem is that, while the SpiNNaker communication fabric is great
-at handling lots of packets, the peek of packets being on the fabric
-at the same time is not high.
+at handling lots of packets, the supported peek of packets being on
+the fabric at the same time is not high.
 Too many packets on the fabric at the same time causes back-pressure
-and the routers simply drops packets.
+and the routers simply drop packets.
 Therefore packets must be distributed across time.
 
 The SpiNNaker1 API provides a function to the machine vertex called
@@ -2653,11 +2655,66 @@ from the previous layer (see Algorithm~\ref{alg:update}).
 If all vertices send at the same time, the peek amount of packets on
 the communication fabric is obviously high.
 With the timer offset one can distribute the peek across time.
-% TODO: how the prototype computes the timer offset
 
-% TODO: figure showing how weights are conceptually bound to
-%       connections and how each connection has its own weight(s)
-%       (for both cnns and mlp)
+The timer offset is computed based on the placement of the neuron on
+the board.
+Each core of a SpiNNaker machine is uniquely identifiable by a three
+element tuple $(x, y, z)$, where $x$ and $y$ are the spatial position
+of a SpiNNaker chip in the 2D torus topology of the machine (see
+Section~\ref{subsec:intro_spinn}) and $0 \leq z \leq 17$ is the id of
+the core on that chip.
+During data generation (see Section~\ref{subsec:spinn_toolchain}),
+the neuron gets the information of its placement from the toolchain.
+A maximum timer offset is provided by the prototype.
+It is the time between update events, divided by ten.
+90 percent of the time between update events should leave enough time
+for a machine vertex with the maximum offset to send its packets along
+the longest path of the topology and the packet being received before
+the receiver's next update event.
+The maximum offset is divided by the cores per chip is multiplied by
+$z$.
+This way each neuron on a chip has a different offset.
+
+\begin{figure} % {{{
+  \begin{subfigure}{.5\textwidth}
+  \begin{center}
+	\begin{tikzpicture}[dot/.style={circle,draw}]
+		\node at (0,0) [dot] (neuron) {$f^{(2)}_1$};
+		\node at (-3,4) [dot] {$f^{(1)}_1$}
+			edge[->] node[above right]{$w_{11}$} (neuron);
+		\node at (-3,2) [dot] {$f^{(1)}_2$}
+			edge[->] node[above]{$w_{21}$} (neuron);
+		\node at (-3,0) [dot] {$f^{(1)}_3$}
+			edge[->] node[above]{$w_{31}$} (neuron);
+		\node at (-3,-4) [dot] {$f^{(1)}_n$}
+			edge[->] node[above left]{$w_{n1}$} (neuron);
+		\node at (-3,-2) [] {\vdots};
+	\end{tikzpicture}
+	\end{center}
+  \caption{Incoming connections for neuron $f^{(2)}_1$.}
+  \end{subfigure}
+  \begin{subfigure}{.5\textwidth}
+  \begin{center}
+	\begin{tikzpicture}[dot/.style={circle,draw}]
+		\node at (0,0) [dot] (neuron) {$f^{(1)}_1$};
+		\node at (3,4) [dot] {$f^{(2)}_1$}
+			edge[<-] node[above left]{$w_{11}$} (neuron);
+		\node at (3,2) [dot] {$f^{(2)}_2$}
+			edge[<-] node[above]{$w_{12}$} (neuron);
+		\node at (3,0) [dot] {$f^{(2)}_3$}
+			edge[<-] node[above]{$w_{13}$} (neuron);
+		\node at (3,-4) [dot] {$f^{(2)}_m$}
+			edge[<-] node[above right]{$w_{1m}$} (neuron);
+		\node at (3,-2) [] {\vdots};
+	\end{tikzpicture}
+	\end{center}
+  \caption{Outgoing connections for neuron $f^{(1)}_1$.}
+  \end{subfigure}
+\caption {Conceptually, weights can be associated with edges.}
+\label{fig:weights}
+\end{figure} % }}}
+
+% transition to backward pass ideas
 
 % also don't forget the offset between sending successive packets
 
@@ -2702,8 +2759,16 @@ With the timer offset one can distribute the peek across time.
 \section{Discussion}
 \label{sec:discussion}
 
+%
+%Extra cores can be enabled to decrease loading time before the
+%execution starts and for packet re-injection of dropped packets, which
+%decreases the number of cores per chip which can be used for the deep
+%learning model \citep{furber_et_al_2020}.
+%
+
 \begin{itemize}
   \item present possible solutions for problems encountered
+  \item mention re-injectors
   \item space used inefficiently (cores and memory) $\rightarrow$ better
     domain decomposition
   \item with this streaming model I have no easy way to do batch
