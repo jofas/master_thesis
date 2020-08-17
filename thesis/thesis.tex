@@ -347,6 +347,7 @@ performance in training and inference.
 Namely general purpose graphical processing units (GPGPUs) and
 Google's tensor processing unit (TPU).
 
+
 \subsection{An Introduction to Deep Learning} % {{{
 \label{subsec:intro_dl}
 
@@ -1128,7 +1129,7 @@ significant chip space for specialized units performing a
 fused multiply-add-accumulate matrix operation (MAC).
 NVIDIA calls these units tensor cores. The Tesla V100 has 640 tensor
 cores, each performing one $4\times 4$ MAC per clock cycle, a
-theoretical peek performance of 125 terraflop/s
+theoretical peak performance of 125 terraflop/s
 \citep{markidis_et_al_2018}.
 The TPUv1 comes with $256\times256$ MACs performing 8 bit (unsigned)
 integer operations \citep{jouppi_et_al_2017}.
@@ -2634,7 +2635,7 @@ of the live IO version of Conway's game of life.
 The execution of the game of life stopped with an error, once too many
 vertices were used.
 The problem is that, while the SpiNNaker communication fabric is great
-at handling lots of packets, the supported peek of packets being on
+at handling lots of packets, the supported peak of packets being on
 the fabric at the same time is not high.
 Too many packets on the fabric at the same time causes back-pressure
 and the routers simply drop packets.
@@ -2652,9 +2653,9 @@ state with its neighbors.
 A perceptron, during the forward pass, may send its potential during
 its update event, depending on whether it has received all signals
 from the previous layer (see Algorithm~\ref{alg:update}).
-If all vertices send at the same time, the peek amount of packets on
+If all vertices send at the same time, the peak number of packets on
 the communication fabric is obviously high.
-With the timer offset one can distribute the peek across time.
+With the timer offset one can distribute the peak across time.
 
 The timer offset is computed based on the placement of the neuron on
 the board.
@@ -2709,14 +2710,65 @@ This way each neuron on a chip has a different offset.
 	\end{tikzpicture}
 	\end{center}
   \caption{Outgoing connections for neuron $f^{(1)}_1$.}
+  \label{fig:weights_b}
   \end{subfigure}
 \caption {Conceptually, weights can be associated with edges.}
 \label{fig:weights}
 \end{figure} % }}}
 
-% transition to backward pass ideas
+During the forward pass the peak number of packets is low.
+Figure~\ref{fig:weights} shows how neurons are connected and how
+weights are conceptually bound to the edges.
+For example, the output of neuron $f^{(1)}_1$ is multiplied with
+weight $w_{11}$, when it is received by neuron $f^{(2)}_1$,
+which computes (\ref{eq:perceptron}) during the forward pass.
+Weights are owned by the destination neuron of each edge.
+So $f^{(2)}_1$ owns all the weights $w_{11},w_{21},\dots,w_{n1}$.
+The output of each neuron is passed to all the neurons in the
+following layer---if the following layer is a dense layer---or to a
+subset of neurons, in the case of a convolutional layer as successor
+layer.
+Again from the example shown in Figure~\ref{fig:weights}, the output
+of $f^{(1)}_1$ would be passed to the neurons $f^{(2)}_1, f^{(2)}_2,
+\dots, f^{(2)}_m$.
+The forward pass is elegantly solved using a multicast message.
+$f^{(1)}_1$ has an outgoing edge partition ``forward'' with all the
+edges shown in Figure~\ref{fig:weights_b}.
+It sends its output with a single call to the SpiNNaker API to all
+the neurons it is connected to and the communication fabric takes care
+of multicasting the output to the neurons in the next layer.
+Therefore, the peak number of packets on the fabric would be exactly
+$n \cdot m$ (bear in mind that only one layer sends at a time, thanks
+to the ping-pong protocol presented in
+Section~\ref{subsec:SpiDNN_arch}).
 
-% also don't forget the offset between sending successive packets
+For a convolutional layer the peak number of packets is
+$n \cdot m \cdot filters / stride$.
+Each filter produces a different result
+(see Section~\ref{subsec:intro_dl}).
+For each filter one call to the SpiNNaker API is necessary in order
+to multicast its output to the next layer.
+To reduce the added pressure of having multiple filters, we introduced
+a constant latency into the sending loop.
+This keeps the peak number of packets lower by spreading the
+packets across time, like using the timer offset (see above).
+
+For development we had access to one SpiNN-5 board
+(see Section~\ref{subsec:intro_spinn} and
+Appendix~\ref{sec:spinn_photos}).
+The SpiNN-5 board has 48 chips, which means it has 864 cores.
+One core per chip is reserved for the router, so a maximum of 816
+cores can be used for neurons.
+Extra monitor cores can be enabled to decrease loading time before the
+execution starts and for packet re-injection of dropped packets, which
+decreases the number of cores per chip down to 15
+\citep{furber_et_al_2020}.
+Listing~\ref{lst:big_models_inference} shows an excerpt from the test
+suite.
+Inference with two models, one MLP and one CNN, is tested.
+Both models have enough neurons to fill the whole board (816 cores).
+Neither one experiences problems with dropped packets.
+% transition to backward pass ideas
 
 % and the time spend in receive... god, all the time spend in
 % receive
@@ -2758,13 +2810,6 @@ This way each neuron on a chip has a different offset.
 
 \section{Discussion}
 \label{sec:discussion}
-
-%
-%Extra cores can be enabled to decrease loading time before the
-%execution starts and for packet re-injection of dropped packets, which
-%decreases the number of cores per chip which can be used for the deep
-%learning model \citep{furber_et_al_2020}.
-%
 
 \begin{itemize}
   \item present possible solutions for problems encountered
@@ -2826,6 +2871,17 @@ This way each neuron on a chip has a different offset.
   \caption{The SpiNNaker1M machine in Manchester.
   Image reproduced with permission from Alan Stokes.}
 \end{figure}
+
+\newpage
+
+\section{Excerpts from the Test Suite}
+\label{sec:test_suite}
+
+\lstinputlisting[language=Python, firstline=1, lastline=68,
+  caption={Excerpt from the test suite showing two models (one MLP and
+    one CNN), which take up all the capacity of a SpiNN-5 board.},
+  captionpos=b, numbers=left, label={lst:big_models_inference}]
+  {../SpiDNN/test/test_inference.py}
 
 \end{appendices}
 
