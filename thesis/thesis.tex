@@ -1154,8 +1154,8 @@ than matrix multiplication.
 \label{sec:related_work}
 
 Like \citet{gomes_2017} states, implementing deep learning on
-neuromorphic chips has been a desire for some time.
-This section will outline two approaches of implementing deep learning
+neuromorphic chips has been a goal for some time.
+This section will outline two approaches to implementing deep learning
 models on neuromorphic hardware.
 One being the SNN toolbox \citep{rueckauer_et_al_2017}, the other
 being an implementation of CNNs on IBM's TrueNorth system
@@ -1165,47 +1165,48 @@ The SNN toolbox takes pre-trained deep learning models and translates
 them into spiking neural networks.
 Its front-end supports a wide range of different input formats from
 various deep learning libraries, including Keras, Tensorflow, PyTorch
-or Caffe \citep{jia_et_al_2014}, while its back-end supports different
-spiking neural network simulators like Brian2
+and Caffe \citep{jia_et_al_2014}, while its back-end supports
+different spiking neural network simulators like Brian2
 \citep{stimberg_et_al_2019}.
-The back-end also supports the simulator independent language PyNN
+The back-end also supports the simulator-independent language PyNN
 \citep{davison_et_al_2009}, enabling running the converted models
 on SpiNNaker, which supports PyNN as its front-end for spiking neural
 networks.
-Furthermore direct mappings to other neuromorphic
+Furthermore, direct mappings to other neuromorphic
 computers like Intel's Loihi \citep{davies_et_al_2018} are supported
-as well by the back-end \citep{snn_toolbox_2020}.
+by the back-end \citep{snn_toolbox_2020}.
 The SNN toolbox supports complex CNNs like VGG16 or Inception-v3
 \citep{szegedy_et_al_2015, rueckauer_et_al_2017}.
 \citet{rueckauer_et_al_2017} shows that using the converted version of
 LeNet \citep{lecun_et_al_1989} on the MNIST data set
 \citep{lecun_et_al_2020} and BinaryNet \citep{courbariaux_et_al_2016}
-on CIFAR-10 \citep{krizhevsky_2009} requires two times
-less operations than the original CNNs without considerable loss in
+on CIFAR-10 \citep{krizhevsky_2009} requires half the
+operations of the original CNNs without considerable loss in
 accuracy.
-Unfortunately for bigger problems, namely VGG16 and Inception-v3 on
+Unfortunately, for bigger problems, namely VGG16 and Inception-v3 on
 the ImageNet data set, the converted models have a much lower accuracy
 than their original counterpart (63.9 percent accuracy for the
-original VGG16 and only an accuracy of 49.6 for the converted model)
+original VGG16 and only 49.6 for the converted model)
 \citep{rueckauer_et_al_2017}.
 Another caveat of the SNN toolbox is the fact that it only supports
-inference and not training, which is the far more complex task
-computationally.
+inference and not training.
+Training is the far more complex task computationally.
 
 IBM's TrueNorth neuromorphic architecture has the goal of
 achieving energy efficiency and performance through scalability,
-same as SpiNNaker.
+similar to SpiNNaker.
 \citet{esser_et_al_2016} presents Eedn (energy-efficient deep
 neuromorphic networks).
-Eedn is an approach of generating CNNs on the TrueNorth system,
+Eedn is an approach to generating CNNs on the TrueNorth system,
 enabling both inference and training.
 TrueNorth---unlike SpiNNaker---uses one bit spikes
-\citep{esser_et_al_2016}, which means its substantially different from
-contemporary consumer hardware and deep learning accelerators and Eedn
-is needed to translate the CNN in order to make it run on TrueNorth.
-SpiNNaker on the other hand, like stated above, is just a collection
+\citep{esser_et_al_2016}, which means it is substantially different
+from contemporary consumer hardware and deep learning accelerators.
+Eedn is needed to translate the CNN in order to make it run on
+TrueNorth.
+SpiNNaker on the other hand, as stated above, is only a collection
 of low power ARM cores connected over a NoC.
-Spikes on SpiNNaker a communicated with small multicast packets
+Spikes on SpiNNaker are communicated with small multicast packets
 (up to 72 bits, see Section~\ref{subsec:intro_spinn})
 \citep{furber_et_al_2020}.
 These packets can be used to transfer any information from one core
@@ -1236,7 +1237,7 @@ a short introduction to the SpiNNaker software toolchain and
 programming model.
 Section~\ref{subsec:SpiDNN_arch} will present the architecture of the
 prototype.
-Lastly, Section~\ref{subsec:problems} will shine light onto the
+Lastly, Section~\ref{subsec:problems} will describe the
 hardships and problems encountered and mistakes made during the
 development process.
 
@@ -1266,20 +1267,21 @@ There are two type of graphs, application graphs and machine graphs.
 A vertex in the machine graph, referred to as a machine vertex, is
 directly mapped to a single SpiNNaker core.
 An application graph is an abstraction over a machine graph.
-Application vertices have a number of atoms.
-Atoms are atomic units of computation.
+Application vertices have a number of atoms, each being an atomic unit
+of computation.
 The atoms of an application vertex are distributed onto machine
 vertices, such that each machine vertex contains a disjunct subset
 of the atoms of the corresponding application vertex.
 This makes programming and scaling easier and also facilitates proper
-resource exploitation, for example by mapping 1,000 small spiking
+resource exploitation.
+For example by mapping 1,000 small spiking
 neurons---atoms of a neuron population represented as a application
 vertex---onto a single core, instead of having them distributed across
 1,000 cores, which would be the case if they were to be implemented
 directly as machine vertices \citep{furber_et_al_2020}.
 For the prototype we used a machine graph, since it is easier to
 implement.
-Less code is required and the hardships of multiplexing and
+Less code is required and the difficulties of multiplexing and
 demultiplexing are avoided.
 The development process was guided by the UNIX rule of optimization:
 prototype before polishing \citep{raymond_2003}, or in Donald Knuth's
@@ -1290,9 +1292,9 @@ The SpiNNaker toolchain is mostly written in the Python programming
 language.
 The SpiNNaker machine is connected to a host device via Ethernet
 \citep{rowley_et_al_2019}.
-In order to execute a program on SpiNNaker one writes a Python
+In order to execute a program on SpiNNaker, one writes a Python
 script which generates a graph.
-It must be either an application or a machine graph.
+It must be either an application graph or a machine graph.
 Machine vertices cannot be added to an application graph and vice
 versa.
 The toolchain---running on the host which also executes the script
@@ -1306,7 +1308,7 @@ able to access them) and finally loading and running the
 application \citep{furber_et_al_2020}.
 
 Each vertex is represented as a Python object---instantiated from the
-appropriate classes---and has an associated binary, the program to
+appropriate classes---and has an associated binary---the program to
 be executed by the machine \citep{furber_et_al_2020}.
 The source code of the binary to be executed on the machine is written
 in the C programming language and compiled with the gcc compiler from
@@ -1315,11 +1317,12 @@ Machine vertices are not common C programs.
 They do not own the control flow but instead are event-based, like
 the ECMAScript programming language \citep{ecma_2020}.
 The SpiNNaker1 API provides the operating system executing the vertex
-and serves the mechanism for registering software callback functions,
-triggered when a certain event occurs \citep{furber_et_al_2020}.
+and serves as the mechanism for registering software callback
+functions, triggered when a certain event occurs
+\citep{furber_et_al_2020}.
 The two events used by the vertices of this prototype were:
 (\romannumeral 1) receiving a packet and (\romannumeral 2) a
-periodical update event, called every $x$ cycles.
+periodic update event, called every $x$ cycles.
 
 \begin{figure} % {{{
 \begin{center}
@@ -1352,14 +1355,14 @@ A MC packet has two or three segments:
 and (\romannumeral 3) optionally 4 byte payload.
 This makes a MC packet either 40 or 72 bits long
 \citep{furber_et_al_2020}.
-A MC packet is send via the directed edges between vertices.
+A MC packet is sent via the directed edges between vertices.
 Each edge has an associated outgoing edge partition.
 An outgoing edge partition has one source vertex and $n$ destination
 vertices and---in the case of the machine graph---one unique
 routing key (allocated by the toolchain).
 The routing key---a 32 bit unsigned integer---is unique in the sense
 that no other outgoing edge partition will have the same key.
-Otherwise routing would fail in the sense that packets will be send
+Otherwise routing would fail, because packets would be send
 to the wrong destinations or dropped when no matching router entry for
 the key is found.
 If the source vertex sends a MC packet it uses the key of the
@@ -1369,8 +1372,8 @@ partition.
 A vertex can have multiple outgoing edge partitions, as is shown in
 Figure~\ref{fig:partitions} \citep{furber_et_al_2020}.
 If the source vertex from Figure~\ref{fig:partitions} sends a MC
-packet with zero as key, the two upper vertices will receive the
-packet, whereas with one as key the two lower vertices would receive
+packet with key zero, the two upper vertices will receive the
+packet, whereas with key one the two lower vertices would receive
 the packet.
 
 The toolchain offers support for live IO, enabling external devices
@@ -1405,7 +1408,7 @@ The underlying assumption made for developing the prototype was,
 that because SpiNNaker was designed to run spiking neurons, it would
 be a natural fit to implement deep learning on a neuron level as well.
 Besides that, neurons are an easy-to-understand abstraction over the
-mechanisms of deep learning and rather straight-forward to implement.
+mechanisms of deep learning and rather straightforward to implement.
 This design decision was made against the trend of both deep learning
 research and state-of-the-art deep learning libraries.
 The former more commonly abstracts over layers while the latter
@@ -1437,15 +1440,15 @@ X = np.random.rand(500, 64)
 # the keras model
 keras_model = tf.keras.Sequential()
 keras_model.add(tf.keras.layers.Dense(128, input_shape=(64,)))
-keras_model.add(tf.keras.layers.Dense(128, activation="relu"))
-keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
+keras_model.add(tf.keras.layers.Dense(128, activation=`relu'))
+keras_model.add(tf.keras.layer.Dense(10, activation=`softmax'))
 
 # the equivalent model for SpiNNaker
 spinn_model = Model()
 spinn_model.add(Input(64))
 spinn_model.add(Dense(128))
-spinn_model.add(Dense(128, activation="relu"))
-spinn_model.add(Dense(10, activation="softmax"))
+spinn_model.add(Dense(128, activation=`relu'))
+spinn_model.add(Dense(10, activation=`softmax'))
 
 # this call ensures both models have the same parameters
 model.set_weights(keras_model.get_weights())
@@ -1468,7 +1471,7 @@ clearly suggests---functions as the representation of a deep learning
 model.
 It is designed to be used the same way as Keras's \texttt{Sequential}
 model (see Listing~\ref{lst:spiDNN_vs_keras}, line 12).
-The second user interface are the layers---the building blocks of
+The second user interface is the layers---the building blocks of
 a model.
 Layers are added sequentially to a model instance by calling the
 model's \texttt{add} method (see Listing~\ref{lst:spiDNN_vs_keras},
@@ -1479,11 +1482,11 @@ While this suits most common needs, modern deep learning models,
 like the inception nets \citep{szegedy_et_al_2014}, have layers
 connected to multiple preceding and succeeding layers.
 Also the shortcut connections of the ResNets (see
-Section~\ref{subsec:intro_bench}) are not straight forward to
+Section~\ref{subsec:intro_bench}) are not straightforward to
 implement with the sequential API.
 Keras therefore exposes another API, its functional API.
-The prototype was not developed so far and only supports sequential
-models.
+The prototype was not developed to this stage and only supports
+sequential models.
 
 \begin{figure} % {{{
   \begin{center}
@@ -1619,7 +1622,7 @@ and can depend on the preceding layer.
 For example, a dense layer (see Section~\ref{subsec:intro_dl})
 generates the weight matrix $\mathbf{W}: n \times m$ and the bias
 $m$-vector.
-$n$ is the amount of neurons in the preceding layer, $m$ the amount of
+$n$ is the number of neurons in the preceding layer, $m$ the number of
 neurons of the dense layer.
 Convolutional layers do not depend on the previous layer for their
 weights.
@@ -1631,7 +1634,7 @@ Section~\ref{subsec:intro_dl}).
 The kernel of a 2D convolutional layer simply has one more spatial
 dimension, so the 2D layer would generate a 4D array as weights.
 The input layer does not generate any weights.
-The formats of the weights is again inspired by Keras and enables
+The format of the weights is again inspired by Keras and enables
 seamless interoperability between a SpiNNaker deep learning model and
 the subset of the Keras API supported by the prototype
 (see Listing~\ref{lst:spiDNN_vs_keras}, line 25).
@@ -1664,15 +1667,15 @@ y = np.random.rand(500, 10)
 # the keras model
 keras_model = tf.keras.Sequential()
 keras_model.add(tf.keras.layers.Dense(128, input_shape=(64,)))
-keras_model.add(tf.keras.layers.Dense(128, activation="relu"))
-keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
+keras_model.add(tf.keras.layers.Dense(128, activation=`relu'))
+keras_model.add(tf.keras.layer.Dense(10, activation=`softmax'))
 
 # the equivalent model for SpiNNaker
 spinn_model = Model()
 spinn_model.add(Input(64))
 spinn_model.add(Dense(128))
-spinn_model.add(Dense(128, activation="relu"))
-spinn_model.add(Dense(10, activation="softmax"))
+spinn_model.add(Dense(128, activation=`relu'))
+spinn_model.add(Dense(10, activation=`softmax'))
 
 # this call ensures both models have the same parameters
 model.set_weights(keras_model.get_weights())
@@ -1682,12 +1685,12 @@ model.set_weights(keras_model.get_weights())
 # unlike the prototype, Keras compiles its models, before they can be trained.
 # Since the prototype does not offer a optimizer interface yet, it does not
 # have a compile method
-kmodel.compile(loss="mean_squared_error",
+kmodel.compile(loss=`mean_squared_error',
                optimizer=tf.keras.optimizers.SGD(learning_rate=0.01))
 kmodel.fit(X, y, epochs=5, batch_size=32, shuffle=False)
 
 model.fit(
-  X, y, loss="mean_squared_error", epochs=5, batch_size=32, learning_rate=0.01)
+  X, y, loss=`mean_squared_error', epochs=5, batch_size=32, learning_rate=0.01)
 
 error = [x - x_ for x, x_ in zip(model.get_weights(), kmodel.get_weights())]
 
@@ -1729,7 +1732,7 @@ functions:
 \end{itemize}
 The only supported optimizer (algorithm for training the weights) is
 gradient descent with a constant learning rate.
-Gradient descend is probably the most common optimization algorithm
+Gradient descent is probably the most common optimization algorithm
 for deep learning \citep{goodfellow_et_al_2016}.
 1D convolutional layers have support for same and valid (default)
 padding and they can be strided (see Section~\ref{subsec:intro_dl}
@@ -1757,10 +1760,10 @@ keras_model = tf.keras.Sequential()
 # this layer has 20 filters and a kernel size of 3. Valid padding and a
 # stride of 1 are default
 keras_model.add(tf.keras.layers.Conv1D(20, 3, input_shape=input_shape))
-keras_model.add(tf.keras.layers.Conv1D(5, 3, activation="relu",
-                                       padding="same", strides=2))
+keras_model.add(tf.keras.layers.Conv1D(5, 3, activation=`relu',
+                                       padding=`same', strides=2))
 keras_model.add(tf.keras.layers.Flatten())
-keras_model.add(tf.keras.layer.Dense(10, activation="softmax"))
+keras_model.add(tf.keras.layer.Dense(10, activation=`softmax'))
 
 # the equivalent model for SpiNNaker
 spinn_model = Model()
@@ -1768,9 +1771,9 @@ spinn_model.add(Input(*input_shape))
 spinn_model.add(Conv1D(20, (3,)))
 # The feature map of this layer is implicitly flattened,
 # because the next layer is a dense layer
-spinn_model.add(Conv1D(5, (3,), activation="relu",
-                       padding="same", stride=2))
-spinn_model.add(Dense(10, activation="softmax"))
+spinn_model.add(Conv1D(5, (3,), activation=`relu',
+                       padding=`same', stride=2))
+spinn_model.add(Dense(10, activation=`softmax'))
 
 # this call ensures both models have the same parameters
 model.set_weights(keras_model.get_weights())
@@ -1786,7 +1789,7 @@ assert np.amax(error) < 1e-4
 \end{lstlisting}
 \end{figure} % }}}
 
-Like stated above, a deep learning model is decomposed into neurons
+As stated above, a deep learning model is decomposed into neurons
 in order to execute it on SpiNNaker.
 Neurons are part of the internal APIs of the prototype and not exposed
 to the user.
@@ -1839,7 +1842,7 @@ First, an auxiliary layer for the live IO is created, the extractor
 layer.
 The extractor layer has a single machine vertex, a LPG instance
 (see Section~\ref{subsec:spinn_toolchain}) for streaming the
-predictions off of SpiNNaker, back to the host.
+predictions off SpiNNaker, back to the host.
 The LPG is also shown as the auxiliary vertex in
 Figure~\ref{fig:spiDNN_arch}.
 The first layer---which must always be an input layer---handles
@@ -1856,7 +1859,7 @@ If, for example, the model was trained before the call to the
 learning---the neurons from the training graph would still exist.
 Beyond the training these neurons are meaningless, because they were
 part of a different run on SpiNNaker and must be deleted (when the
-toolchain is resetted it deletes its machine graph instance, but the
+toolchain is reset it deletes its machine graph instance, but the
 vertex objects remain).
 They could be deleted right before the \texttt{fit} or
 \texttt{predict} method exits, but for unit testing it is convenient
@@ -1871,13 +1874,13 @@ This is a design pattern in software engineering called the layered
 pattern (not to be confused with the layers provided by our
 prototype) \citep{morlion_2018}.
 This design pattern is a common way to abstract---e.g.\ TCP/IP or the
-OSI model \citep{tanenbaum_et_al_2013}---and holds code complexity
+OSI model \citep{tanenbaum_et_al_2013}---and keeps code complexity
 down, makes ownership clear and helps writing well-defined interfaces.
 For the initialization of the neurons, the layer interface provides
 a method \texttt{init\_neurons}.
 This method generates the neurons, which are stored in the
 \texttt{neurons} property of each layer (a Python list).
-The \texttt{init\_neurons} method furthermore adds the neurons to
+Furthermore, the \texttt{init\_neurons} method adds the neurons to
 the machine graph of the SpiNNaker toolchain.
 
 After the neurons are created and initialized, the connections for
@@ -1890,13 +1893,13 @@ For example, the forward pass is built with calling
 \texttt{connect\_incoming} for each hidden layer, the output layer
 and the auxiliary layer for extracting the predictions.
 Each of these layers is connected with the preceding layer.
-All layers except convolutional layers connect every of their neurons
+All layers except convolutional layers connect each of their neurons
 with every neuron of the layer connected with.
 Connecting convolutional layers is more complicated, because they
 also need to take care of stride and padding.
 
-Last thing to be set up, before execution can start, is the live IO
-connection for streaming the observations onto the board and the
+The last thing to be set up, before execution can start, is the live
+IO connection for streaming the observations onto the board and the
 predictions off it (see Algorithm~\ref{alg:pred}, line 7).
 The communication protocol chosen was the most naive possible
 solution, staying true to our development principle (see above).
@@ -1925,7 +1928,7 @@ architectures.
 A possible solution to this problem is discussed in
 Section~\ref{sec:discussion}.
 
-Like stated above, weights are actually owned by the model, not
+As stated above, weights are actually owned by the model, not
 the layer objects.
 The weights are directly injected into the neurons during their
 generation and initialization.
@@ -1935,7 +1938,7 @@ The filters of the convolutional layers are simply shared between
 all neurons of the layer, so each neuron has a copy.
 
 The received packets have to be matched somehow to the weights
-the payload of the packet is multiplied with.
+the payload of the packet is multiplied by.
 All packets sent by the different components of the prototype are
 with payload, so 72 bit big.
 Each packet consists of a control byte and two words, key and payload
@@ -1943,7 +1946,8 @@ Each packet consists of a control byte and two words, key and payload
 Each neuron knows how many neurons in the previous layer it is
 connected to and knows their keys within a certain partition.
 The simple MLP shown in Figure~\ref{fig:spiDNN_arch} only has a
-single partition the ``forward'' partition.\footnote{Not actually one
+single partition---the ``forward'' partition.\footnote{%
+  Not actually one
   partition, but lots of outgoing edge partitions with the same
   identifier (see Section~\ref{subsec:spinn_toolchain}).
   Below, a partition will always refer to a set of outgoing edge
@@ -1952,9 +1956,8 @@ During data generation (see Section~\ref{subsec:spinn_toolchain})
 the data structured generated by the SpiNNaker toolchain can be
 queried and the machine graph traversed in order to find out the
 corresponding routing keys.
-The routing keys of the outgoing edge partitions of all the neurons
-from the previous layer, connected to the neuron which is creating its
-mapping between packets and weights, are collected.
+The routing keys of the outgoing edge partitions of the neurons
+from the previous layer are collected.
 The keys are guaranteed to be consecutive.
 For example, the first neuron of the input layer of the MLP from
 Figure~\ref{fig:spiDNN_arch} (64 neurons big) would have zero as its
@@ -1978,8 +1981,7 @@ The same procedure works for the backward pass as well.
 For convolutional neurons it is somewhat more complex, because they
 receive multiple channels from their preceding neurons.
 The index is therefore determined with an additional array of channel
-counters.
-For each connection a channel counter is created.
+counters---for each connection a channel counter is created.
 A channel counter is incremented each time a value is received from
 its corresponding connection.
 The channel counter is then additionally used to determine the correct
@@ -2044,7 +2046,7 @@ Blocking the router causes back-pressure, which leads to packet loss
 
 The prototype must support multiple partitions.
 For basic inference---without a softmax layer (see below)---it is only
-one partition, like stated above.
+one partition, as stated above.
 For the backward pass during training on the other hand, neurons are
 not only connected to the neurons of the succeeding layer, but also
 to the ones of the preceding layer.
@@ -2054,14 +2056,14 @@ neurons in the preceding layer as well.
 In the other direction, the error passed backwards would reach the
 neurons in the succeeding layer.
 It would be hard to determine if a packet is a potential (meant to
-send forward) or an error (meant to send backward).
-Furthermore this would mean that a lot of MC packets would simply
+be sent forward) or an error (meant to be sent backward).
+Furthermore, this would mean that a lot of MC packets would simply
 be dropped by the receiving vertex, because only one set of neurons
-handles potentials while the other only handles errors.
+handles potentials, while the other only handles errors.
 This would put unnecessary strain onto the communication fabric.
 
 Not only does the backward pass needs its own partition, there is
-also an activation function which behaves differently than the other
+also an activation function which behaves differently to the other
 activation functions implemented.
 The activation function is the softmax activation function
 (see Equation~\ref{eq:softmax}).
@@ -2076,11 +2078,11 @@ in the next layer or on the host, if the output layer had softmax as
 activation function.
 Most certainly faster than the current version, it led to awkward
 code with more branches.
-The amount of overhead in the code and the fact that now information
+The amount of overhead in the code and the fact that information
 of one layer (its activation function) has to be shared with another
 layer was deemed too complex at this stage of the prototype.
 The softmax activation function was implemented early in the
-development process where we tried to avoid code complexity at all
+development process, when we tried to avoid code complexity at all
 cost.
 The current version of the prototype handles softmax via an
 intra-layer partition, the ``softmax'' partition.
@@ -2109,7 +2111,7 @@ allocator.
 
 We have overridden the default key allocator with a first-touch
 global partition key allocator.
-Everytime a directed edge is added to the machine graph (e.g.\ as
+Every time a directed edge is added to the machine graph (e.g.\ as
 is done in Algorithm~\ref{alg:pred}, lines 5 and 6) it is mapped to
 its place in the key space, such that partitions continue to be
 consecutive (global partition over the outgoing edge partitions of
@@ -2138,9 +2140,9 @@ The forward keys for the input layer would be 128 to 191, the
 forward keys for the first hidden layer would be 192 to 319 and so
 forth.
 Our first-touch global partition key allocator scales up to an
-arbitrary amount of partitions (partitions are obvioulsy bound by the
+arbitrary amount of partitions (partitions are obviously bound by the
 key space being $2^{32}$ items big), so it is no problem to handle all
-four parititions of the prototype:
+four partitions of the prototype:
 (\romannumeral 1) the forward partition, (\romannumeral 2) the
 softmax partition, (\romannumeral 3) the backward partition and
 (\romannumeral 4) the previously unmentioned ``kernel update''
@@ -2160,15 +2162,15 @@ Training a deep learning model on SpiNNaker is done via the
 \texttt{fit} method.
 The method takes a training set and its labels as two input
 parameters.
-Furthermore one has to define the parameters of the training session.
+Furthermore, one has to define the parameters of the training session.
 These parameters are: (\romannumeral 1) the loss function to be
-optimized, (\romannumeral 2) the amount of iterations over the whole
+optimized, (\romannumeral 2) the number of iterations over the whole
 training set (the epochs), (\romannumeral 3) the batch size for
 gradient descent and (\romannumeral 4) the learning rate
 (see Section~\ref{subsec:intro_dl}).
 The parameters of the training session are passed to the trainable
 neurons on the board.
-The training set and its labels is streamed onto the board, same as
+The training set and its labels are streamed onto the board, same as
 inference (without the labels).
 
 The structure of the machine graph for a trainable deep learning
@@ -2279,7 +2281,7 @@ backward pass multiplied by the learning rate
 (see Algorithm~\ref{alg:backprop}, lines 6--8).
 Lastly, the updated weights have to be extracted from the SpiNNaker
 machine again, back to the host.
-Like stated above, the weights are passed onto the machine during the
+As stated above, the weights are passed onto the machine during the
 data generation phase of the SpiNNaker toolchain and are stored in
 SDRAM.
 Because SDRAM is slow, the weights are copied into DTCM (see
@@ -2300,8 +2302,7 @@ Last phase of the implementation was spend with implementing 1D
 convolutional layers.
 Convolutional layers were determined---during the research and planing
 phase---to be the hardest part of the implementation.
-This turned out to be true, but not for the reasons why that was
-believed in the first place.
+This turned out to be true, but not for the expected reasons.
 We thought that the their general approach to multiple channels and
 filters would lead to a complicated implementation.
 Rather than having troubles with mapping messages to weights and
@@ -2376,10 +2377,10 @@ Again the problem was solved with counters.
 Unfortunately the receiving event for the backward pass in our
 implementation has become very complex and computationally too
 expensive.
-Like stated above, the router blocks until a packet is received
+As stated above, the router blocks until a packet is received
 (the receive event callback finished).
-If the receive event callback takes long, the router will be blocked
-longer, which will lead to back-pressure on the communication
+If the receive event callback takes a long time, the router will be
+blocked longer, which will lead to back-pressure on the communication
 fabric.
 Back-pressure will lead to dropped packets (discussed in
 Section~\ref{subsec:problems}).
