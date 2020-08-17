@@ -34,10 +34,10 @@ def test_conv_flatten():
                                          dtype=np.float32)).all()
 
     conv1d = Conv1D(1, (kernel_size,))
-    conv1d.n_filters = n_filters
+    conv1d._n_filters = n_filters
 
     input = Input(2)
-    input.n_filters = n_channels
+    input._n_filters = n_channels
 
     weights_, biases_ = conv1d.generate_weights(input)
 
