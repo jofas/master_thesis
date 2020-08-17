@@ -2693,6 +2693,7 @@ This way each neuron on a chip has a different offset.
 	\end{tikzpicture}
 	\end{center}
   \caption{Incoming connections for neuron $f^{(2)}_1$.}
+  \label{fig:weights_a}
   \end{subfigure}
   \begin{subfigure}{.5\textwidth}
   \begin{center}
@@ -2768,6 +2769,120 @@ suite.
 Inference with two models, one MLP and one CNN, is tested.
 Both models have enough neurons to fill the whole board (816 cores).
 Neither one experiences problems with dropped packets.
+
+Backpropagation puts much more pressure onto the communication
+fabric.
+During backpropagation, neuron $f^{(2)}_1$ in
+Figure~\ref{fig:weights_a} computes its neuron error (see
+Section~\ref{subsec:SpiDNN_arch}).
+In order to get the error that is passed backwards, the neuron error
+is multiplied by each weight.
+The error passed from $f^{(2)}_1$ to $f^{(1)}_1$ is the neuron error
+of $f^{(2)}_1$ multiplied with $w_{11}$.
+The error passed to $f^{(1)}_2$ is the neuron error multiplied with
+$w_{21}$ and so forth.
+The problem is, neuron $f^{(2)}_1$ owns all the weights
+$w_{11}, w_{21}, \dots, w_{n1}$.
+$f^{(1)}_1$ does not know about $w_{11}$ and cannot access it.
+There were three things tried in order to solve the problem:
+(\romannumeral 1) one-to-one backward partitions,
+(\romannumeral 2) shared parameters and (\romannumeral 3)
+multicasting each error.
+
+The first approach was to compute each error passed backwards
+from $f^{(2)}_1$ inside the neuron and send each error successively,
+via a one-to-one outgoing edge partition.
+This way, $f^{(2)}_1$ would have $n$ outgoing edge partitions, each
+with one destination.
+In comparison, $f^{(1)}_1$ has one outgoing edge partition in the
+forward direction with $n$ destinations.
+This approach has one major disadvantage: pressure on the routing
+table.
+Each outgoing edge partition has one unique key
+(see Section~\ref{subsec:spinn_toolchain}).
+This way, $m \cdot n$ keys are needed only for layer two shown in
+Figure~\ref{fig:weights}, instead of
+$m$ keys for all the outgoing edge partitions of the layer.
+Each router has a 1024 word routing table
+\citep{navaridas_et_al_2009}.
+Even though the SpiNNaker toolchain offers routing table compression
+\citep{heathcote_2016}, lots of small partitions will cause too many
+entries to fit into the routing table, even for small networks.
+It was clear that this approach does not offer a scalable solution
+and was abandoned quickly.
+It took approximately half a week to develop and test this version of
+backpropagation.
+
+Since we knew about the problem of dropped packets, we continued
+searching for a solution with minimal packets.
+The next approach represents an unsuccessful trade-off between code
+quality and scalability.
+Since we did not experience dropped packets during the forward pass on
+a MLP filling all the available cores on a SpiNN-5 board (see
+Listing~\ref{lst:big_models_inference}), we deemed that sending
+$n \cdot m$ packets works well enough (tested with a maximum $n$ of 50
+and $m$ of 300, which makes the peak number of packets 15,000).
+In order to achieve one call to the SpiNNaker API per neuron for
+sending backwards, we introduced shared parameters.
+Shared parameters means that $f^{(1)}_1$ now owns and maintains a copy
+of $w_{11}, w_{12}, \dots, w_{1m}$, which are owned by the neurons of
+layer two.
+$f^{(2)}_1$ only has to send its neuron error backwards.
+It reaches every neuron in layer one.
+The neurons in layer one compute their error by multiplying the
+received neuron error with $w_{i1}$, now that they own a copy of the
+weight.
+This way the same number of packets are sent forward and backward.
+Forward and backward partition between two layers are simply reversed
+(outgoing edge partition of $f^{(1)}_1$ in the forward direction has
+the $m$ destinations in the succeeding layer, while the outgoing
+edge partition of $f^{(2)}_1$ in the backward direction has $n$
+destinations in the preceding layer).
+
+As stated in Section~\ref{subsec:SpiDNN_arch}, we early on realized
+the code complexity arising from sharing information between layer
+objects in the context of the softmax activation function.
+Therefore, we tried to avoid breaking the layered design pattern
+we chose for the prototype.
+Compared to softmax, sharing weights between neurons is a severe
+violation of this pattern.
+Furthermore, it violated our design philosophy: prototype before you
+polish (see Section~\ref{subsec:spinn_toolchain}).
+
+Another negative aspect of sharing parameters is the fact that the
+computational effort of the backward pass is doubled.
+$w_{11}$ now has to be updated by two different neurons, its
+conceptual owner $f^{(2)}_1$ and the neuron which owns a copy
+$f^{(1)}_1$.
+If $w_{11}$ is only updated by the owner, the error of $f^{(1)}_1$
+would be computed wrongly, because the neuron error of $f^{(2)}_1$ is
+multiplied by the outdated weight.
+
+Sharing parameters was deemed good enough of a compromise between
+scalability and code complexity during the backward pass
+implementation of the MLP.
+Therefore we modeled our implementation of 1D convolutional layers
+based on shared parameters.
+In retrospect, this turned out to be the wrong decision and can be
+accounted to the miscalculation of the effort it would take to
+implement convolutional layers (see Section~\ref{subsec:SpiDNN_arch}).
+The complexity of having to update weights of a convolutional layer
+not only intra-layer, but also across layers turned out to be too
+complex to implement in the time allocated for this thesis.
+Trying to solve the issue arising with padding and strides described
+above in addition to a backward pass algorithm for convolutional
+layers which turned out to be much higher in complexity than the
+backward pass algorithm for dense layers took all the remaining time
+intended for implementation and most of the time reserved as a
+buffer (three weeks buffer reserved for improving the implementation
+and for benchmarking, out of thirteen weeks of dissertation phase).
+In the end, we were not able to get the backward pass working for
+convolutional layers with shared parameters.
+
+When it became clear we were not able to finish our implementation
+with shared parameters, we changed our approach for communication
+during the backward pass again, trying to tackle the problem arising
+from the complexity of the code.
 % transition to backward pass ideas
 
 % and the time spend in receive... god, all the time spend in
