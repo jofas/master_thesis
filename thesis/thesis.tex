@@ -2971,7 +2971,7 @@ multiplies this with a factor of 300.
 The peak number of packets increases from 15,000 packets to 4,500,000.
 4,485,000 packets are dropped at the receiving end.
 Over 99 percent of all packets sent during the backward pass are
-redundant.
+unused.
 
 With multicasting errors backwards, we were able to get
 backpropagation working for convolutional layer.
@@ -3040,18 +3040,65 @@ backward pass which would enable a model on the scale of ResNet-50,
 we discovered some issues with our general approach to implementing
 deep learning on SpiNNaker and with our hypothesis, that neurons
 are a good choice for domain decomposition of a deep learning model.
-% easy-to-implement only for MLP not CNNs
-% then the problems of the design in the first place
+We chose neurons as abstractions because we thought them
+straightforward to implement.
+For perceptrons, this turned out to be correct.
+Implementing a convolutional layer based on neurons---where each
+neuron does one convolution with all filters of the layer
+(see Section~\ref{subsec:SpiDNN_arch})---turned out to be quite
+complex.
+The major complexity arises during the backward pass and strides and
+padding being hard to integrate into the neurons (see above).
 
-\begin{itemize}
-  \item resource invariance (first prototype, deemed too difficult
-    to put resources into it as well (just three months time))
-  \item bottlenecks (one layer much higher
-    computational effort but even less resources (10--1024--20)
-  \item conv neurons of resnet way too big and are horrific scalers
-    (small spatial input but big channels computationally much more
-    effort but again, less resources)
-\end{itemize}
+Besides not being as straightforward to implement and not as easy to
+reason about as was expected, our prototype has another flaw: resource
+invariance.
+This can be attributed to the early stage this project is in.
+The SpiNNaker toolchain offers a way to make neurons more resource
+aware, namely application graphs, which can combine multiple neurons
+into one core, fully utilizing its resources (see
+Section~\ref{subsec:spinn_toolchain}).
+The problem with application graphs in this context is, that they
+cannot handle neurons (atoms for the application graph) which will
+not fit onto a single core.
+For example, the middle layer of one of the last three residual blocks
+of ResNet-50 (see Section~\ref{subsec:intro_bench}) performs a
+$3 \times 3$ convolution on a feature map with 512 channels and
+has 512 filters.
+The weights alone take up 9,216 Kb, far exceeding the available
+64 Kb of DTCM of a single core (see Section~\ref{subsec:intro_spinn}).
+This is another problem which can be added to the missing features
+for ResNet-50.
+Deep learning neurons can grow very big and it can happen that they
+have to be split up.
+Conceptually this is solvable by utilizing the SpiNNaker toolchain,
+which offers a concept called shared keys, allowing multiple outgoing
+edge partitions to have the same key.
+This way a receiving neuron would not know that it is receiving from
+different cores.
+
+Another example illustrating the resource invariance of neurons as
+machine vertices are bottlenecks.
+If one would execute a three layer MLP with 10, 1000 and 20 neurons
+per layer, the second layer would take 1000 cores, each core having
+a tenth of the computational effort compared to the 20 cores taken
+by the output layer.
+ResNet-50 is another example.
+Each time a residual block halves the spatial dimensions of its
+input (applies a stride of two, see Section~\ref{subsec:intro_bench}),
+it doubles the number of filters \citep{he_et_al_2015}.
+This should keep computational cost per layer identical.
+For our prototype, the computational effort would simply rise, each
+time the filters are doubled.
+The layers that are computationally more demanding receive less space
+on the board, therefore less resources, than the computationally less
+demanding layers.
+
+% streaming and ping-pong not good (the first for batch norm, the
+% other means a lot of waiting neurons, not doing anything
+
+% SpiNNaker toolchain may remove resource invariance, but proper
+% domain decomposition will also mend the problem of dropped packets
 
 % }}}
 
@@ -3063,6 +3110,11 @@ are a good choice for domain decomposition of a deep learning model.
 
 \section{Discussion}
 \label{sec:discussion}
+
+% start with good things and recount the awesome journey to this
+% point in time
+
+% then discuss the reset
 
 \begin{itemize}
   \item interpreting neurons as domain decomposition over linear algebra
