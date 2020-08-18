@@ -2897,13 +2897,76 @@ and for benchmarking, out of thirteen weeks of dissertation phase).
 In the end, we were not able to get the backward pass working for
 convolutional layers with shared parameters.
 
+\begin{algorithm} % {{{
+  \caption{: Backward pass for the approach of multicasting each
+    error}
+  \label{alg:multicast_error}
+
+  \begin{algorithmic}[1]
+    \STATE{compute neuron error}
+    \FOR{$i = 1,\dots,n$}
+      \STATE{error $:= \text{neuron error} \cdot w_{ij}$}
+      \COMMENT{$j$ is the constant index of the neuron executing this
+        algorithm}
+      \STATE{send error backwards to all connected neurons in the
+        preceding layer}
+      \STATE{(optionally) add latency in-between iterations, in order
+        to spread the packets in time}
+    \ENDFOR
+  \end{algorithmic}
+\end{algorithm} % }}}
+
 When it became clear that shared parameters are too complex to
 implement and maintain, we changed our approach for communication
 during the backward pass again, trying to tackle the problem arising
 from the complexity of the code.
+We chose to compute the error passed backwards inside $f^{(2)}_1$.
+This approach is like our first approach, without one-to-one
+partitions.
+The partition structure stays the same as the structure of the
+forward pass and the structure of the shared parameters approach for
+the backward pass.
+This approach puts massive pressure on the communication fabric.
+Algorithm~\ref{alg:multicast_error} shows the backward pass procedure
+for communicating the errors backwards.
+The problem arises in Algorithm~\ref{alg:multicast_error}, line 4.
+For example, if $f^{(2)}_1$ from Figure~\ref{fig:weights} sends the
+error intended for $f^{(1)}_1$ backwards, it will reach all $n$
+neurons it is connected to from the preceding layer.
+The other neurons $f^{(1)}_2, f^{(1)}_3, \dots, f^{(1)}_n$ all receive
+a packet and drop it, since it is not their error.
+In the second iteration $f^{(1)}_2$ receives the error and all other
+neurons drop their multicast packet.
+This is continued $n$ times.
+The peak number of packets increases from $m \cdot n$ to
+$m \cdot n^2$.
+Of those $n^2$ packets, $n(n - 1)$ are simply dropped at the receiving
+end.
+These packets do not serve a purpose in themselves and are only used
+to increase a counter, so the receiving neuron knows if the received
+error is the one intended for it.
+If we look at the MLP from Listing~\ref{lst:big_models_inference},
+lines 24--31, it has a 300 neuron layer, followed by a 50 neuron
+layer.
+A forward pass between these two layers needs 15,000 packets
+(see above).
+The backward pass from the 50 neuron layer to the 300 neuron layer
+multiplies this with a factor of 300.
+The peak number of packets increases from 15,000 packets to 4,500,000.
+4,485,000 packets are dropped at the receiving end.
+Over 99 percent of all packets sent during the backward pass are
+redundant.
+
+% run a test session with the big MLP for training
+
+% and show the two examples from the without_shared_state branch to
+% show the max we could scale
+
+% describe algorithm
 
 % still strides are an issue for matching backwards
-% transition to backward pass ideas
+%
+% complex receive event callback
 
 % and the time spend in receive... god, all the time spend in
 % receive
@@ -2991,7 +3054,7 @@ from the complexity of the code.
 
 
 \begin{appendices}
-\section{Images of the SpiNNaker hardware}
+\section{Images of the SpiNNaker Hardware}
 \label{sec:spinn_photos}
 
 \begin{figure}[H]
