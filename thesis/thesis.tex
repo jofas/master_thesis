@@ -2401,7 +2401,7 @@ Once the gradients are shared, the errors are passed backwards.
 \label{subsec:problems}
 
 This section will start by describing the mistakes made during
-development and the encountered problems.
+development and the problems encountered.
 Afterwards, general problems and inferiorities of the prototype and
 our hypothesis will be presented.
 Some possible solutions to these will be discussed in
@@ -2428,7 +2428,7 @@ pressure ensued.
 Besides the minor deviations, a major problem with the prototype was
 discovered, which we were unable to fix.
 This problem has been mentioned in Section~\ref{subsec:SpiDNN_arch}
-before and concerns itself with dropped packets.
+before and concerns dropped packets.
 
 The minor deviations encountered during the development process
 (listed in chronological order) were:
@@ -2464,7 +2464,7 @@ finished \citep{furber_et_al_2020, spinnaker_2020b}.
 
 We changed the program such that each cell streams its state off the
 board.
-Unfortunately this did not work once the number of cells exceeded
+This did not work once the number of cells exceeded
 a certain threshold.
 No packets were received by the \texttt{LiveEventConnection}
 (see Section~\ref{subsec:spinn_toolchain}) and the router on the
@@ -2475,23 +2475,22 @@ whole execution.
 SpiNNaker has no memory protection (no segmentation faults when
 trying to access memory not owned by the accessing machine vertex).
 Any machine vertex can override data owned by other vertices in SDRAM
-and we rightfully thought that the LPG is writing to memory owned by
+and we correctly thought that the LPG was writing to memory owned by
 the router.
 After reducing the code of the LPG, we could determine strange
 behavior in the buffer that stores received packets for sending them
 to the host.
 Once the LPG has sent its first EIEIO message to the host
-(see Section~\ref{subsec:SpiDNN_arch}) the buffer showed that its
+(see Section~\ref{subsec:SpiDNN_arch}) the buffer showed that it was
 full, even though it did not contain packets anymore.
 While we could isolate the problem to the generation and sending
 process of the EIEIO message, we could not find the bug in there
 and had to rely on the SpiNNaker core team to find the bug and fix it.
 
-Unfortunately, finding and fixing this bug took away one whole week
-(the first) of the dissertation phase, not to mention all of the
-familiarization phase.
-The live IO version of Conway's game of live was not finished.
-While the states were now streamed off of SpiNNaker, the initial
+Finding and fixing this bug took away approximately one week
+(the first) of the dissertation phase and the live IO version of
+Conway's game of live was not yet finished.
+While the states were now streamed off SpiNNaker, the initial
 states were not yet streamed onto the machine (a vital part of the
 prototype which we had to familiarize ourselves with).
 Further interfaces and mechanisms we had to learn were how to
@@ -2512,7 +2511,7 @@ application graphs).
 The change made to the toolchain can be found at
 \citet{fassbender_2020b}.
 
-The same goes for the discovered bug during the key allocation
+The same goes for the bug discovered during the key allocation
 process, once an outgoing edge partition has more than one key,
 as is the case with flattened convolutional layers (see
 Section~\ref{subsec:SpiDNN_arch}).
@@ -2550,10 +2549,10 @@ This continues all the way to five.
 Adding two lines that add up the offset instead of overwriting it
 solved the problem.
 The solution can be found at \citet{fassbender_2020c}.
-Both, the interface change and the bug together, was solved in
+Both, the interface change and the bug together, were solved in
 a single day.
 
-Not really an issue during development but during testing was the
+An issue during testing was the
 fact that we were unable to get a second live IO session running in
 the same Python script, after the first one was properly closed.
 This made it impossible to call \texttt{predict} after \texttt{fit},
@@ -2566,29 +2565,30 @@ The problem arises due to a socket not being properly closed, or
 rather not properly deallocated by the operating system of the host.
 In order to fix this problem we tried to tell the operating system to
 reuse the socket.
-While this removed the error, unfortunately it led to inconsistent
-behavior of the second live IO session.
+While this removed the error, it led to inconsistent behavior of the
+second live IO session.
 With the reused socket, the second live IO session sometimes sent
 packets to the machine and sometimes did not.
+
 The fact that we were unable to get a second working live IO session
 limited our testing abilities in two ways.
 First, we could not \texttt{predict} with a trained model (except by
 exporting the updated weights to file first, as described above).
 Second, we could never execute the whole test suite, but had to
 call each function, from every test script, by hand.
-While this has been an inconvenience, the overall time lost by trying
-out the workaround described above and for having to execute the test
+While this has been an inconvenience, the overall time spent trying
+out the workaround described above and executing the test
 suite by hand has not exceeded a whole working day.
 The issue can be found at \citep{fassbender_2020d}.
 
 The four issues discussed above were all dealing with the SpiNNaker
 toolchain.
-They have led to approximately two weeks of lost time during the
-dissertation phase.
+Dealing with these issues took approximately two weeks of time during
+the dissertation phase.
 The last of the minor deviations does not concern itself with the
 toolchain, but has its source in mistakes made during the
 implementation of the prototype.
-Like stated in Section~\ref{subsec:SpiDNN_arch}, the time and effort
+As stated in Section~\ref{subsec:SpiDNN_arch}, the time and effort
 it would take to get the stride and padding of a convolutional layer
 to work was underestimated.
 The problem has two sides: (\romannumeral 1) the time it took to find
@@ -2596,27 +2596,26 @@ the right solution and (\romannumeral 2) how difficult it would be
 to integrate strides and padding into the machine vertex.
 The former could have been prevented by spending more time
 on finding the right formula.
-Too much time was wasted by trying to be fast.
 Convolutional layers were implemented after forward and backward pass
 of the MLP.
-With already one and two weeks behind schedule precious time was
-wasted by having to debug cases, where padding and offset were
-computed wrongfully.
+Time---unaccounted for in the work plan---was spent debugging cases,
+where padding and offset were computed wrongfully.
 Getting the formula for computing the offset for strided convolutional
-layers with ``same'' padding right took another week.
+layers with ``same'' padding right took approximately one week.
 The difficulties of having to integrate padding into the machine
 vertices have been discussed in Section~\ref{subsec:SpiDNN_arch}
 (integrating the offset into the forward pass).
-The problem with strides arise during the backward pass, where we
+The problem with strides arose during the backward pass, where we
 have to match the key a packet is sent with to its correct position,
 so the errors arrive at their proper place (where they have actually
 happened).
 In order to get the matching mechanism right, the stride of the
 succeeding layer has to be known.
 Sharing information between layers is costly concerning code
-complexity (something we have learned early during the development
-phase while implementing softmax, see
-Section~\ref{subsec:SpiDNN_arch}).
+complexity, something we have learned early during the development
+phase while implementing softmax (see
+Section~\ref{subsec:SpiDNN_arch}) and backpropagation for MLPs (see
+below).
 Backpropagation with convolutional layers has been the most complex
 task (and the last) implemented in the prototype and it is the main
 cause of the major problem limiting supported size of deep learning
@@ -2665,13 +2664,18 @@ of a SpiNNaker chip in the 2D torus topology of the machine (see
 Section~\ref{subsec:intro_spinn}) and $0 \leq z \leq 17$ is the id of
 the core on that chip.
 During data generation (see Section~\ref{subsec:spinn_toolchain}),
-the neuron gets the information of its placement from the toolchain.
+the neuron gets the information about its placement from the
+toolchain.
 A maximum timer offset is provided by the prototype.
 It is the time between update events, divided by ten.
-90 percent of the time between update events should leave enough time
+90 percent of the time between update events leaves enough time
 for a machine vertex with the maximum offset to send its packets along
 the longest path of the topology and the packet being received before
 the receiver's next update event.
+The formula for computing the maximum offset is taken from
+the implementation of a Poisson spike source neuron from the
+SpiNNaker front-end for spiking neural networks
+\citep{spinnaker_2020c}.
 The maximum offset is divided by the cores per chip is multiplied by
 $z$.
 This way each neuron on a chip has a different offset.
@@ -2739,7 +2743,7 @@ It sends its output with a single call to the SpiNNaker API to all
 the neurons it is connected to and the communication fabric takes care
 of multicasting the output to the neurons in the next layer.
 Therefore, the peak number of packets on the fabric would be exactly
-$n \cdot m$ (bear in mind that only one layer sends at a time, thanks
+$n \cdot m$ (only one layer sends at a time, thanks
 to the ping-pong protocol presented in
 Section~\ref{subsec:SpiDNN_arch}).
 
@@ -2747,7 +2751,7 @@ For a convolutional layer the peak number of packets is
 $n \cdot m \cdot filters / stride$.
 Each filter produces a different result
 (see Section~\ref{subsec:intro_dl}).
-For each filter one call to the SpiNNaker API is necessary in order
+For each filter, one call to the SpiNNaker API is necessary in order
 to multicast its output to the next layer.
 To reduce the added pressure of having multiple filters, we introduced
 a constant latency into the sending loop.
@@ -2784,7 +2788,7 @@ $w_{21}$ and so forth.
 The problem is, neuron $f^{(2)}_1$ owns all the weights
 $w_{11}, w_{21}, \dots, w_{n1}$.
 $f^{(1)}_1$ does not know about $w_{11}$ and cannot access it.
-There were three things tried in order to solve the problem:
+There were three approaches to solving the problem:
 (\romannumeral 1) one-to-one backward partitions,
 (\romannumeral 2) shared parameters and (\romannumeral 3)
 multicasting each error.
@@ -2802,19 +2806,23 @@ Each outgoing edge partition has one unique key
 (see Section~\ref{subsec:spinn_toolchain}).
 This way, $m \cdot n$ keys are needed only for layer two shown in
 Figure~\ref{fig:weights}, instead of
-$m$ keys for all the outgoing edge partitions of the layer.
+$m$ keys for all the outgoing edge partitions of the layer in the
+forward direction.
 Each router has a 1024 word routing table
 \citep{navaridas_et_al_2009}.
 Even though the SpiNNaker toolchain offers routing table compression
 \citep{heathcote_2016}, lots of small partitions will cause too many
-entries to fit into the routing table, even for small networks.
+entries.
+The number of entries does not fit into the routing table, even for
+small networks.
 It was clear that this approach does not offer a scalable solution
 and was abandoned quickly.
 It took approximately half a week to develop and test this version of
 backpropagation.
 
 Since we knew about the problem of dropped packets, we continued
-searching for a solution with minimal packets.
+searching for a solution with minimal packets, rather than the most
+naive and easiest to implement.
 The next approach represents an unsuccessful trade-off between code
 quality and scalability.
 Since we did not experience dropped packets during the forward pass on
@@ -2827,6 +2835,8 @@ sending backwards, we introduced shared parameters.
 Shared parameters means that $f^{(1)}_1$ now owns and maintains a copy
 of $w_{11}, w_{12}, \dots, w_{1m}$, which are owned by the neurons of
 layer two.
+If the next layer is a convolutional layer, the neurons own a copy of
+the whole kernel of the succeeding layer.
 $f^{(2)}_1$ only has to send its neuron error backwards.
 It reaches every neuron in layer one.
 The neurons in layer one compute their error by multiplying the
@@ -2850,13 +2860,21 @@ Furthermore, it violated our design philosophy: prototype before you
 polish (see Section~\ref{subsec:spinn_toolchain}).
 
 Another negative aspect of sharing parameters is the fact that the
-computational effort of the backward pass is doubled.
+computational effort of the backward pass and the amount of memory
+needed for the whole model are doubled.
 $w_{11}$ now has to be updated by two different neurons, its
 conceptual owner $f^{(2)}_1$ and the neuron which owns a copy
 $f^{(1)}_1$.
 If $w_{11}$ is only updated by the owner, the error of $f^{(1)}_1$
 would be computed wrongly, because the neuron error of $f^{(2)}_1$ is
 multiplied by the outdated weight.
+Therefore, $f^{(1)}_1$ has to perform gradient descent not only for
+the weights it owns, but also for the copies of the weights of the
+succeeding layer.
+The copied weights and their gradients have to be stored by
+$f^{(1)}_1$ as well.
+The overall memory needed by the deep learning model (ignoring the
+constant memory needed for variables) is doubled.
 
 Sharing parameters was deemed good enough of a compromise between
 scalability and code complexity during the backward pass
@@ -2879,10 +2897,12 @@ and for benchmarking, out of thirteen weeks of dissertation phase).
 In the end, we were not able to get the backward pass working for
 convolutional layers with shared parameters.
 
-When it became clear we were not able to finish our implementation
-with shared parameters, we changed our approach for communication
+When it became clear that shared parameters are too complex to
+implement and maintain, we changed our approach for communication
 during the backward pass again, trying to tackle the problem arising
 from the complexity of the code.
+
+% still strides are an issue for matching backwards
 % transition to backward pass ideas
 
 % and the time spend in receive... god, all the time spend in
