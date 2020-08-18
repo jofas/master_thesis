@@ -1735,6 +1735,24 @@ The only supported optimizer (algorithm for training the weights) is
 gradient descent with a constant learning rate.
 Gradient descent is probably the most common optimization algorithm
 for deep learning \citep{goodfellow_et_al_2016}.
+Supported loss functions, which are optimized, are:
+\begin{itemize}
+  \item mean squared error:
+    \begin{align}
+      \label{eq:mse}
+      L(y, \hat{y}) = 1/k \sum_{i=1}^k(y_k - \hat{y}_k)^2
+    \end{align}
+
+  \item categorical cross-entropy:
+    \begin{align}
+      L(y, \hat{y}) = - \sum_{i=1}^{k} y_i \log \hat{y}_i
+    \end{align}
+
+  \item binary cross-entropy ($y$ and $\hat{y}$ must be scalar):
+    \begin{align}
+      L(y, \hat{y}) = - y \log \hat{y} + (1 - y) \log(1 - \hat{y})
+    \end{align}
+\end{itemize}
 1D convolutional layers have support for same and valid (default)
 padding and they can be strided (see Section~\ref{subsec:intro_dl}
 and Listing~\ref{lst:spiDNN_vs_keras_cnns}, lines 30 and 31).
@@ -2232,13 +2250,8 @@ The prototype only supports streaming each example individually.
 The observation $\mathbf{x}_i$ is passed through the model and the
 loss is computed based on the outputs and the labels by the loss layer
 (see Algorithm~\ref{alg:backprop}, lines 3 and 4).
-For example, let the loss function be mean squared error:
-\begin{align}
-L = 1/k \sum_{i=1}^k(y_k - \hat{y}_k)^2,
-\end{align}
-$y$ being the $k$-vector encoding the true label and $\hat{y}$ being
-the $k$-vector result of the output layer.
-
+For example, let the loss function be mean squared error
+(see Equation~\ref{eq:mse}).
 The loss is partially derived for each output neuron.
 The output of the $i$th neuron is computed as
 $\hat{y}_i = g(h(f^{(l-1)}))$, $g$ being the activation function,
@@ -2879,7 +2892,10 @@ constant memory needed for variables) is doubled.
 Sharing parameters was deemed good enough of a compromise between
 scalability and code complexity during the backward pass
 implementation of the MLP.
-Therefore we modeled our implementation of 1D convolutional layers
+We were able to train a model similar to the MLP shown in
+Listing~\ref{lst:big_models_inference} to learn XOR
+(see Listing~\ref{lst:big_mlp_training}), without dropped packets.
+Therefore, we modeled our implementation of 1D convolutional layers
 based on shared parameters.
 In retrospect, this turned out to be the wrong decision and can be
 accounted to the miscalculation of the effort it would take to
@@ -2957,38 +2973,77 @@ The peak number of packets increases from 15,000 packets to 4,500,000.
 Over 99 percent of all packets sent during the backward pass are
 redundant.
 
-% run a test session with the big MLP for training
+With multicasting errors backwards, we were able to get
+backpropagation working for convolutional layer.
+Listing~\ref{lst:cnn_known_weights} shows the test we used for
+implementing backpropagation.
+We computed the gradients by hand, controlled them with the Keras
+model and tried to implement the backward pass accordingly.
+We were unable to make this test work with shared parameters.
+With multicasting errors, we managed to pass the test.
+The biggest CNN trained with this approach can be seen in
+Listing~\ref{lst:training_cnn}.
+Beyond this size, dropped packets stalled the execution.
+Even for such a small deep learning model, we experienced exploding
+gradients (up to the point where weights turned to NaN)
+\citep{brownlee_2019a}, whereas the Keras model used for comparing
+did not.
+This could have three reasons: (\romannumeral 1) Keras has some
+mechanism to avoid exploding gradients the author does not know about,
+(\romannumeral 2) floating operations on SpiNNaker are numerically
+unstable and (\romannumeral 3) the most likely reason being a bug
+in the prototype.
 
-% and show the two examples from the without_shared_state branch to
-% show the max we could scale
+Another major problem of multicasting errors backwards, besides the
+number of unused packets straining the communication fabric, is
+the amount of time spent by the receive callback.
+As stated in Section~\ref{subsec:SpiDNN_arch}, while a packet is
+received by a core, the router on that chip blocks.
+Therefore, receive callbacks must be fast, to keep the time the router
+is blocked down.
+Receiving multicasted errors backwards takes time, because the
+receiver must find out, if the received packets is intended for
+it.
+As stated above, this is done by increasing a counter.
+For dense layers, receiving backwards is not too complex.
+Neurons of a convolutional layer on the other hand spend a lot of
+time in their receive callback.
+They not only have to increase the counter and see, whether the
+packets received is one of its errors.
+Also, they have to deal with the extra complexity of having not only
+to receive one error from the sending neuron.
+They need to receive as many packets from a neuron in the succeeding
+layer, as this layer has filters (channels of the succeeding layer),
+multiplied by the amount of filters of the succeeding layer.
+Therefore, matching received packets takes time, pressuring the
+communication fabric even more.
+Ironically, in order to match received packets, the neuron needs to
+know about the stride of the succeeding layer, so even the less
+complex solution compared to shared parameters needs to violate
+the layered design pattern.
 
-% describe algorithm
+After trying out multicasting errors backwards, without much success
+and seeing its scaling errors in practice, we ran out of time.
+We could not solve the problem of dropped packets and were unable to
+get the more complex approach to the backward pass---shared
+parameters---working.
+We were unable to get the prototype to a state where it would have
+been able to implement ResNet-50---the model we originally intended
+to benchmark our prototype with
+(see Section~\ref{subsec:intro_bench}).
+The missing features are: (\romannumeral 1) 2D convolutional layers,
+(\romannumeral 2) pooling layers and (\romannumeral 3) shortcut
+connections.
 
-% still strides are an issue for matching backwards
-%
-% complex receive event callback
-
-% and the time spend in receive... god, all the time spend in
-% receive
-
-% then the big packet thing
-
-% here mention what features are missing for ResNet
-
+Besides the problem of not being able to implement a version of the
+backward pass which would enable a model on the scale of ResNet-50,
+we discovered some issues with our general approach to implementing
+deep learning on SpiNNaker and with our hypothesis, that neurons
+are a good choice for domain decomposition of a deep learning model.
+% easy-to-implement only for MLP not CNNs
 % then the problems of the design in the first place
 
 \begin{itemize}
-  \item what is all missing (2D, Pooling and Shortcut connections)
-  \item comm structure of the backward pass
-  \item Too much time spend in receive callback
-  \item interpreting neurons as domain decomposition over linear algebra
-    compute graph
-  \item backward pass: gradients computed two times so comm fabric is
-    not overly used by unique partitions/lots of unused packages
-  \item backprop design change (shared weights $\rightarrow$ redundant
-    packets (easier and nicer to implement)).
-    Really stress this point and present all three things tried
-    (e-mail).
   \item resource invariance (first prototype, deemed too difficult
     to put resources into it as well (just three months time))
   \item bottlenecks (one layer much higher
@@ -3010,6 +3065,8 @@ redundant.
 \label{sec:discussion}
 
 \begin{itemize}
+  \item interpreting neurons as domain decomposition over linear algebra
+    compute graph
   \item present possible solutions for problems encountered
   \item mention re-injectors
   \item space used inefficiently (cores and memory) $\rightarrow$ better
@@ -3080,6 +3137,231 @@ redundant.
     one CNN), which take up all the capacity of a SpiNN-5 board.},
   captionpos=b, numbers=left, label={lst:big_models_inference}]
   {../SpiDNN/test/test_inference.py}
+
+\newpage
+
+\begin{lstlisting}[language=Python, caption={Excerpt from the test
+  suite showing a network similar to the MLP from
+  Listing~\ref{lst:big_models_inference} being trained.
+  The MLP is trained to learn XOR, so the input and output dimensions
+  are different from the model shown in
+  Listing~\ref{lst:big_models_inference}.
+  The backward pass was implemented using shared parameters
+  (see Section~\ref{subsec:problems}).}, captionpos=b, numbers=left,
+  label={lst:big_mlp_training}]
+import numpy as np
+import tensorflow as tf
+
+from spiDNN import Model
+from spiDNN.layers import Input, Dense
+
+from copy import deepcopy
+from time import time
+
+EPOCHS = 50
+BATCH_SIZE = 4
+LEARNING_RATE = 0.1
+
+def test_mlp_backprop():
+    X = np.array([[.0, .0], [.0, 1.], [1., .0], [1., 1.]])
+    y = np.array([[.0, 1.], [1., .0], [1., .0], [.0, 1.]])
+
+    kmodel = tf.keras.models.Sequential()
+    kmodel.add(tf.keras.layers.Dense(
+        50, activation="relu", input_shape=(2,)))
+    kmodel.add(tf.keras.layers.Dense(50, activation="softmax"))
+    kmodel.add(tf.keras.layers.Dense(300, activation="tanh"))
+    kmodel.add(tf.keras.layers.Dense(50, activation="sigmoid"))
+    kmodel.add(tf.keras.layers.Dense(25))
+    kmodel.add(tf.keras.layers.Dense(2, activation="softmax"))
+
+    kmodel.compile(
+        loss="mean_squared_error",
+        optimizer=tf.keras.optimizers.SGD(learning_rate=LEARNING_RATE))
+
+    model=Model()
+    model.add(Input(2))
+    model.add(Dense(50, activation="relu"))
+    model.add(Dense(50, activation="softmax"))
+    model.add(Dense(300, activation="tanh"))
+    model.add(Dense(50, activation="sigmoid"))
+    model.add(Dense(25))
+    model.add(Dense(2, activation="softmax"))
+
+    model.set_weights(kmodel.get_weights())
+
+    unfitted_weights = deepcopy(model.get_weights())
+
+    spinn_start = time()
+    model.fit(
+        X, y, "mean_squared_error", epochs=EPOCHS, batch_size=BATCH_SIZE,
+        learning_rate=LEARNING_RATE)
+    spinn_end = time()
+
+    keras_start = time()
+    kmodel.fit(X, y, epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=False)
+    keras_end = time()
+
+    w = model.get_weights()
+    w_ = kmodel.get_weights()
+
+    error = [x - x_ for x, x_ in zip(w, w_)]
+    update = [x - x_ for x, x_ in zip(w, unfitted_weights)]
+
+    # make sure weights are updated in SDRAM before they are extracted
+    for u in update:
+        assert np.amax(np.absolute(u)) > 0.0
+
+    for e in error:
+        e_max = np.amax(np.absolute(e))
+        print(e_max)
+        assert e_max < 0.1
+
+    print("SpiNNaker took: {} seconds".format(spinn_end - spinn_start))
+    print("Keras took: {} seconds".format(keras_end - keras_start))
+\end{lstlisting}
+
+\newpage
+
+\begin{lstlisting}[language=Python, caption={Excerpt from the test
+  suite showing the training of a CNN with known weights.
+  It was used for implementing backpropagation for convolutional
+  layer.}, captionpos=b, numbers=left,
+  label={lst:cnn_known_weights}]
+import numpy as np
+import tensorflow as tf
+
+from spiDNN import Model
+from spiDNN.layers import Input, Dense
+
+
+def test_training_conv1d_with_known_weights():
+    input_shape = (2, 1)
+
+    X = np.array([[0., 1.]]).reshape(1,2,1)
+    y = np.array([[1.]])
+
+    weights = [
+        np.array([[[.1, .4]],
+                  [[.2, .5]],
+                  [[.3, .6]]]), np.array([.0, .0]),
+        np.array([[[ .7, 1.3],
+                   [ .8, 1.4]],
+                  [[ .9, 1.5],
+                   [1. , 1.6]],
+                  [[1.1, 1.7],
+                   [1.2, 1.8]]]), np.array([.0, .0]),
+        np.array([[1.9],[2.0],[2.1],[2.2]]), np.array([.0])
+    ]
+
+
+    c1 = tf.keras.layers.Conv1D(2, 3, padding="same", input_shape=input_shape)
+    c2 = tf.keras.layers.Conv1D(2, 3, padding="same")
+
+    kmodel = tf.keras.models.Sequential()
+    kmodel.add(c1)
+    kmodel.add(c2)
+    kmodel.add(tf.keras.layers.Flatten())
+    kmodel.add(tf.keras.layers.Dense(1))
+
+    kmodel.compile(
+        loss="mean_squared_error",
+        optimizer=tf.keras.optimizers.SGD(learning_rate=1e-2))
+
+    kmodel.set_weights(weights)
+
+    kmodel.train_on_batch(X, y)
+
+    model = Model()
+    model.add(Input(*input_shape))
+    model.add(Conv1D(2, (3,), padding="same"))
+    model.add(Conv1D(2, (3,), padding="same"))
+    model.add(Dense(1))
+
+    model.set_weights(deepcopy(weights))
+
+    model.fit(X, y, "mean_squared_error", epochs=1, batch_size=1,
+              learning_rate=1e-2)
+
+    w = model.get_weights()
+    w_ = kmodel.get_weights()
+
+    error = [x - x_ for x, x_ in zip(w, w_)]
+    update = [x - x_ for x, x_ in zip(w, weights)]
+
+    for u in update:
+        assert np.amax(np.absolute(u)) > 0.0
+
+    for e in error:
+        e_max = np.amax(np.absolute(e))
+        print(e_max)
+        assert e_max < 0.1
+\end{lstlisting}
+
+\newpage
+
+\begin{lstlisting}[language=Python, caption={Excerpt from the test
+  suite showing the biggest CNN trained with the prototye, without
+  dropped packets.}, captionpos=b, numbers=left,
+  label={lst:training_cnn}]
+import numpy as np
+import tensorflow as tf
+
+from spiDNN import Model
+from spiDNN.layers import Input, Dense
+
+
+def test_training_conv1d():
+    loss = "mean_squared_error"
+    kernel_size = 3
+    input_shape = (10, 3)
+
+    X = np.random.rand(4, *input_shape)
+    y = np.random.rand(4, 4)
+
+    kmodel = tf.keras.models.Sequential()
+    kmodel.add(tf.keras.layers.Conv1D(
+        1, 3, padding="same", input_shape=input_shape))
+    kmodel.add(tf.keras.layers.Conv1D(2, kernel_size - 1, padding="same"))
+    kmodel.add(tf.keras.layers.Conv1D(2, kernel_size + 2, padding="same"))
+    kmodel.add(tf.keras.layers.Flatten())
+    kmodel.add(tf.keras.layers.Dense(y.shape[1]))
+
+    kmodel.compile(
+        loss=loss,
+        optimizer=tf.keras.optimizers.SGD(learning_rate=0.1))
+
+    model = Model()
+    model.add(Input(*input_shape))
+    model.add(Conv1D(1, (3,), padding="same"))
+    model.add(Conv1D(2, (kernel_size - 1,), padding="same"))
+    model.add(Conv1D(2, (kernel_size + 2,), padding="same"))
+    model.add(Dense(y.shape[1]))
+
+    model.set_weights(kmodel.get_weights())
+
+    unfitted_weights = deepcopy(model.get_weights())
+
+    model.fit(
+        X, y, loss, epochs=1, batch_size=4,
+        learning_rate=0.1)
+
+    kmodel.fit(X, y, epochs=1, batch_size=4, shuffle=False)
+
+    w = model.get_weights()
+    w_ = kmodel.get_weights()
+
+    error = [x - x_ for x, x_ in zip(w, w_)]
+    update = [x - x_ for x, x_ in zip(w, unfitted_weights)]
+
+    for u in update:
+        assert np.amax(np.absolute(u)) > 0.0
+
+    for e in error:
+        e_max = np.amax(np.absolute(e))
+        print(e_max)
+        assert e_max < 1.
+\end{lstlisting}
 
 \end{appendices}
 
