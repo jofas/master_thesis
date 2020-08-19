@@ -297,16 +297,35 @@ important use cases of deep learning:
 and mobile devices, (\romannumeral 2) supercomputers and the
 cloud-era \citep{gomes_2017}.
 
-This thesis investigates the performance of SpiNNaker machines for
-deep learning by training the state-of-the-art computer vision model
-ResNet-50 \citep{he_et_al_2015} under the closed division rules of the
-MLPerf training benchmark \citep{mattson_et_al_2019}.
-In order to benchmark ResNet-50 on SpiNNaker a prototypical
+This thesis's original goal was an investigation of the performance of
+SpiNNaker machines for deep learning.
+We wanted to conduct a benchmark by training the state-of-the-art
+computer vision model ResNet-50 \citep{he_et_al_2015} under the closed
+division rules of the MLPerf training benchmark
+\citep{mattson_et_al_2019}.
+In order to benchmark ResNet-50 on SpiNNaker, a prototypical
 implementation was developed as part of this thesis.
-
-\begin{itemize}
-  \item here a paragraph about the results
-\end{itemize}
+Unfortunately, our implementation fell far short of being able to
+run a state-of-the-art computer vision model as complex as ResNet-50.
+The main problem during the development process was time and this
+project is another example of Hofstadter's Law.%
+\footnote{%
+  Hofstadter's Law: It always takes longer than you expect, even when
+  you take into account Hofstadter's Law \citep{hofstadter_1979}.
+}
+We were not able to finish all the features needed for ResNet-50.
+The original work plan would have sufficed, but we spent too much time
+trying to fix problems, which were unaccounted for in the work plan.
+Nonetheless, we gained valuable experience.
+Instead of presenting a benchmark, this thesis investigates the
+problems encountered during the development process and tries to
+communicate bottlenecks found and misconceptions made.
+Hopefully this thesis can be a building block for the future efforts
+of implementing deep learning on SpiNNaker.
+The developed prototype is licensed under the GNU GPLv3.0 licence and
+is available---including this thesis and other documentation, for
+example a report of the research and planning phase---under
+\url{https://github.com/jofas/master_thesis}.
 
 Section~\ref{sec:background} presents the background of this thesis.
 An introduction to deep learning is given in
@@ -316,14 +335,22 @@ Section~\ref{subsec:intro_spinn} describes the SpiNNaker architecture
 and compares it to current deep learning hardware.
 Related work can be found in Section~\ref{sec:related_work}.
 Section~\ref{sec:SpiDNN} presents the architecture of the
-prototype developed for benchmarking and Section~\ref{sec:benchmark}
-presents the benchmarks and its results.
-In Section~\ref{sec:discussion} the results of the benchmark are
-discussed, as well as the development process.
+developed prototype and discusses the problems encountered during
+the implementation.
+Section~\ref{subsec:spinn_toolchain} describes the relevant aspects
+of the SpiNNaker programming model and the SpiNNaker toolchain.
+In Section~\ref{subsec:SpiDNN_arch}, the architecture of the protoype
+is presented.
+Section~\ref{subsec:problems} will outline and discuss the problems
+encountered and what we did in order to solve them.
+In Section~\ref{sec:discussion}, a recap of the development phase and
+the prototype is given, as well as ideas given which could potentially
+solve the problems of the prototype.
 Section~\ref{sec:conclusion} contains the conclusion, while
-Section~\ref{sec:next_steps} outlines the next steps for further
-increasing the performance of SpiNNaker by enhancing the
-prototype.
+Section~\ref{sec:next_steps} outlines a few general next steps and
+ideas for implementing deep learning on SpiNNaker, based on
+observations made and knowledge gained during the efforts of enabling
+deep learning on SpiNNaker.
 
 % }}}
 
@@ -333,12 +360,13 @@ prototype.
 
 This section summarizes the background knowledge needed for the
 following sections.
-First a short introduction to deep learning is given in
+First, a short introduction to deep learning is given in
 Section~\ref{subsec:intro_dl}.
 The main focus lies on the basic concepts and those concepts important
 for computer vision.
-Next, Section~\ref{subsec:intro_bench} outlines the context of the
-conducted benchmark presented in Section~\ref{sec:benchmark}.
+Next, Section~\ref{subsec:intro_bench} outlines our initial ideas for
+benchmarking the prototype and SpiNNaker against other deep learning
+libraries and accelerators.
 Lastly, the SpiNNaker neuromorphic computer architecture is described
 in Section~\ref{subsec:intro_spinn}.
 SpiNNaker is also compared against the two state-of-the-art hardware
@@ -876,7 +904,8 @@ benchmarked system \citep{mattson_et_al_2019}.
 Currently the fastest solution, from the latest MLPerf training
 benchmark v0.6, is Google's cloud system based on Tensorflow and
 one TPUv3 pod (1024 TPUv3s) \citep{mlperf_2019, stone_2019}.
-Our benchmark, presented in Section~\ref{sec:benchmark}, is based
+The benchmark we wanted to conduct in order to compare our
+implementation against others, is based
 on the image classification task of the MLPerf training benchmark,
 making it easy to compare SpiNNaker and our prototype to other
 state-of-the-art deep learning systems.
@@ -1004,10 +1033,10 @@ This should keep computational cost the same for each block
       \node[block, fill=black!40, below=.2 of block13] (block14) {512, 2048};
       \node[block, fill=black!40, below=.2 of block14] (block15) {512, 2048};
 
-      \node[below=.2 of block15] (pool2) {$7\times7$ Avg pool};
+      \node[below=.2 of block15] (pool2) {$7\times7$ avg pool};
       \node[block, below=.2 of pool2] (dense) {dense 1000};
 
-      \node[above=.2 of block0] (pool1) {$3 \times 3$ Max pool, /2};
+      \node[above=.2 of block0] (pool1) {$3 \times 3$ max pool, /2};
       \node[block, above=.2 of pool1] (conv1)
         {$7\times7$ convolution, 64 filters, /2};
       \node[above=.2 of conv1] (x) {$\mathbf{x}$};
@@ -2431,11 +2460,8 @@ Without complications, the work plan developed during the research and
 planning phase, would have sufficed.
 In retrospect it was a naive assumption, that we would not encounter
 complications with the power of stalling implementation progress
-and this project has been another example of Hofstadter's Law.%
-\footnote{%
-  Hofstadter's Law: It always takes longer than you expect, even when
-  you take into account Hofstadter's Law \citep{hofstadter_1979}.
-}
+and this project has been another example of Hofstadter's Law
+(see Section~\ref{sec:intro}).
 In the end, minor deviations from the work plan added up and time
 pressure ensued.
 Besides the minor deviations, a major problem with the prototype was
@@ -3028,8 +3054,8 @@ We could not solve the problem of dropped packets and were unable to
 get the more complex approach to the backward pass---shared
 parameters---working.
 We were unable to get the prototype to a state where it would have
-been able to implement ResNet-50---the model we originally intended
-to benchmark our prototype with
+sufficed for implementing ResNet-50 with it---the model we originally
+intended to benchmark our prototype with
 (see Section~\ref{subsec:intro_bench}).
 The missing features are: (\romannumeral 1) 2D convolutional layers,
 (\romannumeral 2) pooling layers and (\romannumeral 3) shortcut
@@ -3055,17 +3081,18 @@ reason about as was expected, our prototype has another flaw: resource
 invariance.
 This can be attributed to the early stage this project is in.
 The SpiNNaker toolchain offers a way to make neurons more resource
-aware, namely application graphs, which can combine multiple neurons
+aware, namely application graphs.
+Application graphs can combine multiple neurons
 into one core, fully utilizing its resources (see
 Section~\ref{subsec:spinn_toolchain}).
 The problem with application graphs in this context is, that they
 cannot handle neurons (atoms for the application graph) which will
-not fit onto a single core.
+not fit into a single core.
 For example, the middle layer of one of the last three residual blocks
 of ResNet-50 (see Section~\ref{subsec:intro_bench}) performs a
 $3 \times 3$ convolution on a feature map with 512 channels and
 has 512 filters.
-The weights alone take up 9,216 Kb, far exceeding the available
+Storing the weights alone takes 9,216 Kb, far exceeding the available
 64 Kb of DTCM of a single core (see Section~\ref{subsec:intro_spinn}).
 This is another problem which can be added to the missing features
 for ResNet-50.
@@ -3091,7 +3118,7 @@ This should keep computational cost per layer identical.
 For our prototype, the computational effort would simply rise, each
 time the filters are doubled.
 The layers that are computationally more demanding receive less space
-on the board, therefore less resources, than the computationally less
+on the board---less resources---than the computationally less
 demanding layers.
 
 % streaming and ping-pong not good (the first for batch norm, the
@@ -3104,9 +3131,6 @@ demanding layers.
 
 % }}}
 
-
-\section{Benchmark}
-\label{sec:benchmark}
 
 \section{Discussion}
 \label{sec:discussion}
