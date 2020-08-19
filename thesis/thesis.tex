@@ -567,6 +567,7 @@ be a matrix $\mathbf{W}: n \times m$ and a $m$-vector $\mathbf{b}$.
 The output of layer $f^{(1)}$ would be a $m$-vector computed as
 follows:
 \begin{align}
+  \label{eq:dense_layer}
   f^{(1)}(\mathbf{x}; \mathbf{W}, \mathbf{b}) =
   g(\mathbf{W}^\top\mathbf{x} + \mathbf{b}).
 \end{align}
@@ -3162,6 +3163,33 @@ on the board---less resources---than the computationally less
 demanding layers.
 
 \begin{figure} % {{{
+  \begin{center}
+    \begin{tikzpicture}[dot/.style={draw, circle},
+      var/.style={draw, minimum size=1cm}]
+      \node[var] (w) {$\mathbf{W}^\top$};
+      \node[right = 1 of w, var] (x) {$\mathbf{x}$};
+      \node[right = 1 of x, var] (b) {$\mathbf{b}$};
+
+      \node[above=1 of x, dot] (matmul) {$\times$};
+      \node[above=1 of b, dot] (plus) {$+$};
+      \node[above=1 of plus, dot] (g) {$g$};
+
+      \draw[->] (w) |- (matmul);
+      \draw[->] (x) -- (matmul);
+      \draw[->] (matmul) -- (plus);
+      \draw[->] (b) -- (plus);
+      \draw[->] (plus) -- (g);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema of the computational graph for the forward pass of
+    a single dense layer (see Equation~\ref{eq:dense_layer}).
+    Rectangle nodes are variables (or sub-graphs, e.g.\ in the case
+    where $\mathbf{x}$ is the output of a hidden layer), while circle
+    nodes represent operators.}
+  \label{fig:compute_graph}
+\end{figure} % }}}
+
+\begin{figure} % {{{
   \begin{subfigure}{\linewidth} % {{{
     \begin{center}
     \begin{tikzpicture}[dot/.style={circle,draw, minimum size=.75cm}]
@@ -3230,6 +3258,7 @@ demanding layers.
     \end{center}
     \caption{How the computational graph of a dense layer is
       decomposed into neurons.}
+    \label{fig:domain_decomp_a}
     \vspace{1cm}
   \end{subfigure} % }}}
   \begin{subfigure}{\linewidth} % {{{
@@ -3301,6 +3330,7 @@ demanding layers.
     \caption{How the computational graph of a dense layer could
       be decomposed in order to reduce the peak and overall number of
       packets by sparsifying the graph.}
+    \label{fig:domain_decomp_b}
     \vspace{1cm}
   \end{subfigure} % }}}
   \caption{Illustration of how a dense layer could be decomposed
@@ -3310,23 +3340,156 @@ demanding layers.
   \label{fig:domain_decomp}
 \end{figure} % }}}
 
-% here present better domain decomposition for dense layer
+As stated in Section~\ref{subsec:SpiDNN_arch}, implementing deep
+learning models as neurons is not the current trend in deep learning
+research and is not practiced by state-of-the-art deep learning
+libraries.
+These libraries represent models as a computational graph
+\citep{goodfellow_et_al_2016, abadi_et_al_2015}.
+Figure~\ref{fig:compute_graph} shows the computational graph for
+the forward pass of a single dense layer (see
+Equation~\ref{eq:dense_layer}).
+A direct implementation of this compute graph on SpiNNaker would not
+make much sense.
+The matrix multiplication is by far the most complex operation, both
+computationally and memory wise.
+$\mathbf{W}$ is $m$ times bigger than $\mathbf{x}$ and $n$ times
+bigger than $\mathbf{b}$.
+Furthermore, we have already discussed that neurons can grow too big.
+Abstracting over the computational graph of a layer instead, will only
+intensify this problem.
 
-% CNNs pretty much the same but with higher dimensions
+But the computational graph gives us a way to decompose a layer,
+other than neurons.
+Figure~\ref{fig:domain_decomp} shows how a better domain decomposition
+reduces the overall and the peak number of packets sent, both for
+the forward pass and the backward pass.
+Neurons---for the forward pass---can be seen as nothing other than the
+row-wise decomposition of the matrix multiplication between
+$\mathbf{x}$ and $\mathbf{W}^\top$, in combination with adding a
+single bias and putting the resulting scalar through the activation
+function (see Figure~\ref{fig:domain_decomp_a}).
+During the backward pass, neurons also perform the derivation of their
+parts (they integrate the derivation of the compute graph shown in
+Figure~\ref{fig:compute_graph}).
+The problem with this domain decomposition is, that each column of
+$\mathbf{W}$ (each row of
+$\mathbf{W}^\top$---Figure~\ref{fig:domain_decomp} displays the
+untransposed $\mathbf{W}$) depends on all the values
+of the vector $\mathbf{x}$ with which the multiplication is conducted.
+The result is---like the name suggests---a dense (fully-connected)
+graph (see Figure~\ref{fig:domain_decomp_a}).
+As we have shown in Section~\ref{subsec:problems}, the forward pass
+between two dense layers did not result in dropped packets, for up
+to 15,000 packets sent on a SpiNN-5 board (see
+Section~\ref{subsec:intro_spinn}).
+Problems arise during the backward pass with multicasted errors, where
+the packets sent are $n$ times higher than during the forward pass.
 
-%
-% SpiNNaker toolchain may remove resource invariance, but proper
-% domain decomposition will also mend the problem of dropped packets
+The number of packets sent by each layer during either the forward
+or backward pass is a cuboid.
+One dimension is the number of neurons in the layer, the second is
+the number of connections (in that particular direction) the neurons
+have and the third dimension is the number of sends per pass.
+For example, the four neurons with the different dash patterns seen in
+Figure~\ref{fig:domain_decomp_a} all have four connections in the
+backwards direction and all send four times (multicasting errors
+backwards, see Section~\ref{subsec:problems}), the errors for each
+neuron in the previous layer.
+Therefore, the number of packets sent backwards by that layer is
+$4 \cdot 4 \cdot 4 = 64$.
+
+Another way to decompose a layer is shown in
+Figure~\ref{fig:domain_decomp_b}.
+Here, each vertex owns not a column of $\mathbf{W}$, but a contiguous
+slice
+Both dimensions of the slice are the same, or as close to it than
+possible.
+The one dimensional domain decomposition of
+$\mathbf{W}^\top\mathbf{x}$ that we have called neurons so far is
+made two dimensional.
+This decomposition has the great property of sparsifying connections
+between the layers (see Figure~\ref{fig:domain_decomp_b}).
+Instead of full connectivity, each vertex is only connected to half
+of the neurons of the previous layer.
+This way, one dimension of the cuboid representing the sent packets
+is also halved.
+This decreases the peak packets sent backwards from $64$ down to
+$4 \cdot 2 \cdot 4 = 32$ (see Figure~\ref{fig:domain_decomp_b}).
+The downside of the two dimensional decomposition is the fact that
+the forward pass is now more complicated.
+A vertex now does not produce an output which is ready for the next
+layer, but the outputs must be accumulated row-wise, in order to
+get the correct results of the matrix multiplication.
+This is why another layer is added, which (\romannumeral 1) performs
+the accumulation, (\romannumeral 2) applies the activation function
+and (\romannumeral 3) passes the results forward to the next layer.
+In Figure~\ref{fig:domain_decomp_b}, we simply led the two of the
+four vertices performing the matrix multiplication own and add the
+biases to their outputs.
+Adding the bias could easily be done by the accumulator vertices
+(which would probably result in better readable and maintainable
+code).
+Also possible, to further reduce resources taken by a layer, would be
+to fuse the accumulator vertices with a subset of vertices from those
+performing the distributed matrix multiplication.
+
+Concerning convolutional layers, decomposing them should be comparable
+to dense layers, the only difference being the obvious fact that
+matrix multiplication is replaced with a convolution.
+Feature maps are nothing but a higher dimensional output, compared
+to the vectors produced by dense layers and it should be possible to
+decompose a convolutional in the same manner.
+This would also be a first step towards solving the problem with
+bottlenecks for ResNet-50 (see above), where the amount of filters
+is increased, but the amount of spatial dimensions is reduced.
+However, how the time spent in the receive callbacks can be reduced
+to a bare minimum remains an open question and is not directly solved
+by a better domain decomposition.
+A more memory intensive solution could be to buffer the received
+packets and sort and match them during the update event.
+
+Using an application graph to fuse neurons into less machine vertices
+would be a big step to solving the problem of having a peak number of
+packets too high for SpiNNaker's communication fabric.
+Like the two dimensional domain decomposition, less machine vertices
+can reduce two dimensions of the cuboid of generated messages:
+(\romannumeral 1) the number of machine vertices and (\romannumeral 2)
+the number of connections (if the previous layer also has less machine
+vertices than neurons).
+The main advantage of using the two dimensional domain decomposition
+over an application graph is the fact that it is more atomic.
+Neurons are always performing a whole row of
+$\mathbf{W}^\top\mathbf{x}$.
+If this row gets too big to fit into a single core, an application
+graph would not help.
+With the two dimensional domain decomposition, this would not happen,
+while it still offers the same ability to utilize the resources of
+SpiNNaker, simply by giving the vertices as much of the matrix as will
+fit.
+For this, the process of decomposing must be aware of the available
+resources (e.g.\ how many cores are at exposure).
+If one thinks this even further, the domain decomposition could even
+span across layers, for example by fusing sub-graphs of the
+overall computational graph of the deep learning model.
+This could also reduce the number of idle cores or even remove
+a whole pass from the communication fabric (e.g.\ when fusing two
+small, consecutive layers into one vertex no communication would need
+to go over the network but could simply be done in the core).
+Programs that optimize deep learning models like that---not for
+SpiNNaker---exist already.
+These programs are known as deep learning compilers
+\citep{li_et_al_2020}.
+There are already existing many different compilers, such as:
+Glow \citep{rotem_et_al_2018}, nGraph \citep{cyphers_et_al_2018},
+TVM \citep{chen_et_al_2018}, Tensor Comprehensions
+\citep{vasilache_et_al_2018} or XLA \citep{leary_et_al_2017}.
+All trying to make deep learning faster and more portable.
 
 % streaming and ping-pong not good (the first for batch norm, the
 % other means a lot of waiting neurons, not doing anything
 
 \begin{itemize}
-  \item interpreting neurons as domain decomposition over linear algebra
-    compute graph
-  \item present possible solutions for problems encountered
-  \item space used inefficiently (cores and memory) $\rightarrow$ better
-    domain decomposition
   \item with this streaming model I have no easy way to do batch
     normalization---implications for vanishing/exploding gradients
     during training
