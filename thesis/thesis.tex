@@ -1351,7 +1351,10 @@ functions, triggered when a certain event occurs
 \citep{furber_et_al_2020}.
 The two events used by the vertices of this prototype were:
 (\romannumeral 1) receiving a packet and (\romannumeral 2) a
-periodic update event, called every $x$ cycles.
+periodic update event, called every $x$ microseconds.
+During testing, we set the update event to be called every five
+milliseconds, which is rather slow but true to our design philosophy
+of prototyping before polishing.
 
 \begin{figure} % {{{
 \begin{center}
@@ -3042,6 +3045,20 @@ know about the stride of the succeeding layer, so even the less
 complex solution compared to shared parameters needs to violate
 the layered design pattern.
 
+The SpiNNaker toolchain offers a utility called a packet re-injector
+\citep{furber_et_al_2020}.
+The re-injector is a machine vertex running on each chip.
+It collects dropped packets by the router and stores them.
+Later, once the router is not blocked anymore, it re-injects the
+packets into the router.
+There is only one register in the SpiNNaker hardware for dropped
+packets \citep{furber_et_al_2020}.
+If a second packet is dropped, before the re-injector can take the
+dropped packet from the register, it will be lost for the simulation.
+Even with the re-injector and increasing the time between update
+events from five microseconds to ten, multicasting errors backwards
+was not able to scale in a meaningful way.
+
 After trying out multicasting errors backwards, without much success
 and seeing its scaling errors in practice, we ran out of time.
 We could not solve the problem of dropped packets and were unable to
@@ -3063,16 +3080,31 @@ connections (see Section~\ref{subsec:intro_bench}).
 \section{Discussion} % {{{
 \label{sec:discussion}
 
-Afterwards, general problems and inferiorities of the prototype and
-our hypothesis will be presented.
-Some possible solutions to these will be discussed in
-Section~\ref{sec:discussion}.
-
+In this section we will discuss further issues with and enhancements
+to the prototype.
 Besides the problem of not being able to implement a version of the
 backward pass which would enable a model on the scale of ResNet-50,
 we discovered some issues with our general approach to implementing
 deep learning on SpiNNaker and with our hypothesis, that neurons
-are a good choice for domain decomposition of a deep learning model.
+are a good choice for domain decomposition of a deep learning model
+(see Section~\ref{subsec:SpiDNN_arch}).
+Untested solutions for the problem with dropped packets are presented,
+as is an idea for better domain decomposition, which could solve (or
+at least mend) two major issues with the prototype at once:
+(\romannumeral 1) a lower peak number of packets and (\romannumeral 2)
+the previously undiscussed issue, that decomposing a deep learning
+model into neurons implemented as machine vertices on SpiNNaker leads
+to resource invariance and therefore to poorer performance.
+Performance has not been discussed previously, simply due to the
+fact that a working solution must be achieved first, before it can
+be made fast.
+But since the goal of this thesis is to communicate shortcomings of
+our prototype and our hypothesis (see Section~\ref{sec:intro})---so
+the next efforts of implementing deep learning on SpiNNaker can build
+on the knowledge gained during this work---we have to communicate the
+observations made about performance, as well as complexity and
+functionality.
+
 We chose neurons as abstractions because we thought them
 straightforward to implement.
 For perceptrons, this turned out to be correct.
@@ -3127,24 +3159,18 @@ time the filters are doubled.
 The layers that are computationally more demanding receive less space
 on the board---less resources---than the computationally less
 demanding layers.
-% remove resource invariance from prev section, it belongs here
 
-% streaming and ping-pong not good (the first for batch norm, the
-% other means a lot of waiting neurons, not doing anything
-
+%
 % SpiNNaker toolchain may remove resource invariance, but proper
 % domain decomposition will also mend the problem of dropped packets
 
-% start with good things and recount the awesome journey to this
-% point in time
-
-% then discuss the rest
+% streaming and ping-pong not good (the first for batch norm, the
+% other means a lot of waiting neurons, not doing anything
 
 \begin{itemize}
   \item interpreting neurons as domain decomposition over linear algebra
     compute graph
   \item present possible solutions for problems encountered
-  \item mention re-injectors
   \item space used inefficiently (cores and memory) $\rightarrow$ better
     domain decomposition
   \item with this streaming model I have no easy way to do batch
@@ -3162,6 +3188,8 @@ demanding layers.
 
 \section{Conclusion}
 \label{sec:conclusion}
+
+% here the recap
 
 \section{Next Steps}
 \label{sec:next_steps}
