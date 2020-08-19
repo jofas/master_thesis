@@ -2801,8 +2801,8 @@ The SpiNN-5 board has 48 chips, which means it has 864 cores.
 One core per chip is reserved for the router, so a maximum of 816
 cores can be used for neurons.
 Extra monitor cores can be enabled to decrease loading time before the
-execution starts and for packet re-injection of dropped packets, which
-decreases the number of cores per chip down to 15
+execution starts and for packet re-injection of dropped packets
+(see below), which decreases the number of cores per chip down to 15
 \citep{furber_et_al_2020}.
 Listing~\ref{lst:big_models_inference} shows an excerpt from the test
 suite.
@@ -3048,13 +3048,14 @@ the layered design pattern.
 The SpiNNaker toolchain offers a utility called a packet re-injector
 \citep{furber_et_al_2020}.
 The re-injector is a machine vertex running on each chip.
-It collects dropped packets by the router and stores them.
+It collects dropped packets by the blocked router and stores them.
 Later, once the router is not blocked anymore, it re-injects the
 packets into the router.
 There is only one register in the SpiNNaker hardware for dropped
 packets \citep{furber_et_al_2020}.
 If a second packet is dropped, before the re-injector can take the
-dropped packet from the register, it will be lost for the simulation.
+first dropped packet from the register, the first packet will be lost,
+without possibility to recover.
 Even with the re-injector and increasing the time between update
 events from five microseconds to ten, multicasting errors backwards
 was not able to scale in a meaningful way.
@@ -3159,6 +3160,159 @@ time the filters are doubled.
 The layers that are computationally more demanding receive less space
 on the board---less resources---than the computationally less
 demanding layers.
+
+\begin{figure} % {{{
+  \begin{subfigure}{\linewidth} % {{{
+    \begin{center}
+    \begin{tikzpicture}[dot/.style={circle,draw, minimum size=.75cm}]
+      \matrix[left delimiter=(, right delimiter=), column sep=.1cm, row sep=.1cm] (w) {
+        \node (w_11) {$w_{11}$}; & \node (w_12) {$w_{12}$}; & \node (w_13) {$w_{13}$}; & \node (w_14) {$w_{14}$}; \\
+        \node (w_21) {$w_{21}$}; & \node (w_22) {$w_{22}$}; & \node (w_23) {$w_{23}$}; & \node (w_24) {$w_{24}$}; \\
+        \node (w_31) {$w_{31}$}; & \node (w_32) {$w_{32}$}; & \node (w_33) {$w_{33}$}; & \node (w_34) {$w_{34}$}; \\
+        \node (w_41) {$w_{41}$}; & \node (w_42) {$w_{42}$}; & \node (w_43) {$w_{43}$}; & \node (w_44) {$w_{44}$}; \\
+      };
+      \node at ($(w.north east) + (.4,-.1)$) {$\top$};
+      \matrix[right=1 of w, row sep=.1cm, left delimiter=(, right delimiter=)] (x) {
+        \node{$x_1$}; \\
+        \node{$x_2$}; \\
+        \node{$x_3$}; \\
+        \node{$x_4$}; \\
+      };
+      \node[right=.5 of x] (add) {+};
+      \matrix[right=.5 of add, row sep=.1cm, left delimiter=(, right delimiter=)] (b) {
+        \node[draw]{$b_1$}; \\
+        \node[draw, dashed]{$b_2$}; \\
+        \node[draw, dash dot]{$b_3$}; \\
+        \node[draw, dash dot dot]{$b_4$}; \\
+      };
+
+      \matrix[right = 1 of b, column sep=1cm, row sep=.5cm] {
+        \node[dot] (x_1) {$x_1$}; & \node[dot] (n_1) {}; & \node (o_1) {}; \\
+        \node[dot] (x_2) {$x_2$}; & \node[dot, dashed] (n_2) {}; & \node (o_2) {}; \\
+        \node[dot] (x_3) {$x_3$}; & \node[dot, dash dot] (n_3) {}; & \node (o_3) {}; \\
+        \node[dot] (x_4) {$x_4$}; & \node[dot, dash dot dot] (n_4) {}; & \node (o_4) {}; \\
+      };
+
+      \node[below=1 of x_4.center, label=16] (packets) {$\rightarrow$};
+      \node[below=1 of n_4.center, label=64] {$\leftarrow$};
+        \node at ($(packets.north) - (4,-.05)$) {number of packets sent in each direction:};
+
+      \draw[->] (x_1) -- (n_1);
+      \draw[->] (x_1) -- (n_2);
+      \draw[->] (x_1) -- (n_3);
+      \draw[->] (x_1) -- (n_4);
+
+      \draw[->] (x_2) -- (n_1);
+      \draw[->] (x_2) -- (n_2);
+      \draw[->] (x_2) -- (n_3);
+      \draw[->] (x_2) -- (n_4);
+
+      \draw[->] (x_3) -- (n_1);
+      \draw[->] (x_3) -- (n_2);
+      \draw[->] (x_3) -- (n_3);
+      \draw[->] (x_3) -- (n_4);
+
+      \draw[->] (x_4) -- (n_1);
+      \draw[->] (x_4) -- (n_2);
+      \draw[->] (x_4) -- (n_3);
+      \draw[->] (x_4) -- (n_4);
+
+      \draw[->] (n_1) -- node[above]{g} (o_1);
+      \draw[->] (n_2) -- node[above]{g} (o_2);
+      \draw[->] (n_3) -- node[above]{g} (o_3);
+      \draw[->] (n_4) -- node[above]{g} (o_4);
+
+      \draw (w_11.north west) |- (w_41.south west) -| (w_11.north east) -- cycle;
+      \draw[dashed] (w_12.north west) |- (w_42.south west) -| (w_12.north east) -- cycle;
+      \draw[dash dot] (w_13.north west) |- (w_43.south west) -| (w_13.north east) -- cycle;
+      \draw[dash dot dot] (w_14.north west) |- (w_44.south west) -| (w_14.north east) -- cycle;
+    \end{tikzpicture}
+    \end{center}
+    \caption{How the computational graph of a dense layer is
+      decomposed into neurons.}
+    \vspace{1cm}
+  \end{subfigure} % }}}
+  \begin{subfigure}{\linewidth} % {{{
+    \begin{center}
+    \begin{tikzpicture}[dot/.style={circle,draw, minimum size=.75cm}]
+      \matrix[left delimiter=(, right delimiter=), column sep=.1cm, row sep=.1cm] (w) {
+        \node (w_11) {$w_{11}$}; & \node (w_12) {$w_{12}$}; & \node (w_13) {$w_{13}$}; & \node (w_14) {$w_{14}$}; \\
+        \node (w_21) {$w_{21}$}; & \node (w_22) {$w_{22}$}; & \node (w_23) {$w_{23}$}; & \node (w_24) {$w_{24}$}; \\
+        \node (w_31) {$w_{31}$}; & \node (w_32) {$w_{32}$}; & \node (w_33) {$w_{33}$}; & \node (w_34) {$w_{34}$}; \\
+        \node (w_41) {$w_{41}$}; & \node (w_42) {$w_{42}$}; & \node (w_43) {$w_{43}$}; & \node (w_44) {$w_{44}$}; \\
+      };
+      \node at ($(w.north east) + (.4,-.1)$) {$\top$};
+      \matrix[right=1 of w, row sep=.1cm, left delimiter=(, right delimiter=)] (x) {
+        \node{$x_1$}; \\
+        \node{$x_2$}; \\
+        \node{$x_3$}; \\
+        \node{$x_4$}; \\
+      };
+      \node[right=.5 of x] (add) {+};
+      \matrix[right=.5 of add, row sep=.1cm, left delimiter=(, right delimiter=)] (b) {
+        \node (b_1) {$b_1$}; \\
+        \node (b_2) {$b_2$}; \\
+        \node (b_3) {$b_3$}; \\
+        \node (b_4) {$b_4$}; \\
+      };
+
+      \matrix[right = 1 of b, column sep=1cm, row sep=.5cm] {
+        \node[dot] (x_1) {$x_1$}; & \node[dot] (n_1) {}; & \node (o_1) {}; & \node (oo_1) {}; \\
+        \node[dot] (x_2) {$x_2$}; & \node[dot, dashed] (n_2) {}; & \node[dot] (o_2) {}; & \node (oo_2) {}; \\
+        \node[dot] (x_3) {$x_3$}; & \node[dot, dash dot] (n_3) {}; & \node[dot] (o_3) {}; & \node (oo_3) {}; \\
+        \node[dot] (x_4) {$x_4$}; & \node[dot, dash dot dot] (n_4) {}; & \node (o_4) {}; & \node (oo_4) {}; \\
+      };
+
+      \node[below=1 of x_4.center, label=8] (packets) {$\rightarrow$};
+      \node[below=1 of n_4.west, label=32] {$\leftarrow$};
+      \node[below=1 of n_4.east, label=8] {$\rightarrow$};
+      \node[below=1 of o_4.center, label=8] {$\leftarrow$};
+        \node at ($(packets.north) - (4,-.05)$) {number of packets sent in each direction:};
+
+      \draw[->] (x_1) -- (n_1);
+      \draw[->] (x_1) -- (n_2);
+
+      \draw[->] (x_2) -- (n_1);
+      \draw[->] (x_2) -- (n_2);
+
+      \draw[->] (x_3) -- (n_3);
+      \draw[->] (x_3) -- (n_4);
+
+      \draw[->] (x_4) -- (n_3);
+      \draw[->] (x_4) -- (n_4);
+
+      \draw[->] (n_1) -- (o_2);
+      \draw[->] (n_2) -- (o_2);
+      \draw[->] (n_3) -- (o_3);
+      \draw[->] (n_4) -- (o_3);
+
+      \draw[->] (o_2) -- node[above]{g} (oo_2);
+      \draw[->] (o_3) -- node[above]{g} (oo_3);
+
+      \draw (w_11.north west) |- (w_21.south west) -| (w_12.north east) -- cycle;
+      \draw[dashed] (w_13.north west) |- (w_23.south west) -| (w_14.north east) -- cycle;
+      \draw[dash dot] (w_31.north west) |- (w_41.south west) -| (w_32.north east) -- cycle;
+      \draw[dash dot dot] (w_33.north west) |- (w_43.south west) -| (w_34.north east) -- cycle;
+
+      \draw[dashed] (b_1.north west) |- (b_2.south west) -| (b_1.north east) -- cycle;
+      \draw[dash dot dot] (b_3.north west) |- (b_4.south west) -| (b_3.north east) -- cycle;
+    \end{tikzpicture}
+    \end{center}
+    \caption{How the computational graph of a dense layer could
+      be decomposed in order to reduce the peak and overall number of
+      packets.}
+    \vspace{1cm}
+  \end{subfigure} % }}}
+  \caption{Illustration of how a dense layer could be decomposed
+  in order to reduce the peak number of packets. The number of
+  packets sent are based on multicasting errors backwards (see
+  Section~\ref{subsec:problems}).}
+  \label{fig:domain_decomp}
+\end{figure} % }}}
+
+% here present better domain decomposition for dense layer
+
+% CNNs pretty much the same but with higher dimensions
 
 %
 % SpiNNaker toolchain may remove resource invariance, but proper
