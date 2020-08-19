@@ -3258,8 +3258,8 @@ demanding layers.
 
       \matrix[right = 1 of b, column sep=1cm, row sep=.5cm] {
         \node[dot] (x_1) {$x_1$}; & \node[dot] (n_1) {}; & \node (o_1) {}; & \node (oo_1) {}; \\
-        \node[dot] (x_2) {$x_2$}; & \node[dot, dashed] (n_2) {}; & \node[dot] (o_2) {}; & \node (oo_2) {}; \\
-        \node[dot] (x_3) {$x_3$}; & \node[dot, dash dot] (n_3) {}; & \node[dot] (o_3) {}; & \node (oo_3) {}; \\
+        \node[dot] (x_2) {$x_2$}; & \node[dot, dashed] (n_2) {}; & \node[dot] (o_2) {$\sum$}; & \node (oo_2) {}; \\
+        \node[dot] (x_3) {$x_3$}; & \node[dot, dash dot] (n_3) {}; & \node[dot] (o_3) {$\sum$}; & \node (oo_3) {}; \\
         \node[dot] (x_4) {$x_4$}; & \node[dot, dash dot dot] (n_4) {}; & \node (o_4) {}; & \node (oo_4) {}; \\
       };
 
@@ -3300,7 +3300,7 @@ demanding layers.
     \end{center}
     \caption{How the computational graph of a dense layer could
       be decomposed in order to reduce the peak and overall number of
-      packets.}
+      packets by sparsifying the graph.}
     \vspace{1cm}
   \end{subfigure} % }}}
   \caption{Illustration of how a dense layer could be decomposed
