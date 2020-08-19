@@ -343,9 +343,8 @@ In Section~\ref{subsec:SpiDNN_arch}, the architecture of the protoype
 is presented.
 Section~\ref{subsec:problems} will outline and discuss the problems
 encountered and what we did in order to solve them.
-In Section~\ref{sec:discussion}, a recap of the development phase and
-the prototype is given, as well as ideas given which could potentially
-solve the problems of the prototype.
+In Section~\ref{sec:discussion}, ideas are presented which could
+potentially solve the problems of the prototype.
 Section~\ref{sec:conclusion} contains the conclusion, while
 Section~\ref{sec:next_steps} outlines a few general next steps and
 ideas for implementing deep learning on SpiNNaker, based on
@@ -2442,13 +2441,8 @@ Once the gradients are shared, the errors are passed backwards.
 \subsection{Problems} % {{{
 \label{subsec:problems}
 
-This section will start by describing the mistakes made during
+This section describes the mistakes made during
 development and the problems encountered.
-Afterwards, general problems and inferiorities of the prototype and
-our hypothesis will be presented.
-Some possible solutions to these will be discussed in
-Section~\ref{sec:discussion}.
-
 The only real problem encountered during development was time.
 We had the ambitious goal of implementing ResNet-50, a
 state-of-the-art deep learning model, on SpiNNaker.
@@ -3059,7 +3053,20 @@ intended to benchmark our prototype with
 (see Section~\ref{subsec:intro_bench}).
 The missing features are: (\romannumeral 1) 2D convolutional layers,
 (\romannumeral 2) pooling layers and (\romannumeral 3) shortcut
-connections.
+connections (see Section~\ref{subsec:intro_bench}).
+
+% }}}
+
+% }}}
+
+
+\section{Discussion} % {{{
+\label{sec:discussion}
+
+Afterwards, general problems and inferiorities of the prototype and
+our hypothesis will be presented.
+Some possible solutions to these will be discussed in
+Section~\ref{sec:discussion}.
 
 Besides the problem of not being able to implement a version of the
 backward pass which would enable a model on the scale of ResNet-50,
@@ -3120,6 +3127,7 @@ time the filters are doubled.
 The layers that are computationally more demanding receive less space
 on the board---less resources---than the computationally less
 demanding layers.
+% remove resource invariance from prev section, it belongs here
 
 % streaming and ping-pong not good (the first for batch norm, the
 % other means a lot of waiting neurons, not doing anything
@@ -3127,18 +3135,10 @@ demanding layers.
 % SpiNNaker toolchain may remove resource invariance, but proper
 % domain decomposition will also mend the problem of dropped packets
 
-% }}}
-
-% }}}
-
-
-\section{Discussion}
-\label{sec:discussion}
-
 % start with good things and recount the awesome journey to this
 % point in time
 
-% then discuss the reset
+% then discuss the rest
 
 \begin{itemize}
   \item interpreting neurons as domain decomposition over linear algebra
@@ -3155,6 +3155,10 @@ demanding layers.
   \item gradients not shared after each pass but only before weight
     update
 \end{itemize}
+
+
+% }}}
+
 
 \section{Conclusion}
 \label{sec:conclusion}
