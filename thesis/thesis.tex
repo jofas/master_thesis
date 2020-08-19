@@ -3486,14 +3486,66 @@ TVM \citep{chen_et_al_2018}, Tensor Comprehensions
 \citep{vasilache_et_al_2018} or XLA \citep{leary_et_al_2017}.
 All trying to make deep learning faster and more portable.
 
-% streaming and ping-pong not good (the first for batch norm, the
-% other means a lot of waiting neurons, not doing anything
+While the better domain decomposition hopefully is a solution
+to the problem of dropped packets and the resource invariance of
+neurons, there is another bottleneck: the ping-pong protocol
+(see Section~\ref{subsec:SpiDNN_arch}).
+The ping-pong protocol is not optimal and is accompanied by a lot
+of time wasted by neurons which simply stall, while other neurons
+do computation.
+For inference, this is easily solvable by simply implementing a
+latency between sending observations from the host to the SpiNNaker
+machine (which was actually the first implementation, before it was
+changed in order to make inference and training as equal as possible,
+to facilitate code reuse and to keep the code base as small as
+achievable).
+The time stalled could be used to process the next observation.
+The problem during training is, that state must be preserved between
+forward and backward pass, name the transmitted signals between
+layers.
+They are needed in order to compute the gradients for the weights.
+DTCM is a scarce resource for state-of-the-art deep learning models,
+so storing signals of multiple observations processed at the same time
+(backward pass for the first observation not finished, while the
+forward pass for a second neuron is processed) must happen in SDRAM
+(see Section~\ref{subsec:intro_spinn}).
+In order to read and write to SDRAM, SpiNNaker offers a hardware
+feature called DMA (direct memory access) \citep{furber_et_al_2020}.
+We have not gained any experience with the DMA unit during this
+project.
+We deemed the ping-pong protocol as something to be optimized,
+exceeding the stage the prototype was developed to.
+Nonetheless it is something where better performance can be gained
+and therefore deserves a mentioning in this section.
+
+Another way to process multiple observations at the same time is
+to spawn multiple copies of the deep learning model on the same
+machine, as long as enough space is available to fit the copies onto
+the SpiNNaker machine.
+The only thing which must be considered with this approach to
+processing multiple observations at the same time is the
+fact that batches must be divided by the number of copies of the model
+and the copies have to share gradients with each other.
+Both apply only if the model is trained.
+Multiple copies of the same network is an important feature once
+performance becomes a factor.
+Otherwise one would not be able to utilize all the resources provided
+by machines as big as the SpiNNaker1M (see
+Section~\ref{subsec:intro_spinn}), with over a million cores.
+
+% is there more to write about multiple copies ????
+
+% streaming and batch normalization layers
+
+% here minor stuff from README and sharing gradients only before
+% weight update
 
 \begin{itemize}
+  \item multiple copies of the same network on the same machine
+    $\rightarrow$ use all resources available
   \item with this streaming model I have no easy way to do batch
     normalization---implications for vanishing/exploding gradients
     during training
-  \item Ping-pong protocol sucks performance wise
   \item optimizations from README
   \item gradients not shared after each pass but only before weight
     update
@@ -3514,11 +3566,6 @@ All trying to make deep learning faster and more portable.
 \begin{itemize}
   \item profiling
   \item cost model
-  \item multiple copies of the same network on the same machine
-    $\rightarrow$ use all resources available
-  \item better domain decomposition (SpiNNaker application graph or
-    custom solution (application graph not helpful for neurons which
-    become too big))
   \item smart algorithms vs.\ integrating with state-of-the-art libraries
     (investing time in stuff like SLIDE and the one paper by the Austrian
     guys about sparse connections explicitly mentioning SpiNNaker and
