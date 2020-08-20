@@ -3548,7 +3548,17 @@ TVM \citep{chen_et_al_2018}, Tensor Comprehensions
 \citep{vasilache_et_al_2018} or XLA \citep{leary_et_al_2017}.
 All trying to make deep learning faster and more portable.
 
-% here mention tdmas
+Another API provided by the SpiNNaker toolchain is a TDMA
+(time-division multiple access) system.
+It globally schedules the sends by a core such that the receiver
+should never overload.
+An older system is part of the stable toolchain, with a new one
+currently under development.
+Replacing the timer offset (see Section~\ref{subsec:problems}) and all
+common send calls to the SpiNNaker1 API with calls to the TDMA system
+should solve the problem of dropped packets.
+Too late during the development did we learn about this API and were
+unable to test it.
 
 While the better domain decomposition hopefully is a solution
 to the problem of dropped packets and the resource invariance of
