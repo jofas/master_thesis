@@ -3645,15 +3645,94 @@ performance.
 % }}}
 
 
-\section{Conclusion}
+\section{Conclusion} % {{{
 \label{sec:conclusion}
 
-% here the recap
+Deep learning has been linked to neuromorphic computer architectures
+like SpiNNaker \citep{gomes_2017}.
+SpiNNaker is massively-parallel, scalable up to one million cores
+and energy efficient \citep{furber_et_al_2020}.
+All these properties makes SpiNNaker very interesting for the
+computational and therefore energy demanding state-of-the-art deep
+learning models.
+It has been a desire to enable training of and inference with these
+models on neuromorphic computers \citep{gomes_2017}, in the search for
+the next hardware solution that supports these massive units of
+computation, finding alternatives to the currently best performing
+deep learning accelerators like Google's TPU or NVIDIA's GPUs
+(see Section~\ref{subsec:intro_spinn}).
+
+This project had the ambitious goal of implementing a prototypical
+deep learning library for SpiNNaker.
+With this prototype we wanted to implement ResNet-50 and benchmark
+SpiNNaker against other deep learning hardware accelerators
+(see Section~\ref{subsec:intro_bench}).
+Our efforts fell well short of this goal.
+The simple reason being that we ran out of time.
+Unforeseen difficulties and obstacles stalled the progress of
+our implementation.
+The work plan developed during the research and planning phase was
+not met.
+
+The main difficulty was a problem with dropped packets (see
+Section~\ref{subsec:problems}).
+A single dropped packet stalls the execution of a deep learning model
+implemented by our prototype, running on a SpiNNaker machine.
+It results in an unrecoverable state of failed execution.
+We were not able to sufficiently solve this problem.
+After trying three different approaches (see
+Section~\ref{subsec:problems}), we ran out of time.
+During the development we have found arguments against our hypothesis,
+that since SpiNNaker was designed to run spiking neurons it would make
+sense to decompose deep learning models into neurons as well.
+We thought that neurons would be easy to implement and easy to reason
+about.
+This turned out to be true for perceptrons, the neurons of a dense
+layer (see Section~\ref{subsec:intro_dl}), but not for neurons of
+a convolutional layer, where each neuron performs one single
+convolution (see Section~\ref{subsec:SpiDNN_arch}).
+More time than calculated during the research and planning phase was
+spent just trying to integrate strides and padding with the neuron
+implementation.
+Furthermore, our implementation of convolutional neurons contributed
+to our problem with dropped packets (see
+Section~\ref{subsec:problems}).
+A better way to decompose a deep learning model and further ideas on
+how to handle the problem of dropped packets (which we could not try
+due to the lack of time) are presented in
+Section~\ref{sec:discussion}.
+
+We were able to develop the prototype to the stage where it was able
+to do inference with MLPs and CNNs which took up all the cores of a
+SpiNN-5 board (see Section~\ref{subsec:problems}).
+Training a MLP taking nearly every core of the SpiNN-5 board is also
+possible.
+We were unable to develop the prototype to a stage where it could
+train a CNN in a meaningful way (see Section~\ref{subsec:problems}),
+our prototype having issues with scaling the CNN (due to dropped
+packets) and showing signs of exploding gradients (probably due to
+a bug, see Section~\ref{subsec:problems}).
+
+In the end, we could gain meaningful insights into the difficulties of
+implementing deep learning on SpiNNaker, which are presented in this
+thesis.
+Where we could find them, better ways to implement deep learning on
+SpiNNaker are presented and discussed.
+Possible optimizations and ideas for future implementation and
+research efforts are outlined in Sections~\ref{sec:discussion} and
+Section~\ref{sec:next_steps}.
+Hopefully, this project will be a building block for future endeavors
+analyzing and implementing deep learning on SpiNNaker.
+
+
+% }}}
+
 
 \section{Next Steps}
 \label{sec:next_steps}
 
 \begin{itemize}
+  \item lossy forward and backward pass
   \item profiling
   \item cost model
   \item smart algorithms vs.\ integrating with state-of-the-art libraries
@@ -3667,6 +3746,7 @@ performance.
   \item implementing ONNX spec to make it easy for developers to use
     SpiNNaker (develop in PyTorch $\rightarrow$ run on SpiNNaker)
 \end{itemize}
+
 
 \bibliography{library.bib}
 \addcontentsline{toc}{section}{References}
