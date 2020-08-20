@@ -3562,15 +3562,85 @@ of the SpiNNaker machine.
 How batch normalization is enabled on SpiNNaker remains an open
 question.
 
-% here minor stuff from README and sharing gradients only before
-% weight update
+So far, we have discussed the major problems of our approach and,
+where we could find them, presented possible solutions.
+Besides these obstacles, there were some more, minor changes and
+optimizations discovered during research and implementation:
+\begin{enumerate}
+  \item The injectors (RIPTMCS vertices, see
+    Section~\ref{subsec:spinn_toolchain}) take up too much space
+  \item Floats on SpiNNaker are implemented in software, which makes
+    them slow. Quantization \citep{praveen_2020} could offer a good
+    solution to conquer the problem of slow floats, increase the
+    throughput and reduce the amount of memory
+  \item Asynchronous user events instead of scheduled update events
+  \item Sharing gradients between convolutional layers (and between
+    multiple copies of the same network, see above) only before
+    weights are updated
+\end{enumerate}
 
-\begin{itemize}
-  \item optimizations from README
-  \item gradients not shared after each pass but only before weight
-    update
-\end{itemize}
+The first minor optimization has its origin in the fact that we use
+a SpiNNaker machine graph, rather than an application graph (see
+Section~\ref{subsec:spinn_toolchain}).
+RIPTMCS machine vertices (see Section~\ref{subsec:spinn_toolchain}) do
+not support multiple partitions, so we had to spawn as many RIPTMCS
+vertices as the input has spatial elements.
+Channels are simply send in succession to the correct RIPTMCS vertex.
+For example, the MNIST data set \citep{lecun_et_al_2020} consists of
+$28 \times 28$ grey-scale images.
+In order to stream the images on the SpiNNaker machine we would need
+784 RIPTMCS instances.
+This is nearly a whole SpiNN-5 board wasted only for streaming the
+images---not very big images at that, ResNet-50 takes
+$224 \times 224 \times 3$ images as its input
+\citep{he_et_al_2015}---not processing them.
+The RIPTMCS application vertex on the other hand could fit all 784
+atoms into one single machine vertex, drastically reducing the impact
+big inputs have on the available resources.
 
+The second optimization has the potential of drastically increasing
+the throughput of SpiNNaker.
+SpiNNaker does not have a hardware floating point unit and floats are
+implemented in software \citep{furber_et_al_2020}.
+This makes them slow and costly operations which take a lot of cycles
+to complete.
+Furthermore floats are four byte big, a whole word.
+A trend in deep learning is the quantization of deep learning models
+\citep{praveen_2020}, where the weights and the inputs are no longer
+32 bit floats, but reduced to 16 bit half-precision floats or even
+16 bit integers (fixed-point) and 8 bit integers for training and
+inference \citep{das_et_al_2018}.
+Enabling quantization for SpiNNaker could reduce the amount of memory
+needed to store the parameters and expensive floating operations
+could be replaced by inexpensive integer operations, increasing the
+speed.
+
+The SpiNNaker1 API offers another event for which a callback can
+be defined, the user event \citep{furber_et_al_2020}.
+The user event can be triggered by the software, calling the
+\texttt{spin1\_\-trigger\_user\_event} function.
+When the user event is triggered, the registered callback is queued
+and executed, whenever it is scheduled by the operating system of the
+core (see Section~\ref{subsec:spinn_toolchain}).
+The user event could be used to replace the periodical update event,
+making the prototype asynchronous.
+Whenever a neuron has received all the packets it needs to process
+either forward or backward pass, it schedules the user event which
+processes the pass, instead of the update event.
+This could result in better performance.
+The implications for dropped packets remains to be observed and
+analyzed.
+
+Lastly, a small optimization reducing the overall number of packets
+send (except for stochastic gradient descent, see
+Section~\ref{subsec:intro_dl}) and time spend waiting would be to
+share gradients between convolutional neurons only before the weights
+are updated.
+For bigger batches and deep architectures, this could be an easy way
+to make the model faster.
+Once multiple copies of the same model (see above) on SpiNNaker are
+implemented, this becomes a more important feature for increasing the
+performance.
 
 % }}}
 
