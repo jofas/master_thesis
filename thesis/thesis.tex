@@ -76,6 +76,12 @@
 {\par\egroup\vskip 0.25ex}
 
 
+\newenvironment{acknowledgments}
+{\centerline{\large\bf Acknowledgments}\vspace{0.7ex}%
+  \bgroup\leftskip 20pt\rightskip 20pt\noindent\ignorespaces}%
+{\par\egroup\vskip 0.25ex}
+
+
 \def\title{Deep Learning on SpiNNaker}
 \def\author{Jonas Fassbender \\ \textit{jonas@fassbender.dev}}
 \date{}
@@ -160,7 +166,31 @@ Edinburgh, August 2020
 
 \pagenumbering{roman}
 
-% here thanks
+% acknowledgments {{{
+\hspace{0pt}
+\vfill
+
+\begin{acknowledgments}
+First and foremost, I would like to thank my family and my friends
+for their endless love and support.
+I know you all will have my back when I embark on my next adventure.
+Everyone at EPCC who made the last year a special year for me has my
+deepest gratitude.
+Special thanks to my supervisors, Alan Stokes---who has been
+relentless in his support, answering even my silliest questions about
+SpiNNaker and who has merged my first commit to an open source
+repository---and Caoimhín Laoide-Kemp---who has taught me much
+about proper scientific writing.
+Also, thank is due to Victor Cosmor for being my rubber duck during
+the phases of this project, when I needed to talk my weird approaches
+to implementing convolutional layers through with somebody.
+\end{acknowledgments}
+
+\vfill
+\hspace{0pt}
+% }}}
+
+\newpage
 
 % declaration {{{
 \hspace{0pt}
@@ -191,6 +221,37 @@ degree or professional qualification except as specified.
 \vfill
 
 \begin{abstract}
+
+  Deep learning is revolutionizing the world, becoming part of our
+  daily lives \citep{lecun_et_al_2015}.
+  It has led to major breakthroughs in fields such as
+  computer vision \citep{krizhevsky_et_al_2012} or
+  natural language processing \citep{hinton_et_al_2012}.
+  State-of-the-art deep learning models are computationally expensive
+  constructs, rapidly increasing their size and their demands
+  \citep{amodei_et_al_2019}.
+  SpiNNaker is a neuromorphic computer architecture, developed for
+  the modeling of the human brain.
+  It is massively-parallel, scalable up to one million cores and
+  energy efficient \citep{furber_et_al_2020}.
+  All these properties makes SpiNNaker an interesting target for
+  deep learning.
+  This thesis investigates in how far deep learning can be realized on
+  SpiNNaker.
+  The original goal was to benchmark a state-of-the-art deep learning
+  model.
+  We fell short of this ambitious goal due to insufficient time.
+  Nonetheless, we developed a prototypical library and gained valuable
+  insights into the difficulties of implementing deep learning on
+  SpiNNaker.
+  This thesis describes the developed prototype and pays close
+  attention to the problems we encountered.
+  We present the efforts we made to solve the problems and where we
+  were not able to do so, we present possible solutions.
+  Ideas for the future efforts of implementing deep learning on
+  SpiNNaker are presented and hopefully, this thesis can be a building
+  block for the road that lies ahead.
+
 \end{abstract}
 
 \vfill
@@ -3115,7 +3176,8 @@ neuron does one convolution with all filters of the layer
 (see Section~\ref{subsec:SpiDNN_arch})---turned out to be quite
 complex.
 The major complexity arises during the backward pass and strides and
-padding being hard to integrate into the neurons (see above).
+padding being hard to integrate into the neurons (see
+Section~\ref{subsec:problems}).
 
 Besides not being as straightforward to implement and not as easy to
 reason about as was expected, our prototype has another flaw: resource
@@ -3455,8 +3517,8 @@ packets too high for SpiNNaker's communication fabric.
 Like the two dimensional domain decomposition, less machine vertices
 can reduce two dimensions of the cuboid of generated messages:
 (\romannumeral 1) the number of machine vertices and (\romannumeral 2)
-the number of connections (if the previous layer also has less machine
-vertices than neurons).
+the number of connections (if the preceding or succeeding layer also
+has less machine vertices than neurons).
 The main advantage of using the two dimensional domain decomposition
 over an application graph is the fact that it is more atomic.
 Neurons are always performing a whole row of
@@ -3485,6 +3547,8 @@ Glow \citep{rotem_et_al_2018}, nGraph \citep{cyphers_et_al_2018},
 TVM \citep{chen_et_al_2018}, Tensor Comprehensions
 \citep{vasilache_et_al_2018} or XLA \citep{leary_et_al_2017}.
 All trying to make deep learning faster and more portable.
+
+% here mention tdmas
 
 While the better domain decomposition hopefully is a solution
 to the problem of dropped packets and the resource invariance of
