@@ -3520,8 +3520,8 @@ and therefore deserves a mentioning in this section.
 
 Another way to process multiple observations at the same time is
 to spawn multiple copies of the deep learning model on the same
-machine, as long as enough space is available to fit the copies onto
-the SpiNNaker machine.
+SpiNNaker machine, as long as enough space is available to fit the
+copies onto it.
 The only thing which must be considered with this approach to
 processing multiple observations at the same time is the
 fact that batches must be divided by the number of copies of the model
@@ -3530,10 +3530,21 @@ Both apply only if the model is trained.
 Multiple copies of the same network is an important feature once
 performance becomes a factor.
 Otherwise one would not be able to utilize all the resources provided
-by machines as big as the SpiNNaker1M (see
-Section~\ref{subsec:intro_spinn}), with over a million cores.
-
-% is there more to write about multiple copies ????
+by machines as big as the SpiNNaker1M, with over a million cores (see
+Section~\ref{subsec:intro_spinn}).
+Also a point for debate is, whether one should optimize for size or
+for speed.
+We believe, it is better to have multiple copies of a smaller, slower
+model, rather than one big or far spread model which can achieve
+higher speed (less time between update events).
+While the consequences for performance remains an open question,
+it has another advantage: SpiNNaker for edge or mobile devices and
+robotics---all fields needing power and space efficient ways to
+execute deep learning models.
+Therefore, it would be desirable to have models as small as possible,
+in order to fit them onto a smaller SpiNNaker machine (e.g.\ a
+SpiNN-5 board) than the SpiNNaker1M
+(see Section~\ref{subsec:intro_spinn}).
 
 % streaming and batch normalization layers
 
@@ -3541,8 +3552,6 @@ Section~\ref{subsec:intro_spinn}), with over a million cores.
 % weight update
 
 \begin{itemize}
-  \item multiple copies of the same network on the same machine
-    $\rightarrow$ use all resources available
   \item with this streaming model I have no easy way to do batch
     normalization---implications for vanishing/exploding gradients
     during training
