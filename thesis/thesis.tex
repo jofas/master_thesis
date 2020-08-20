@@ -269,8 +269,6 @@ degree or professional qualification except as specified.
 
 \newpage
 
-% listoftables
-
 \pagenumbering{arabic}
 
 \section{Introduction} % {{{
@@ -291,8 +289,9 @@ drug discovery \citep{ma_et_al_2015}, genomics
 
 Deep learning has become so ubiquitous that we are changing the
 way we build modern hardware to account for its computational demands.
-From the way edge devices like mobile phones or embedded systems are
-built \citep{deng_2019} and modern CPUs \citep{perez_2017} to
+Examples include (\romannumeral 1) the way edge devices like mobile
+phones or embedded systems are built \citep{deng_2019},
+(\romannumeral 2) modern CPUs \citep{perez_2017} and (\romannumeral 3)
 specialized hardware designed only for deep learning models, such
 as Google's tensor processing unit (TPU) \citep{jouppi_et_al_2017} or
 NVIDIA's EGX Edge AI platform \citep{boitano_2020}.
@@ -1216,7 +1215,7 @@ significant chip space for specialized units performing a
 fused multiply-add-accumulate matrix operation (MAC).
 NVIDIA calls these units tensor cores. The Tesla V100 has 640 tensor
 cores, each performing one $4\times 4$ MAC per clock cycle, a
-theoretical peak performance of 125 terraflop/s
+theoretical peak performance of 125 teraflop/s
 \citep{markidis_et_al_2018}.
 The TPUv1 comes with $256\times256$ MACs performing 8 bit (unsigned)
 integer operations \citep{jouppi_et_al_2017}.
