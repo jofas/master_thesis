@@ -3546,15 +3546,26 @@ in order to fit them onto a smaller SpiNNaker machine (e.g.\ a
 SpiNN-5 board) than the SpiNNaker1M
 (see Section~\ref{subsec:intro_spinn}).
 
-% streaming and batch normalization layers
+Another problem with the streaming approach is that we never have the
+whole batch on the machine but only one example.
+While not a problem for any layers we have implemented so far,
+models trained on SpiNNaker with our prototype could not utilize an
+important mechanism for reducing the impact of vanishing and exploding
+gradients \citep{bengio_et_al_1994, glorot_et_al_2010,
+  brownlee_2019a}: batch normalization \citep{ioffe_et_al_2015}.
+ResNet-50 uses batch normalization between each convolutional layer
+and its activation function \citep{he_et_al_2015}.
+The batch size with which ResNet-50 is trained is 256.
+Having to store 256 times the feature map of one of the convolutional
+layers in order to normalize it puts massive pressure onto the memory
+of the SpiNNaker machine.
+How batch normalization is enabled on SpiNNaker remains an open
+question.
 
 % here minor stuff from README and sharing gradients only before
 % weight update
 
 \begin{itemize}
-  \item with this streaming model I have no easy way to do batch
-    normalization---implications for vanishing/exploding gradients
-    during training
   \item optimizations from README
   \item gradients not shared after each pass but only before weight
     update
