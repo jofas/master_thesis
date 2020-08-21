@@ -1,42 +1,50 @@
-Deep Learning on SpiNNaker (formerly: A Tensorflow Backend to SpiNNaker)
-========================================================================
-
+Deep Learning on SpiNNaker
+==========================
 
 See the `report <report/report.pdf>`_ for an introduction the this project.
+The master thesis discussing SpiDNN in detail can be found
+`here <thesis/thesis.pdf>`_.
 
 
-Work Plan
----------
+Installation
+------------
 
-+-----------------+----+----+
-|                 | 33 | 34 |
-+=================+====+====+
-| **IMPLEMENT**   |         |
-+-----------------+----+----+
-| (Validation)    |    | xx |
-+-----------------+----+----+
-| (RIPTMCS)       |    | xx |
-+-----------------+----+----+
-| Cleanup Code    |    | xx |
-+-----------------+----+----+
-| Document Code   |    | xx |
-+-----------------+----+----+
-| (**BENCHMARK**) |    | xx |
-+-----------------+----+----+
-| **WRITING**     |         |
-+-----------------+----+----+
-| SpiDNN          | xx |    |
-+-----------------+----+----+
-| (Benchmark)     |    | xx |
-+-----------------+----+----+
-| Conclusion      | xx |    |
-+-----------------+----+----+
-| Proof reading   |    | xx |
-+-----------------+----+----+
+First, in order to compile the binaries for the SpiNNaker toolchain
+and for SpiDNN, you need to download the `GNU ARM Embedded Toolchain <https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm>`_
+and make it available in your path.
+
+Afterwards, download and install the SpiNNaker toolchain with the
+graph front-end:
+
+.. code-block:: bash
+
+   git clone https://github.com/SpiNNakerManchester/SupportScripts
+   bash SupportScripts/install.sh gfe
+   bash SupportScritps/setup.sh
+   bash SupportScripts/automatic_make.sh
+
+Other dependecies that must be installed for SpiDNN:
+
+* numpy
+
+  `pip install numpy`
+
+* tensorflow
+
+  `pip install tensorflow`
+
+* keras
+
+  `pip install keras`
+
+Afterwards, enter the `SpiDNN/` directory and execute `source scripts/env.sh`.
+This adds SpiDNN to your python-path variable.
+In the `SpiDNN/tests/test_inference.py` and `SpiDNN/tests/test_training.py`
+files, you will find examples of how to use SpiDNN.
 
 
-Optimizations and features
---------------------------
+TODO: Optimizations and features
+--------------------------------
 
 * custom injectors which support partitions
 
