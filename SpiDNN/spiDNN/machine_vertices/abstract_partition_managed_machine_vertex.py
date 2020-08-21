@@ -11,6 +11,13 @@ class AbstractPartitionManagedMachineVertex(
         MachineVertex,
         AbstractProvidesOutgoingPartitionConstraints,
         AbstractProvidesNKeysForPartition):
+    """
+    Base class all neurons (machine vertices) used by SpiDNN inherit
+    from. It is used in conjunction with the first-touch global
+    partition manager from the spiDNN.gfe module and makes sure each
+    outgoing edge partition of a neuron gets the correct keys for
+    communication.
+    """
 
     @overrides(AbstractProvidesOutgoingPartitionConstraints
                .get_outgoing_partition_constraints)

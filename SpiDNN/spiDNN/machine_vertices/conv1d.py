@@ -34,6 +34,10 @@ class Conv1DNeuron(
         AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
+    """
+    Neuron of a 1D convolutional layer.
+    (!) BACKWARD PASS ON THIS BRANCH NOT WORKING (!)
+    """
 
     BASE_PARAMS_DATA_SIZE = 8 * BYTES_PER_WORD
 
@@ -214,32 +218,6 @@ class Conv1DNeuron(
         if is_output_layer:
             raise Exception("Unimplemented")
         else:
-
-            # TODO: if next_layer is Dense or Conv1D
-            #
-            # Dense => receive 1 but multiply with self.n_filters many
-            #          next_layer_weights.
-            #
-            #          also how are weights extracted?
-            #          next_layer_weights[id:id+self.n_filters]
-            #
-            # Conv1D => receive next_layer.n_filters and have
-            #           next_layer.n_filters many next_layer_weights
-            #
-            #           how are weights extracted?
-            #           ... that's a quite interesting question
-            #
-            # n_errors != sizeof(next_layer_weights)
-            #
-            # I'm a bitch and will just multiply n_errors if
-            # n_next_layer_weights > n_errors
-            #
-            # additional params: kernel_update_key
-            #                    n_next_layer_weights
-            #
-            #
-            # NEXT: implement backprop on spinnaker
-
             min_next_key = min([
                 routing_info.get_first_key_from_pre_vertex(
                     edge.pre_vertex, globals.backward_partition)
@@ -271,6 +249,8 @@ class Conv1DNeuron(
                 next_layer_kernel_size = int(
                     len(weights) / next_layer.n_filters)
 
+                # TODO: get backward pass to work
+                #
                 # all next_layer_weights look different (well not all
                 # but there are a few possibilites (based on position
                 # and offset)
@@ -279,12 +259,7 @@ class Conv1DNeuron(
                 #
                 # + bool next_layer_has_kernel
                 #
-                # .... please god, make this one work, if not I'm dead
-                #      in the water
-                # !!!! so first test whether position is working with
-                #      strides... motherfucking strides
-                #
-                # lol motherfucker strides are already not working
+                # strides are already not working
                 # because index key - min_next_key will be wrong in
                 # the first place
                 #
@@ -325,7 +300,6 @@ class Conv1DNeuron(
                 #
                 #                 but how about CNNs? min_layer_key
                 #                 must be different no? They aren't
-                #
                 #
                 #
                 # position = 1

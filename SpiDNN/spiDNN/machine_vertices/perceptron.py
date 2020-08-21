@@ -32,6 +32,9 @@ class Perceptron(
         AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
+    """
+    The neuron of a dense layer.
+    """
 
     BASE_PARAMS_DATA_SIZE = 5 * BYTES_PER_WORD
 
@@ -188,7 +191,7 @@ class Perceptron(
 
         if is_output_layer:
             edges = self \
-                .get_edges_ending_at_vertex_where_partition_name_starts_with(
+                .get_edges_ending_at_vertex_with_partition_name_starts_with(
                     machine_graph, globals.backward_partition)
 
             assert len(edges) == 1

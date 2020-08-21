@@ -36,6 +36,12 @@ class LossMachineVertex(
         AbstractPartitionManagedMachineVertex,
         SimulatorVertex,
         MachineDataSpecableVertex):
+    """
+    Machine vertex computing the loss and passing it backwards to
+    the output layer of the model. It also computes the global loss
+    per epoch and streames it to the host, which then prints the
+    updated status to the user in the command line.
+    """
 
     PARAMS_DATA_SIZE = 7 * BYTES_PER_WORD
 

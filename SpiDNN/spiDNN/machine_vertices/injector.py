@@ -8,6 +8,11 @@ from .abstract_partition_managed_machine_vertex import \
 class Injector(
         AbstractPartitionManagedMachineVertex,
         ReverseIPTagMulticastSourceMachineVertex):
+    """
+    Wrapper around the RIPTMCS from the SpiNNaker toolchain.
+    Makes sure the RIPTMCS gets the correct keys, by inheriting from
+    AbstractPartitionManagedMachineVertex.
+    """
 
     def __init__(self, layer, id, n_keys):
         self.layer = layer
