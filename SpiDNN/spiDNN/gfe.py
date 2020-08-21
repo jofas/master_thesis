@@ -1,3 +1,10 @@
+"""
+Wrapper module around the graph front-end, adding a global partition
+manager instance (registering touches everytime a MachineEdge is added
+to the graph.
+Calls are propagated to the SpiNNaker graph front-end.
+"""
+
 import spinnaker_graph_front_end as front_end
 from spinn_utilities.socket_address import SocketAddress
 from spinn_front_end_common.utilities.globals_variables import \
