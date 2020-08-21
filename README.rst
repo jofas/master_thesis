@@ -27,7 +27,7 @@ Other dependecies that must be installed for SpiDNN:
 
 * numpy
 
-  `pip install numpy`
+  ``pip install numpy``
 
 * tensorflow
 
@@ -35,11 +35,11 @@ Other dependecies that must be installed for SpiDNN:
 
 * keras
 
-  `pip install keras`
+  ``pip install keras``
 
-Afterwards, enter the `SpiDNN/` directory and execute `source scripts/env.sh`.
+Afterwards, enter the ``SpiDNN/`` directory and execute ``source scripts/env.sh``.
 This adds SpiDNN to your python-path variable.
-In the `SpiDNN/tests/test_inference.py` and `SpiDNN/tests/test_training.py`
+In the ``SpiDNN/tests/test_inference.py`` and ``SpiDNN/tests/test_training.py``
 files, you will find examples of how to use SpiDNN.
 
 
