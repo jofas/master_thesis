@@ -39,6 +39,8 @@ Other dependecies that must be installed for SpiDNN:
 
 Afterwards, enter the ``SpiDNN/`` directory and execute ``source scripts/env.sh``.
 This adds SpiDNN to your python-path variable.
+Also from the ``SpiDNN/`` directory, execute ``make``, which will build
+the binaries for SpiNNaker.
 In the ``SpiDNN/tests/test_inference.py`` and ``SpiDNN/tests/test_training.py``
 files, you will find examples showing how SpiDNN is used.
 
