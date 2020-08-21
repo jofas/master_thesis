@@ -1,3 +1,7 @@
+"""
+Module containing various constants used throughout the SpiDNN stack.
+"""
+
 from spinn_front_end_common.utilities.constants import NOTIFY_PORT
 
 machine_time_step = 500
