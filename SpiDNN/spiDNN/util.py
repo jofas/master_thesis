@@ -25,9 +25,11 @@ def absolute_path_from_home(relative_path=None):
 
 
 def generate_offset(processor):
+    """
+    Generates the timer offset for a machine vertex.
+    """
     return int(
-        math.ceil(globals.max_offset / globals.cores_per_chip) * processor
-    )
+        math.ceil(globals.max_offset / globals.cores_per_chip) * processor)
 
 
 def uint32t_to_float(uint):
@@ -41,6 +43,11 @@ def float_to_uint32t(flt):
 
 
 class TrainableParams:
+    """
+    Utility class used as storage container for the trainable
+    parameters passed from the fit method of the model down to the
+    machine vertices.
+    """
     n_elements = 4
 
     def __init__(self, epochs, epoch_size, batch_size, learning_rate):
@@ -57,6 +64,10 @@ class TrainableParams:
 
 
 class Partition:
+    """
+    A partition object (set of outgoing edge partitions).
+    """
+
     def __init__(self, identifier):
         self.identifier = identifier
         self.first_key = 0
@@ -81,6 +92,10 @@ class Partition:
         return False
 
     def get_first_key(self, machine_vertex):
+        """
+        Returns the first key of the outgoing edge partition of the
+        calling machine_vertex.
+        """
         if machine_vertex.label not in self.machine_vertices:
             raise KeyError("""Partition {} has never seen MachineVertex
                 {} as the source of an edge.""".format(
@@ -95,6 +110,11 @@ class Partition:
 
 
 class PartitionManager:
+    """
+    First-touch global partition manager. Makes sure that all keys
+    are consecutive, based on when they were touched first.
+    """
+
     def __init__(self):
         self.partitions = []
         self.partitions_lookup = {}
@@ -117,6 +137,9 @@ class PartitionManager:
                     partition.first_key += n_keys
 
     def generate_constraints(self, machine_vertex, partition_identifier):
+        """
+        Returns the fixed keys for the outgoing edge partition.
+        """
         partition = self._get_partition(partition_identifier)
 
         if partition is None:
@@ -129,12 +152,6 @@ class PartitionManager:
 
         keys_and_masks = [BaseKeyAndMask(key, globals.mask)
                           for key in range(base_key, base_key + n_keys)]
-
-        #assert len(keys_and_masks) == n_keys
-
-        # print(machine_vertex)
-        # for km in keys_and_masks:
-        #    print(km.get_keys(n_keys=n_keys, offset=1))
 
         return [FixedKeyAndMaskConstraint(keys_and_masks)]
 
@@ -159,6 +176,10 @@ class PartitionManager:
 
 
 class LossExtractionManager:
+    """
+    Utility providing a nice CLI print-out for training progress.
+    """
+
     def __init__(self, epochs, epoch_size):
         self.epochs = epochs
         self.epoch_size = epoch_size
@@ -186,6 +207,10 @@ class LossExtractionManager:
 
 
 class PingPongExtractionManager:
+    """
+    Class managing the ping-pong protocol.
+    """
+
     def __init__(self, epochs, epoch_size, n_receive):
         self.epochs = epochs
         self.epoch_size = epoch_size
@@ -202,11 +227,18 @@ class PingPongExtractionManager:
             return (self.overall_receive_counter - 1) // self.n_receive
 
     def reset(self):
+        """
+        This method resets the manager, after a single ping-pong has
+        finished.
+        """
         with self.lock:
             self.receive_counter = 0
 
     @property
     def received_all(self):
+        """
+        Wake up injectors, once this function returns True.
+        """
         with self.lock:
             return self.receive_counter == self.n_receive
 
