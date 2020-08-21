@@ -27,6 +27,8 @@
 \usepackage{booktabs}
 \usepackage{natbib}
 \usepackage{csquotes}
+\usepackage[toc, acronym]{glossaries}
+
 
 \usetikzlibrary{%
     arrows,
@@ -84,6 +86,34 @@
 \date{}
 
 \ShortHeadings{Jonas Fassbender}{\title}
+
+
+\makeglossaries
+
+
+\newacronym{tpu}{TPU}{tensor processing unit}
+\newacronym{gpgpu}{GPGPU}{general purpose graphical processing unit}
+\newacronym{gpu}{GPU}{graphical processing unit}
+
+\newacronym{mlp}{MLP}{multilayer perceptron}
+\newacronym{cnn}{CNN}{convolutional neural network}
+
+\newacronym{ilsvrc}{ILSVRC}{ImageNet large scale visual recognition
+  challenge}
+
+% eieio, tdma, dma
+
+\newacronym{noc}{NoC}{Network-on-Chip}
+\newacronym{itcm}{ITCM}{instruction tightly-coupled memory}
+\newacronym{dtcm}{DTCM}{data tightly-coupled memory}
+\newacronym{sdram}{SDRAM}{synchronous dynamic random access memory}
+\newacronym{sdp}{SDP}{SpiNNaker datagram protocol}
+\newacronym{eieio}{EIEIO}{external internal event input output}
+\newacronym{dma}{DMA}{direct memory access}
+\newacronym{tdma}{TDMA}{time-division multiple access}
+
+\newacronym{riptmcs}{RIPTMCS}{\texttt{ReverseIPTagMulticastSource}}
+\newacronym{lpg}{LPG}{\texttt{LivePacketGatherer}}
 
 \begin{document}
 
@@ -293,8 +323,9 @@ Examples include (\romannumeral 1) the way edge devices like mobile
 phones or embedded systems are built \citep{deng_2019},
 (\romannumeral 2) modern CPUs \citep{perez_2017} and (\romannumeral 3)
 specialized hardware designed only for deep learning models, such
-as Google's tensor processing unit (TPU) \citep{jouppi_et_al_2017} or
-NVIDIA's EGX Edge AI platform \citep{boitano_2020}.
+as Google's \acrfull{tpu}
+\citep{jouppi_et_al_2017} or NVIDIA's EGX Edge AI platform
+\citep{boitano_2020}.
 Whole state-of-the-art supercomputers are built solely for deep
 learning.
 An example would be a supercomputer built by Microsoft for OpenAI,
@@ -311,8 +342,8 @@ AlphaGo Zero---the successor of the famous AlphaGo program, which
 was able to beat Go world champion Lee Sedol
 \citep{silver_et_al_2017}---to be the system  with the highest
 computational demands of approximately 1850 petaflop/s-days.
-AlphaGo Zero was trained for 40 days on a machine with 4 TPUs
-\citep{silver_et_al_2017}.
+AlphaGo Zero was trained for 40 days on a machine with 4
+\acrshort{tpu}s \citep{silver_et_al_2017}.
 With the end of Moore's Law \citep{loeffler_2018}, chip makers have to
 get creative in scaling up computing, the same way machine learning
 researchers are scaling up their models \citep{simonite_2016}.
@@ -428,8 +459,8 @@ in Section~\ref{subsec:intro_spinn}.
 SpiNNaker is also compared against the two state-of-the-art hardware
 solutions for deep learning that currently produce the best
 performance in training and inference.
-Namely general purpose graphical processing units (GPGPUs) and
-Google's tensor processing unit (TPU).
+Namely \acrlong{gpgpu}s (\acrshort{gpgpu}s) and
+Google's \acrfull{tpu}.
 
 
 \subsection{An Introduction to Deep Learning} % {{{
@@ -531,17 +562,19 @@ behavior when connected together \citep{goodfellow_et_al_2016}.
 Backpropagation enabled the training of networks of
 perceptrons---artificial neural networks.
 
-The quintessential artificial neural network is the \textit{multilayer
-perceptron} (MLP), also called a \textit{feedforward neural network}
-(see Figure~\ref{fig:mlp}) \citep{goodfellow_et_al_2016}.
-The MLP consists of multiple perceptrons organized in \textit{layers}.
+The quintessential artificial neural network is the
+\acrfull{mlp}, also called a
+\textit{feedforward neural network} (see Figure~\ref{fig:mlp})
+\citep{goodfellow_et_al_2016}.
+The \acrshort{mlp} consists of multiple perceptrons organized in
+\textit{layers}.
 Layers are connected successively such that the output of each of its
 perceptrons reaches all perceptrons in the next layer.
 Such a layer is known to be \textit{fully-connected} or
-\textit{dense}. No cycle exists between perceptrons; the MLP is a
-directed acyclic graph.
-Unlike the single layer perceptron, the MLP has at least one
-\textit{hidden layer}.
+\textit{dense}. No cycle exists between perceptrons; the
+\acrshort{mlp} is a directed acyclic graph.
+Unlike the single layer perceptron, the \acrshort{mlp} has at least
+one \textit{hidden layer}.
 A hidden layer is a layer between the input and output layers (see
 Figure~\ref{fig:mlp}).
 
@@ -603,11 +636,11 @@ Figure~\ref{fig:mlp}).
 			edge[->] (i3);
 	\end{tikzpicture}
 \end{center}
-\caption {Schema of a MLP or feedforward neural network.}
+\caption {Schema of a \acrshort{mlp} or feedforward neural network.}
 \label{fig:mlp}
 \end{figure} % }}}
 
-A MLP can also be represented as a statistical model
+A \acrshort{mlp} can also be represented as a statistical model
 $f(\mathbf{x};\mathbf{\theta})$.
 Computing $f(\mathbf{x})$---also called \textit{inference} or the
 \textit{forward pass}---can be described as a layer-wise composition
@@ -629,13 +662,13 @@ follows:
   g(\mathbf{W}^\top\mathbf{x} + \mathbf{b}).
 \end{align}
 The second layer takes the output of the first and so forth.
-The forward pass of the MLP is computed as:
+The forward pass of the \acrshort{mlp} is computed as:
 \begin{align}
   y = f^{(l)}(f^{(l-1)}(\dots f^{(1)}(\mathbf{x}))).
 \end{align}
 
 The backpropagation algorithm is a way to train the parameters of a
-MLP (or other deep learning models) so that it approximates the
+\acrshort{mlp} (or other deep learning models) so that it approximates the
 unknown function $f^*$ which generates the labels of the examples
 we have in our data set.
 The data set used for training a model is called the \textit{training
@@ -692,17 +725,17 @@ The total loss of the next hidden layer is given as:
 \end{align}
 $f^{(l-1)}_i$ being the $i$-th perceptron of the hidden layer $l-1$.
 
-\citet{hornik_et_al_1989} demonstrated that a non-linear MLP
+\citet{hornik_et_al_1989} demonstrated that a non-linear \acrshort{mlp}
 (the activation functions are non-linear transformations of
 $h(x) = \mathbf{W}^\top\mathbf{x} + \mathbf{b}$) can overcome the
 famous XOR problem of a single layer perceptron demonstrated in
 \citet{minsky_et_al_1969}.
 Another major contribution of the phase of connectionism was the
 neocognitron \citep{fukushima_1980}, the origin of today's
-\textit{convolutional neural networks} (CNNs)---which are the
+\acrlong{cnn}s (\acrshort{cnn}s)---which are the
 state-of-the-art approach for building computer vision models---and
 the application of the backpropagation algorithm to fully automate the
-training of CNNs \citep{lecun_et_al_1989}.
+training of \acrshort{cnn}s \citep{lecun_et_al_1989}.
 
 \citet{goodfellow_et_al_2016} claims that the third and current phase
 of deep learning---where the name deep learning was
@@ -728,7 +761,7 @@ are inspired by findings of neuroscientists.
 In this case by research done by Hubel and Wiesel about the
 mammalian visual cortex
 \citep{hubel_et_al_1959, hubel_et_al_1962, hubel_et_al_1968}.
-CNNs are just deep learning models which have at least one
+\acrshort{cnn}s are just deep learning models which have at least one
 convolutional layer. They are applied to problems which have a
 grid-like topology, like time-series (1D), images (2D) or videos (3D)
 \citep{goodfellow_et_al_2016}.
@@ -910,9 +943,9 @@ its input (see Figure~\ref{fig:padding} \citep{goodfellow_et_al_2016}.
 \label{fig:padding}
 \end{figure} % }}}
 
-Along convolutional layers, CNNs often have \textit{pooling layers}.
+Along convolutional layers, \acrshort{cnn}s often have \textit{pooling layers}.
 A pooling layer summarizes locally with the goal of making the
-CNN invariant to small translations of the input
+\acrshort{cnn} invariant to small translations of the input
 \citep{goodfellow_et_al_2016}, making the model less prone to
 \textit{overfitting}---the state a model is in if it performs well
 on the training set but does not generalize well to unseen examples.
@@ -926,17 +959,16 @@ maximum value of that neighborhood.
 \subsection{Benchmarking Deep Learning Systems for Computer Vision} % {{{
 \label{subsec:intro_bench}
 
-In 2010 the annual (until 2017) ImageNet Large Scale Visual
-Recognition Challenge (ILSVRC) was launched and has become the most
-famous benchmark for computer vision models, producing many well-known
-deep learning models like AlexNet in 2012
-\citep{krizhevsky_et_al_2012}, VGG16 in 2014
+In 2010 the annual (until 2017) \acrfull{ilsvrc}
+was launched and has become the most famous benchmark for computer
+vision models, producing many well-known deep learning models like
+AlexNet in 2012 \citep{krizhevsky_et_al_2012}, VGG16 in 2014
 \citep{simonyan_et_al_2014} and the ResNet models in 2015
 \citep{he_et_al_2015}.
-The ILSVRC---like the name suggests---is based on the ImageNet data
+The \acrshort{ilsvrc}---like the name suggests---is based on the ImageNet data
 set consisting of more than 14 million images
 \citep{russakovsky_et_al_2015}.
-One task of the ILSVRC benchmark is image classification.
+One task of the \acrshort{ilsvrc} benchmark is image classification.
 During image classification the model is trained on 1000 categories
 (1.2 million images), without overlapping labels (each image has a
 single label, e.g.~``dog'') \citep{russakovsky_et_al_2015}.
@@ -944,7 +976,7 @@ The top-1 ($y = \text{argmax } f(\mathbf{x})$) accuracy is measured on
 a test set of 150,000 images and winner is the model with the highest
 top-1 accuracy.
 
-While a benchmark like the ILSVRC produces new insights into computer
+While a benchmark like the \acrshort{ilsvrc} produces new insights into computer
 vision and keeps the community up to date on what is possible,
 deep learning has another issue on which a benchmark can shed light:
 training/inference speed of hardware and software systems.
@@ -954,20 +986,21 @@ industry---like hardware vendors, cloud providers and machine learning
 engineers---with a fair standard to rely on
 \citep{mattson_et_al_2019}.
 One task of the MLPerf training benchmark is training the ResNet-50
-model (see below) on the image classification task from the ILSVRC
+model (see below) on the image classification task from the \acrshort{ilsvrc}
 2012, until it reaches a top-1 accuracy of 74.9 percent.
 The wallclock time is measured and serves as the result for the
 benchmarked system \citep{mattson_et_al_2019}.
 Currently the fastest solution, from the latest MLPerf training
 benchmark v0.6, is Google's cloud system based on Tensorflow and
-one TPUv3 pod (1024 TPUv3s) \citep{mlperf_2019, stone_2019}.
+one \acrshort{tpu}v3 pod (1024 \acrshort{tpu}v3s)
+\citep{mlperf_2019, stone_2019}.
 The benchmark we wanted to conduct in order to compare our
 implementation against others, is based
 on the image classification task of the MLPerf training benchmark,
 making it easy to compare SpiNNaker and our prototype to other
 state-of-the-art deep learning systems.
 
-The winner of the image classification task of the ILSVRC 2015 was an
+The winner of the image classification task of the \acrshort{ilsvrc} 2015 was an
 ensemble of residual nets (ResNets) introduced in
 \citet{he_et_al_2015}.
 The ensemble generated a top-5 accuracy (true label in the five
@@ -1161,18 +1194,17 @@ fast ones \citep{furber_et_al_2020}.
 The SpiNNaker system's basic building block is the SpiNNaker chip,
 a multiprocessor chip consisting of 18 ARM968 cores
 \citep{furber_et_al_2020} and a
-Network-on-Chip (NoC) system for communication between the cores
+\acrfull{noc} system for communication between the cores
 \citep{furber_et_al_2007}.
 Each core can run up to 1000 spiking neurons, which communicate with
 each other over spikes---small packages with a maximum size of 72 bits
-which are sent over the NoC \citep{furber_et_al_2007, spinnaker_2020}.
-Each core has a 64 Kb DTCM---data tightly-coupled memory---for the
+which are sent over the \acrshort{noc} \citep{furber_et_al_2007, spinnaker_2020}.
+Each core has a 64 Kb \acrfull{dtcm} for the
 application data and fast access to it.
-The 32 Kb ITCM stores the instructions executed by the core
+The 32 Kb \acrfull{itcm} stores the instructions executed by the core
 \citep{furber_et_al_2020}.
-All cores on a chip share access to 128 Mb SDRAM---synchronous
-dynamic random access memory---which has a higher capacity than
-DTCM but is also a lot slower
+All cores on a chip share access to 128 Mb \acrfull{sdram}, which has
+a higher capacity than \acrshort{dtcm} but is also a lot slower
 \citep{furber_et_al_2020, spinnaker_2020a}.
 
 By today's standards 18 cores do not qualify as a massively-parallel
@@ -1192,8 +1224,8 @@ Images of the SpiNNaker hardware can be found in
 Appendix~\ref{sec:spinn_photos}.
 
 SpiNNaker is quite different from common deep learning accelerators,
-like general purpose graphics processing units (GPGPUs) or Google's
-TPU \citep{jouppi_et_al_2017}.
+like \acrlong{gpgpu}s (\acrshort{gpgpu}s) or Google's
+\acrshort{tpu} \citep{jouppi_et_al_2017}.
 Common deep learning libraries like Tensorflow
 \citep{abadi_et_al_2015}, Keras \citep{keras} or PyTorch
 \citep{paszke_et_al_2019} implement
@@ -1206,8 +1238,8 @@ multiplication, which represents the majority of computation needed
 for training and inference.
 The leading systems, when it comes to throughput and speed according
 to the MLPerf training benchmark \citep{mlperf_2019}, are Google's
-TPU \citep{jouppi_et_al_2017} and NVIDIA's GPU architecture
-Volta \citep{durant_et_al_2017}.
+\acrshort{tpu} \citep{jouppi_et_al_2017} and NVIDIA's \acrshort{gpu}
+architecture Volta \citep{durant_et_al_2017}.
 Volta's successor Ampere was released in 2020, which, according to
 NVIDIA, is much more powerful \citep{krashinsky_et_al_2020}.
 Both architectures leverage instruction level parallelism, sacrificing
@@ -1217,11 +1249,11 @@ NVIDIA calls these units tensor cores. The Tesla V100 has 640 tensor
 cores, each performing one $4\times 4$ MAC per clock cycle, a
 theoretical peak performance of 125 teraflop/s
 \citep{markidis_et_al_2018}.
-The TPUv1 comes with $256\times256$ MACs performing 8 bit (unsigned)
-integer operations \citep{jouppi_et_al_2017}.
-The TPUv2 added support for mixed precision floating point operations
-(16 bit multiply with 32 bit add and accumulate, same as the
-tensor core of the Volta architecture)
+The \acrshort{tpu}v1 comes with $256\times256$ MACs performing 8 bit
+(unsigned) integer operations \citep{jouppi_et_al_2017}.
+The \acrshort{tpu}v2 added support for mixed precision floating point
+operations (16 bit multiply with 32 bit add and accumulate, same as
+the tensor core of the Volta architecture)
 \citep{kennedy_2017, markidis_et_al_2018}.
 The SpiNNaker cores do not have a MAC unit, being designed to run
 spiking neurons efficiently, rather than lots of matrix
@@ -1245,7 +1277,7 @@ neuromorphic chips has been a goal for some time.
 This section will outline two approaches to implementing deep learning
 models on neuromorphic hardware.
 One being the SNN toolbox \citep{rueckauer_et_al_2017}, the other
-being an implementation of CNNs on IBM's TrueNorth system
+being an implementation of \acrshort{cnn}s on IBM's TrueNorth system
 \citep{esser_et_al_2016}.
 
 The SNN toolbox takes pre-trained deep learning models and translates
@@ -1262,13 +1294,13 @@ networks.
 Furthermore, direct mappings to other neuromorphic
 computers like Intel's Loihi \citep{davies_et_al_2018} are supported
 by the back-end \citep{snn_toolbox_2020}.
-The SNN toolbox supports complex CNNs like VGG16 or Inception-v3
+The SNN toolbox supports complex \acrshort{cnn}s like VGG16 or Inception-v3
 \citep{szegedy_et_al_2015, rueckauer_et_al_2017}.
 \citet{rueckauer_et_al_2017} shows that using the converted version of
 LeNet \citep{lecun_et_al_1989} on the MNIST data set
 \citep{lecun_et_al_2020} and BinaryNet \citep{courbariaux_et_al_2016}
 on CIFAR-10 \citep{krizhevsky_2009} requires half the
-operations of the original CNNs without considerable loss in
+operations of the original \acrshort{cnn}s without considerable loss in
 accuracy.
 Unfortunately, for bigger problems, namely VGG16 and Inception-v3 on
 the ImageNet data set, the converted models have a much lower accuracy
@@ -1284,15 +1316,15 @@ achieving energy efficiency and performance through scalability,
 similar to SpiNNaker.
 \citet{esser_et_al_2016} presents Eedn (energy-efficient deep
 neuromorphic networks).
-Eedn is an approach to generating CNNs on the TrueNorth system,
+Eedn is an approach to generating \acrshort{cnn}s on the TrueNorth system,
 enabling both inference and training.
 TrueNorth---unlike SpiNNaker---uses one bit spikes
 \citep{esser_et_al_2016}, which means it is substantially different
 from contemporary consumer hardware and deep learning accelerators.
-Eedn is needed to translate the CNN in order to make it run on
+Eedn is needed to translate the \acrshort{cnn} in order to make it run on
 TrueNorth.
 SpiNNaker on the other hand, as stated above, is only a collection
-of low power ARM cores connected over a NoC.
+of low power ARM cores connected over a \acrshort{noc}.
 Spikes on SpiNNaker are communicated with small multicast packets
 (up to 72 bits, see Section~\ref{subsec:intro_spinn})
 \citep{furber_et_al_2020}.
@@ -1390,7 +1422,7 @@ and takes care of the execution of the program on the connected
 SpiNNaker machine.
 The toolchain goes through a stage of mapping the graph onto the
 available cores, before data generation (where e.g.\ parameters of the
-vertex are loaded into SDRAM, so that the vertex on the machine is
+vertex are loaded into \acrshort{sdram}, so that the vertex on the machine is
 able to access them) and finally loading and running the
 application \citep{furber_et_al_2020}.
 
@@ -1472,16 +1504,14 @@ application running on SpiNNaker.
 Interaction happens, again, via MC packets\footnote{%
   MC packets are the abstraction presented to the user. In fact,
   communication between the host and the SpiNNaker machine are handled
-  by the EIEIO (external internal event input output) protocol
-  \citep{rast_et_al_2015}.
-  The EIEIO protocol sits on-top of the SpiNNaker-internal SDP
-  (SpiNNaker datagram protocol), which itself sits on-top of UDP
+  by the \acrfull{eieio} protocol \citep{rast_et_al_2015}.
+  The \acrshort{eieio} protocol sits on-top of the SpiNNaker-internal
+  \acrfull{sdp}, which itself sits on-top of UDP
   \citep{furber_et_al_2014}.
 }
 by adding extra vertices for input and output to the graph.
-Live input is enabled by the \texttt{ReverseIPTagMulticastSource}
-(RIPTMCS) machine vertex and live output by the
-\texttt{LivePacketGatherer} (LPG) \citep{furber_et_al_2020}.
+Live input is enabled by the \acrfull{riptmcs} machine vertex and live
+output by the \acrfull{lpg} \citep{furber_et_al_2020}.
 The toolchain provides a \texttt{LiveEventCon\-nection} for the
 external device, which supplies the appropriate abstractions over the
 networking.
@@ -1696,7 +1726,7 @@ sequential models.
   \end{center}
   \caption{Illustration of how a machine graph is generated by the
     prototype. The dashed circle represents an auxiliary machine
-    vertex, in this case the LPG. This machine graph would be
+    vertex, in this case the \acrshort{lpg}. This machine graph would be
     generated when the \texttt{predict} method of the model is
     called.}
   \label{fig:spiDNN_arch}
@@ -1848,7 +1878,7 @@ and Listing~\ref{lst:spiDNN_vs_keras_cnns}, lines 30 and 31).
 
 \begin{figure} % {{{
 \begin{lstlisting}[language=Python, caption={Example code comparing
-  inference with 1D CNNs in Keras to inference with the prototype.},
+  inference with 1D \acrshort{cnn}s in Keras to inference with the prototype.},
   captionpos=b, label=lst:spiDNN_vs_keras_cnns, numbers=left]
 import tensorflow as tf
 import numpy as np
@@ -1948,14 +1978,14 @@ Algorithm~\ref{alg:pred} shows what happens during the
 \texttt{predict} method.
 First, an auxiliary layer for the live IO is created, the extractor
 layer.
-The extractor layer has a single machine vertex, a LPG instance
+The extractor layer has a single machine vertex, a \acrshort{lpg} instance
 (see Section~\ref{subsec:spinn_toolchain}) for streaming the
 predictions off SpiNNaker, back to the host.
-The LPG is also shown as the auxiliary vertex in
+The \acrshort{lpg} is also shown as the auxiliary vertex in
 Figure~\ref{fig:spiDNN_arch}.
 The first layer---which must always be an input layer---handles
 streaming the data onto the machine.
-Neurons of an input layer are simple wrappers around the RIPTMCS
+Neurons of an input layer are simple wrappers around the \acrshort{riptmcs}
 machine vertices provided by the SpiNNaker toolchain (see
 Section~\ref{subsec:spinn_toolchain}).
 
@@ -2053,7 +2083,7 @@ Each packet consists of a control byte and two words, key and payload
 (see Section~\ref{subsec:spinn_toolchain}).
 Each neuron knows how many neurons in the previous layer it is
 connected to and knows their keys within a certain partition.
-The simple MLP shown in Figure~\ref{fig:spiDNN_arch} only has a
+The simple \acrshort{mlp} shown in Figure~\ref{fig:spiDNN_arch} only has a
 single partition---the ``forward'' partition.\footnote{%
   Not actually one
   partition, but lots of outgoing edge partitions with the same
@@ -2067,7 +2097,7 @@ corresponding routing keys.
 The routing keys of the outgoing edge partitions of the neurons
 from the previous layer are collected.
 The keys are guaranteed to be consecutive.
-For example, the first neuron of the input layer of the MLP from
+For example, the first neuron of the input layer of the \acrshort{mlp} from
 Figure~\ref{fig:spiDNN_arch} (64 neurons big) would have zero as its
 key.
 The second neuron one.
@@ -2263,7 +2293,7 @@ the convolutional layer are shared between its neurons
 (see Section~\ref{subsec:intro_dl}).
 
 After implementation of the forward pass and the activation functions,
-the backward pass was implemented, enabling training a MLP.
+the backward pass was implemented, enabling training a \acrshort{mlp}.
 The forward pass of trainable neurons works the same with plain
 inference neurons, thanks to our development choices (see above).
 Training a deep learning model on SpiNNaker is done via the
@@ -2302,7 +2332,7 @@ The overall loss is displayed to the user in the console, together
 with a progress bar.
 The input layer has no parameters.
 Therefore it can be excluded in the backward pass.
-The first hidden layer is connected---backwards---to the LPG used
+The first hidden layer is connected---backwards---to the \acrshort{lpg} used
 for streaming data off of SpiNNaker.
 Its outputs are used as the pong event.
 Once the first hidden layer has computed its gradients the backward
@@ -2326,7 +2356,7 @@ layers.
           \STATE{update weights with (\ref{eq:sgd})}
         \ENDIF
         \IF{last epoch complete}
-          \STATE{write weights back to SDRAM}
+          \STATE{write weights back to \acrshort{sdram}}
         \ENDIF
       \ENDFOR
     \ENDFOR
@@ -2386,20 +2416,20 @@ Lastly, the updated weights have to be extracted from the SpiNNaker
 machine again, back to the host.
 As stated above, the weights are passed onto the machine during the
 data generation phase of the SpiNNaker toolchain and are stored in
-SDRAM.
-Because SDRAM is slow, the weights are copied into DTCM (see
+\acrshort{sdram}.
+Because \acrshort{sdram} is slow, the weights are copied into \acrshort{dtcm} (see
 Section~\ref{subsec:intro_spinn}).
-The fast and private DTCM memory of each SpiNNaker core can not be
+The fast and private \acrshort{dtcm} memory of each SpiNNaker core can not be
 accessed from anywhere but the core itself.
 Therefore the updated weights must be written back to the parameter
-region in SDRAM, where the host can access them.
+region in \acrshort{sdram}, where the host can access them.
 This is a very slow operation and is only done after the last
 example of the whole training session has been processed
 (see Algorithm~\ref{alg:backprop}, lines 9--11).
 A constant latency of two seconds has been added to the host.
 The host sleeps for two seconds before it extracts the weights from
 the machine, to make sure the updated weights are all successfully
-copied back to SDRAM.
+copied back to \acrshort{sdram}.
 
 Last phase of the implementation was spend with implementing 1D
 convolutional layers.
@@ -2527,8 +2557,8 @@ The minor deviations encountered during the development process
 (listed in chronological order) were:
 
 \begin{enumerate}
-  \item A bug in the LPG (see Section~\ref{subsec:spinn_toolchain})
-  \item Interface changes made to the RIPTMCS during development (see
+  \item A bug in the \acrshort{lpg} (see Section~\ref{subsec:spinn_toolchain})
+  \item Interface changes made to the \acrshort{riptmcs} during development (see
     Section~\ref{subsec:spinn_toolchain})
   \item A bug discovered during the key generation process for more
     than one key (as is the case for flattened convolutional layers,
@@ -2540,7 +2570,7 @@ The minor deviations encountered during the development process
     and ``same'' padding for convolutional layers
 \end{enumerate}
 
-The first problem encountered was a bug in the LPG.
+The first problem encountered was a bug in the \acrshort{lpg}.
 Between the research and planning phase and the dissertation phase
 there was another phase of this project planned.
 This phase's goal was familiarization with the SpiNNaker programming
@@ -2561,24 +2591,24 @@ This did not work once the number of cells exceeded
 a certain threshold.
 No packets were received by the \texttt{LiveEventConnection}
 (see Section~\ref{subsec:spinn_toolchain}) and the router on the
-chip with the LPG showed strange warnings of dropped packets.
+chip with the \acrshort{lpg} showed strange warnings of dropped packets.
 These warnings were strange because the amount of dropped packets
 reported far exceeded the total amount of packets sent during the
 whole execution.
 SpiNNaker has no memory protection.
 Therefore, no segmentation faults are raised when
 trying to access memory not owned by the accessing machine vertex.
-Any machine vertex can override data owned by other vertices in SDRAM
-and we correctly thought that the LPG was writing to memory owned by
+Any machine vertex can override data owned by other vertices in \acrshort{sdram}
+and we correctly thought that the \acrshort{lpg} was writing to memory owned by
 the router.
-After reducing the code of the LPG, we could determine strange
+After reducing the code of the \acrshort{lpg}, we could determine strange
 behavior in the buffer that stores received packets for sending them
 to the host.
-Once the LPG has sent its first EIEIO message to the host
+Once the \acrshort{lpg} has sent its first \acrshort{eieio} message to the host
 (see Section~\ref{subsec:SpiDNN_arch}) the buffer showed that it was
 full, even though it did not contain packets anymore.
 While we could isolate the problem to the generation and sending
-process of the EIEIO message, we could not find the bug in there
+process of the \acrshort{eieio} message, we could not find the bug in there
 and had to rely on the SpiNNaker core team to find the bug and fix it.
 
 Finding and fixing this bug took away approximately one week
@@ -2597,7 +2627,7 @@ The issue, a description and a link to the solution can be found at
 
 The interface changes made for the next release of the toolchain
 were easily fixable.
-The SpiNNaker core team removed the direct support for RIPTMCS
+The SpiNNaker core team removed the direct support for \acrshort{riptmcs}
 in a machine graph.
 Only a single parameter was changed in order to restore the direct
 support again (instead of having to use constructs only used in
@@ -2691,7 +2721,7 @@ to integrate strides and padding into the machine vertex.
 The former could have been prevented by spending more time
 on finding the right formula.
 Convolutional layers were implemented after forward and backward pass
-of the MLP.
+of the \acrshort{mlp}.
 Time---unaccounted for in the work plan---was spent debugging cases,
 where padding and offset were computed wrongfully.
 Getting the formula for computing the offset for strided convolutional
@@ -2708,7 +2738,7 @@ succeeding layer has to be known.
 Sharing information between layers is costly concerning code
 complexity, something we have learned early during the development
 phase while implementing softmax (see
-Section~\ref{subsec:SpiDNN_arch}) and backpropagation for MLPs (see
+Section~\ref{subsec:SpiDNN_arch}) and backpropagation for \acrshort{mlp}s (see
 below).
 Backpropagation with convolutional layers has been the most complex
 task (and the last) implemented in the prototype and it is the main
@@ -2864,7 +2894,7 @@ execution starts and for packet re-injection of dropped packets
 \citep{furber_et_al_2020}.
 Listing~\ref{lst:big_models_inference} shows an excerpt from the test
 suite.
-Inference with two models, one MLP and one CNN, is tested.
+Inference with two models, one \acrshort{mlp} and one \acrshort{cnn}, is tested.
 Both models have enough neurons to fill the whole board (816 cores).
 Neither one experiences problems with dropped packets.
 
@@ -2920,7 +2950,7 @@ naive and easiest to implement.
 The next approach represents an unsuccessful trade-off between code
 quality and scalability.
 Since we did not experience dropped packets during the forward pass on
-a MLP filling all the available cores on a SpiNN-5 board (see
+a \acrshort{mlp} filling all the available cores on a SpiNN-5 board (see
 Listing~\ref{lst:big_models_inference}), we deemed that sending
 $n \cdot m$ packets works well enough (tested with a maximum $n$ of 50
 and $m$ of 300, which makes the peak number of packets 15,000).
@@ -2972,8 +3002,8 @@ constant memory needed for variables) is doubled.
 
 Sharing parameters was deemed good enough of a compromise between
 scalability and code complexity during the backward pass
-implementation of the MLP.
-We were able to train a model similar to the MLP shown in
+implementation of the \acrshort{mlp}.
+We were able to train a model similar to the \acrshort{mlp} shown in
 Listing~\ref{lst:big_models_inference} to learn XOR
 (see Listing~\ref{lst:big_mlp_training}), without dropped packets.
 Therefore, we modeled our implementation of 1D convolutional layers
@@ -3042,7 +3072,7 @@ end.
 These packets do not serve a purpose in themselves and are only used
 to increase a counter, so the receiving neuron knows if the received
 error is the one intended for it.
-If we look at the MLP from Listing~\ref{lst:big_models_inference},
+If we look at the \acrshort{mlp} from Listing~\ref{lst:big_models_inference},
 lines 24--31, it has a 300 neuron layer, followed by a 50 neuron
 layer.
 A forward pass between these two layers needs 15,000 packets
@@ -3062,7 +3092,7 @@ We computed the gradients by hand, controlled them with the Keras
 model and tried to implement the backward pass accordingly.
 We were unable to make this test work with shared parameters.
 With multicasting errors, we managed to pass the test.
-The biggest CNN trained with this approach can be seen in
+The biggest \acrshort{cnn} trained with this approach can be seen in
 Listing~\ref{lst:training_cnn}.
 Beyond this size, dropped packets stalled the execution.
 Even for such a small deep learning model, we experienced exploding
@@ -3192,7 +3222,7 @@ of ResNet-50 (see Section~\ref{subsec:intro_bench}) performs a
 $3 \times 3$ convolution on a feature map with 512 channels and
 has 512 filters.
 Storing the weights alone takes 9,216 Kb, far exceeding the available
-64 Kb of DTCM of a single core (see Section~\ref{subsec:intro_spinn}).
+64 Kb of \acrshort{dtcm} of a single core (see Section~\ref{subsec:intro_spinn}).
 This is another problem which can be added to the missing features
 for ResNet-50.
 Deep learning neurons can grow very big and it can happen that they
@@ -3205,7 +3235,7 @@ different cores.
 
 Another example illustrating the resource invariance of neurons as
 machine vertices are bottlenecks.
-If one would execute a three layer MLP with 10, 1000 and 20 neurons
+If one would execute a three layer \acrshort{mlp} with 10, 1000 and 20 neurons
 per layer, the second layer would take 1000 cores, each core having
 a tenth of the computational effort compared to the 20 cores taken
 by the output layer.
@@ -3549,29 +3579,27 @@ TVM \citep{chen_et_al_2018}, Tensor Comprehensions
 \citep{vasilache_et_al_2018} or XLA \citep{leary_et_al_2017}.
 All trying to make deep learning faster and more portable.
 
-Other APIs provided by the SpiNNaker toolchain are a TDMA
-(time-division multiple access) system and SDP (SpiNNaker datagram
-protocol) \citep{furber_et_al_2014}.
-The TDMA system globally schedules the sends by a core such that the
+Other APIs provided by the SpiNNaker toolchain are a \acrfull{tdma}
+system and the \acrfull{sdp} \citep{furber_et_al_2014}.
+The \acrshort{tdma} system globally schedules the sends by a core such that the
 receiver should never overload.
 An older system is part of the stable toolchain, with a new one
 currently under development.
 Replacing the timer offset (see Section~\ref{subsec:problems}) and all
-common send calls to the SpiNNaker1 API with calls to the TDMA system
+common send calls to the SpiNNaker1 API with calls to the \acrshort{tdma} system
 should solve the problem of dropped packets.
 Too late during the development did we learn about this API and were
 unable to test it.
-SDP is used as the protocol for communication with the host, but it
+\acrshort{sdp} is used as the protocol for communication with the host, but it
 can also be used for communication between SpiNNaker cores.
 It offers point-to-point communication \citep{furber_et_al_2014},
 which could drastically reduce the amount of unused copies during our
 approach of multicasting errors backwards during the backward pass
 (see Section~\ref{subsec:problems}).
-While we knew about SDP and discussed it for implementing the backward
+While we knew about \acrshort{sdp} and discussed it for implementing the backward
 pass, in the end we decided against it, due to the fact that it is
 slower than the multicast system of SpiNNaker.
 In retrospect, this decision is questionable.
-
 
 While the better domain decomposition hopefully is a solution
 to the problem of dropped packets and the resource invariance of
@@ -3591,14 +3619,14 @@ The problem during training is, that state must be preserved between
 forward and backward pass, name the transmitted signals between
 layers.
 They are needed in order to compute the gradients for the weights.
-DTCM is a scarce resource for state-of-the-art deep learning models,
+\acrshort{dtcm} is a scarce resource for state-of-the-art deep learning models,
 so storing signals of multiple observations processed at the same time
 (backward pass for the first observation not finished, while the
-forward pass for a second neuron is processed) must happen in SDRAM
+forward pass for a second neuron is processed) must happen in \acrshort{sdram}
 (see Section~\ref{subsec:intro_spinn}).
-In order to read and write to SDRAM, SpiNNaker offers a hardware
-feature called DMA (direct memory access) \citep{furber_et_al_2020}.
-We have not gained any experience with the DMA unit during this
+In order to read and write to \acrshort{sdram}, SpiNNaker offers a hardware
+feature called \acrfull{dma} \citep{furber_et_al_2020}.
+We have not gained any experience with the \acrshort{dma} unit during this
 project.
 We deemed the ping-pong protocol as something to be optimized,
 exceeding the stage the prototype was developed to.
@@ -3725,8 +3753,8 @@ It has been a desire to enable training of and inference with these
 models on neuromorphic computers \citep{gomes_2017}, in the search for
 the next hardware solution that supports these massive units of
 computation, finding alternatives to the currently best performing
-deep learning accelerators like Google's TPU or NVIDIA's GPUs
-(see Section~\ref{subsec:intro_spinn}).
+deep learning accelerators like Google's \acrshort{tpu} or NVIDIA's
+\acrshort{gpu}s (see Section~\ref{subsec:intro_spinn}).
 
 This project had the ambitious goal of implementing a prototypical
 deep learning library for SpiNNaker.
@@ -3769,13 +3797,13 @@ due to the lack of time) are presented in
 Section~\ref{sec:discussion}.
 
 We were able to develop the prototype to the stage where it was able
-to do inference with MLPs and CNNs which took up all the cores of a
+to do inference with \acrshort{mlp}s and \acrshort{cnn}s which took up all the cores of a
 SpiNN-5 board (see Section~\ref{subsec:problems}).
-Training a MLP taking nearly every core of the SpiNN-5 board is also
+Training a \acrshort{mlp} taking nearly every core of the SpiNN-5 board is also
 possible.
 We were unable to develop the prototype to a stage where it could
-train a CNN in a meaningful way (see Section~\ref{subsec:problems}),
-our prototype having issues with scaling the CNN (due to dropped
+train a \acrshort{cnn} in a meaningful way (see Section~\ref{subsec:problems}),
+our prototype having issues with scaling the \acrshort{cnn} (due to dropped
 packets) and showing signs of exploding gradients (probably due to
 a bug, see Section~\ref{subsec:problems}).
 
@@ -3815,7 +3843,7 @@ In Section~\ref{sec:discussion}, we have already outlined deep
 learning compilers.
 A deep learning compiler which already exists for SpiNNaker is the
 SNN toolbox presented in Section~\ref{sec:related_work}.
-The difference being that it translates the deep learning model into
+The difference being, that it translates the deep learning model into
 a spiking neural network.
 The front-end of a deep learning compiler takes the deep learning
 model of a supported library (e.g.\ PyTorch or TensorFlow) and
@@ -3874,7 +3902,7 @@ DEEP R has been successfully applied to a deep learning model on the
 successor of SpiNNaker, the SpiNNaker 2 \citep{liu_et_al_2018}.
 The tested models achieve good performance with a connectivity
 restrained to 1.3 percent.
-DEEP R, SLIDE and other algorithms that reduce the connectivity would
+DEEP R, SLIDE and other algorithms that reduce the connectivity could
 help with the obvious problem of too many packets, but also reducing
 memory pressure, another problem discussed in
 Section~\ref{sec:discussion}.
@@ -3887,7 +3915,7 @@ Section~\ref{sec:discussion}.
 \addcontentsline{toc}{section}{References}
 
 
-\begin{appendices}
+\begin{appendices} % {{{
 \section{Images of the SpiNNaker Hardware}
 \label{sec:spinn_photos}
 
@@ -3910,17 +3938,17 @@ Section~\ref{sec:discussion}.
 \label{sec:test_suite}
 
 \lstinputlisting[language=Python, firstline=1, lastline=68,
-  caption={Excerpt from the test suite showing two models (one MLP and
-    one CNN), which take up all the capacity of a SpiNN-5 board.},
+  caption={Excerpt from the test suite showing two models (one \acrshort{mlp} and
+    one \acrshort{cnn}), which take up all the capacity of a SpiNN-5 board.},
   captionpos=b, numbers=left, label={lst:big_models_inference}]
   {../SpiDNN/test/test_inference.py}
 
 \newpage
 
 \begin{lstlisting}[language=Python, caption={Excerpt from the test
-  suite showing a network similar to the MLP from
+  suite showing a network similar to the \acrshort{mlp} from
   Listing~\ref{lst:big_models_inference} being trained.
-  The MLP is trained to learn XOR, so the input and output dimensions
+  The \acrshort{mlp} is trained to learn XOR, so the input and output dimensions
   are different from the model shown in
   Listing~\ref{lst:big_models_inference}.
   The backward pass was implemented using shared parameters
@@ -4001,7 +4029,7 @@ def test_mlp_backprop():
 \newpage
 
 \begin{lstlisting}[language=Python, caption={Excerpt from the test
-  suite showing the training of a CNN with known weights.
+  suite showing the training of a \acrshort{cnn} with known weights.
   It was used for implementing backpropagation for convolutional
   layer.}, captionpos=b, numbers=left,
   label={lst:cnn_known_weights}]
@@ -4078,7 +4106,7 @@ def test_training_conv1d_with_known_weights():
 \newpage
 
 \begin{lstlisting}[language=Python, caption={Excerpt from the test
-  suite showing the biggest CNN trained with the prototye, without
+  suite showing the biggest \acrshort{cnn} trained with the prototye, without
   dropped packets.}, captionpos=b, numbers=left,
   label={lst:training_cnn}]
 import numpy as np
@@ -4140,6 +4168,12 @@ def test_training_conv1d():
         assert e_max < 1.
 \end{lstlisting}
 
-\end{appendices}
+\end{appendices} % }}}
+
+
+\clearpage
+
+\printglossary[type=\acronymtype]
+
 
 \end{document}
