@@ -10,6 +10,12 @@ from spiDNN.machine_vertices import Injector
 
 
 class Input(AbstractLayerBase):
+    """
+    Layer for streaming the observations onto the board. Neurons
+    are Injectors (wrapper around the RIPTMCS utility vertex from the
+    SpiNNaker toolchain).
+    """
+
     def __init__(self, *input_shape, label="unnamed"):
         n_neurons = input_shape[0]
 

@@ -6,6 +6,10 @@ from spinn_utilities.abstract_base import AbstractBase, abstractproperty, \
 
 @add_metaclass(AbstractBase)
 class LayerInterface(object):
+    """
+    Interface with all the properties and methods a layer has to
+    provide.
+    """
 
     @abstractproperty
     def n_filters(self):

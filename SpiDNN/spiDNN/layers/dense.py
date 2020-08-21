@@ -12,6 +12,10 @@ from spiDNN.machine_vertices import Perceptron
 
 
 class Dense(AbstractLayerBase, WeightsInterface):
+    """
+    Implementation of a dense layer.
+    """
+
     def __init__(self, n_neurons, activation="identity", bias=True):
         super(Dense, self).__init__("unnamed", n_neurons, [])
 

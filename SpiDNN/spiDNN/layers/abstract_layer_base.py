@@ -7,6 +7,11 @@ import spiDNN.util as util
 
 
 class AbstractLayerBase(LayerInterface):
+    """
+    Base implementation of the LayerInterface. All layer classes
+    inherit from this class.
+    """
+
     def __init__(self, label, n_neurons, neurons, n_filters=1):
         self._label = label
         self._n_neurons = n_neurons

@@ -6,6 +6,11 @@ from spinn_utilities.abstract_base import AbstractBase, abstractproperty, \
 
 @add_metaclass(AbstractBase)
 class WeightsInterface(object):
+    """
+    Interface implemented by layers whose neurons (machine vertices)
+    have trainable parameters (weights), e.g. dense or convolutional
+    layers.
+    """
 
     @abstractmethod
     def generate_weights(self, source_layer):

@@ -9,6 +9,12 @@ from .layer_interface import LayerInterface
 
 
 class Loss(AbstractLayerBase):
+    """
+    Layer adding a single loss machine vertex to the graph when the
+    model is trained. Wrapper is needed so we don't violate the
+    layered design pattern.
+    """
+
     def __init__(self, label, loss, K):
         super(Loss, self).__init__(label, 1, [])
 

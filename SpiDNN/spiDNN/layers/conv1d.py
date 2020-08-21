@@ -14,6 +14,10 @@ from spiDNN.machine_vertices import Conv1DNeuron
 
 
 class Conv1D(AbstractLayerBase, WeightsInterface):
+    """
+    Implementation of a 1D convolutional layer.
+    """
+
     def __init__(
             self, n_filters, kernel_shape, activation="identity",
             bias=True, padding="valid", stride=1):
@@ -77,6 +81,8 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
     @overrides(LayerInterface.connect_incoming)
     def connect_incoming(self, source_layer, partition):
+        # TODO: (!) This is not working. Look at connect_outgoing
+        #           from the without_shared_state branch
         if type(source_layer) == Conv1D:
             self._connect_incoming_conv1d(source_layer, partition)
         else:
@@ -122,6 +128,9 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
         return weights, biases
 
     def _connect_incoming_conv1d(self, source_layer, partition):
+        """
+        Connect to the preceding layer. Padding must be accounted for.
+        """
         if self.padding == "valid":
             growing_down = 0
         elif self.padding == "same":
@@ -152,6 +161,10 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
             i += self.stride
 
     def _set_n_neurons(self, source_layer):
+        """
+        Computes the number of neurons in the layer, based on the
+        number of input neurons and the padding.
+        """
         if self.padding == "valid":
             self.n_neurons = int(
                 (source_layer.n_neurons - self.kernel_shape[0])

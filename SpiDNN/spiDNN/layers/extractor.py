@@ -12,6 +12,11 @@ from .abstract_layer_base import AbstractLayerBase
 
 
 class Extractor(AbstractLayerBase):
+    """
+    This class is an abstraction over the LPG. This abstraction is
+    needed so we don't violate our layered design pattern.
+    """
+
     def __init__(self, label):
         args = LivePacketGatherParameters(
             port=globals.ack_port,
