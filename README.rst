@@ -40,7 +40,7 @@ Other dependecies that must be installed for SpiDNN:
 Afterwards, enter the ``SpiDNN/`` directory and execute ``source scripts/env.sh``.
 This adds SpiDNN to your python-path variable.
 In the ``SpiDNN/tests/test_inference.py`` and ``SpiDNN/tests/test_training.py``
-files, you will find examples of how to use SpiDNN.
+files, you will find examples showing how SpiDNN is used.
 
 
 TODO: Optimizations and features
