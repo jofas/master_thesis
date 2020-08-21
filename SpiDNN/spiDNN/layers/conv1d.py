@@ -28,7 +28,7 @@ class Conv1D(AbstractLayerBase, WeightsInterface):
 
         self.kernel_shape = kernel_shape
 
-        self.n_channels = None # set during generate_weights
+        self.n_channels = None  # set during generate_weights
 
         self.bias = bias
         self.stride = stride

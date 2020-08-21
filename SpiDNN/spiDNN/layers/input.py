@@ -16,7 +16,7 @@ class Input(AbstractLayerBase):
         if len(input_shape) == 1:
             n_filters = 1  # actually the amount of channels
         else:
-            n_filters = input_shape[-1] # channel_last
+            n_filters = input_shape[-1]  # channel_last
 
         super(Input, self).__init__(
             label, n_neurons, [], n_filters=n_filters)

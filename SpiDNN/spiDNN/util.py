@@ -128,12 +128,12 @@ class PartitionManager:
             partition_identifier)
 
         keys_and_masks = [BaseKeyAndMask(key, globals.mask)
-            for key in range(base_key, base_key + n_keys)]
+                          for key in range(base_key, base_key + n_keys)]
 
         #assert len(keys_and_masks) == n_keys
 
-        #print(machine_vertex)
-        #for km in keys_and_masks:
+        # print(machine_vertex)
+        # for km in keys_and_masks:
         #    print(km.get_keys(n_keys=n_keys, offset=1))
 
         return [FixedKeyAndMaskConstraint(keys_and_masks)]

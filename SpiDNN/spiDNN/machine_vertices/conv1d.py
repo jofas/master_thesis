@@ -364,7 +364,7 @@ class Conv1DNeuron(
                 for edge in edges:
                     # TODO: this could be your achilles heel again
                     position = self.id % next_layer.kernel_shape[0] \
-                               + edge.pre_vertex.lower_padding
+                        + edge.pre_vertex.lower_padding
 
                     filter = 0
                     for _ in range(0, next_layer.n_filters):

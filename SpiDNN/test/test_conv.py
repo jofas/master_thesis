@@ -89,7 +89,7 @@ def test_convolution():
                                4.2 + 1.2 + biases[1],
                                7.2 + 2.2 + biases[2]], dtype=np.float32)
 
-    assert np.amax(np.absolute(y[0,0,:] - correct_result)) < 1e-6
+    assert np.amax(np.absolute(y[0, 0, :] - correct_result)) < 1e-6
 
 
 def test_connection():

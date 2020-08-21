@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class DataRegions(Enum):
     SYSTEM = 0
     BASE_PARAMS = 1

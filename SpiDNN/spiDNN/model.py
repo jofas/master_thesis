@@ -240,7 +240,7 @@ class Model:
                 conn.send_events_with_payloads(
                     label,
                     [(0, util.float_to_uint32t(
-                        x[send_label_to_pos[label],i]))
+                        x[send_label_to_pos[label], i]))
                         for i in range(0, X.shape[-1])])
                 barrier.wait()
             barrier.release()
@@ -321,7 +321,7 @@ class Model:
                     conn.send_events_with_payloads(
                         label,
                         [(0, util.float_to_uint32t(
-                            m[send_label_to_pos[label],i]))
+                            m[send_label_to_pos[label], i]))
                             for i in range(0, M.shape[-1])])
                     barrier.wait()
             barrier.release()

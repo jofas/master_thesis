@@ -229,9 +229,9 @@ class Perceptron(
         spec.write_value(min_next_key)
         spec.write_value(n_errors)
         spec.write_value(int(is_output_layer))
-        spec.write_value(0) # Only used by Conv layer
-        spec.write_value(0) # Only used by Conv layer
-        spec.write_value(0) # Only used by Conv layer
+        spec.write_value(0)  # Only used by Conv layer
+        spec.write_value(0)  # Only used by Conv layer
+        spec.write_value(0)  # Only used by Conv layer
         spec.write_value(n_errors)
         spec.write_value(n_errors)
 
