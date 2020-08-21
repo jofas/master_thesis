@@ -31,7 +31,7 @@ Other dependecies that must be installed for SpiDNN:
 
 * tensorflow
 
-  `pip install tensorflow`
+  ``pip install tensorflow``
 
 * keras
 
