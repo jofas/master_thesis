@@ -13,11 +13,20 @@ import numpy as np
 
 
 class Model:
+    """
+    The main interface to SpiDNN. Implements a sequential deep
+    learning model.
+    """
+
     def __init__(self):
         self.__weights = []
         self._layers = []
 
     def add(self, layer, label=None):
+        """
+        Adds a layer to the model.
+        """
+
         # TODO: here control correct usage
 
         # TODO: make sure layer_names are unique
@@ -37,6 +46,10 @@ class Model:
         return self
 
     def predict(self, X):
+        """
+        Performs inference with the model instance. Loads and executes
+        the model on SpiNNaker.
+        """
         X = np.array(X, dtype=np.float32)
 
         result = np.empty(
@@ -63,6 +76,10 @@ class Model:
         return result
 
     def fit(self, X, y, loss_fn, epochs, batch_size, learning_rate):
+        """
+        Performs training with the model instance. Loads and executes
+        the model on SpiNNaker.
+        """
         X = np.array(X, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
 
@@ -124,6 +141,10 @@ class Model:
         conn.close()
 
     def _reset_layers(self):
+        """
+        Resets the layers (deletes the neurons from the last time
+        the model was executed on SpiNNaker).
+        """
         for layer in self._layers:
             layer.reset()
 
@@ -170,12 +191,20 @@ class Model:
             i += 1
 
     def _extract_weights(self):
+        """
+        After training the model, the weights must be extracted from
+        the SpiNNaker machine, back to the host.
+        """
         i = 0
         for layer in self._layers[1:]:
             self.__weights[i:i+2] = layer.extract_weights()
             i += 2
 
     def _setup_predict_live_event_connection(self, extractor, X, result):
+        """
+        live IO connection for inference. Handles streaming the
+        observations onto the machine and the predictions off.
+        """
         send_labels = self._layers[0].labels
         receive_labels = self._layers[-1].labels
 
@@ -204,6 +233,14 @@ class Model:
 
     def _generate_predict_extractor_callback(
             self, receive_labels, result, barrier):
+        """
+        Returns the callback for the inference extractor. The callback
+        handles the ping-pong protocol, making sure the next
+        observation is not streamed onto the SpiNNaker machine, before
+        the previous observation has finished the forward pass.
+        It also stops the simulation, once all observations are passed
+        through the model.
+        """
         extractor_manager = util.PingPongExtractionManager(
             1, result.shape[0], len(receive_labels))
 
@@ -227,6 +264,12 @@ class Model:
         return extractor_callback
 
     def _generate_predict_injector_callback(self, send_labels, X, barrier):
+        """
+        Returns the callback for the inference injector. Injects the
+        observations (passes them to the input layer).
+        Waits till it is notified by the extractor that it can send
+        the next observation.
+        """
         send_label_to_pos = {
             label: i for i, label in enumerate(send_labels)}
 
@@ -249,6 +292,10 @@ class Model:
 
     def _setup_fit_live_event_connection(
             self, extractor, loss_layer, y_injectors, X, y, epochs):
+        """
+        live IO connection for training. Handles streaming the
+        examples onto the machine.
+        """
 
         conn = LiveEventConnection(
             extractor.labels[0],
@@ -290,6 +337,13 @@ class Model:
 
     def _generate_fit_extractor_callback(
             self, receive_labels, X, barrier, epochs):
+        """
+        Returns the callback for the training extractor. The callback
+        handles the ping-pong protocol, making sure the next
+        example is not streamed onto the SpiNNaker machine, before
+        the previous example has finished the forward and backward pass.
+        It also stops the simulation, once all epochs are finished.
+        """
         extractor_manager = util.PingPongExtractionManager(
             epochs, len(X), len(receive_labels))
 
@@ -307,6 +361,13 @@ class Model:
         return extractor_callback
 
     def _generate_fit_injector_callback(self, send_labels, M, barrier, epochs):
+        """
+        Returns the callback for the training injector. Injects the
+        observations (passes them to the input layer) and the labels
+        (passes them to the loss layer).
+        Waits till it is notified by the extractor that it can send
+        the next example.
+        """
         send_label_to_pos = {
             label: i for i, label in enumerate(send_labels)}
 
