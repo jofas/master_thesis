@@ -79,6 +79,9 @@
 
 \addtobeamertemplate{footline}{}
 {
+  \begin{textblock*}{100mm}(.025\textwidth,-0.57cm)
+    \insertframenumber
+  \end{textblock*}
   \begin{textblock*}{100mm}(.845\textwidth,-0.57cm)
     \includegraphics[height=0.5cm, width=1.8cm]{225px-Epcc_logo.jpg}
   \end{textblock*}
@@ -143,11 +146,6 @@
 \end{frame}
 % }}}
 
-\begin{frame}[fragile]
-  \frametitle{Agenda}
-  \tableofcontents
-\end{frame}
-
 % SpiNNaker {{{
 \section{SpiNNaker}
 
@@ -180,67 +178,6 @@
 
 % Prototype {{{
 \section{Prototype}
-
-\begin{frame}[fragile]
-  \frametitle{User API}
-  \setbeamercovered{invisible}
-
-  \begin{figure} % {{{
-  \begin{subfigure}[t]{.48\linewidth}
-    {\tiny
-  \begin{lstlisting}[language=Python]
-import numpy as np
-import tensorflow as tf
-
-# generate random data set
-X = np.random.rand(500, 10)
-
-# Keras MLP
-kmodel = tf.keras.models.Sequential()
-kmodel.add(tf.keras.layers.Dense(
-  50, activation="relu",
-  input_shape=(10,)))
-kmodel.add(tf.keras.layers.Dense(
-  50, activation="softmax"))
-kmodel.add(tf.keras.layers.Dense(
-  300, activation="tanh"))
-kmodel.add(tf.keras.layers.Dense(
-  50, activation="sigmoid"))
-kmodel.add(tf.keras.layers.Dense(25))
-
-# predict labels from random data
-# with random weights
-p_ = kmodel.predict(X)
-  \end{lstlisting}
-}
-  \end{subfigure}
-  \begin{subfigure}[t]{.48\linewidth}
-    {\tiny
-  \begin{lstlisting}[language=Python]
-from spiDNN import Model
-from spiDNN.layers import Input, Dense
-
-# equivalent model for SpiNNaker
-model=Model()
-model.add(Input(10))
-model.add(Dense(50, activation="relu"))
-model.add(Dense(50, activation="softmax"))
-model.add(Dense(300, activation="tanh"))
-model.add(Dense(50, activation="sigmoid"))
-model.add(Dense(25))
-
-# make sure both models have same parameters
-model.set_weights(kmodel.get_weights())
-
-p = model.predict(X)
-
-# floating point discrepancies may occur
-assert np.amax(np.absolute(p - p_)) < 1e-4
-\end{lstlisting}
-}
-  \end{subfigure}
-  \end{figure} % }}}
-\end{frame}
 
 \begin{frame}[fragile]
   \frametitle{Prototype Architecture}
@@ -278,11 +215,17 @@ assert np.amax(np.absolute(p - p_)) < 1e-4
         node[below right] {SpiNNaker toolchain} --
         ($(model.south east) - (0, 1)$);
 
-      \node[elem, container, below=2 of model] (machine_graph) {};
+      \node[elem, container, below=2 of model, minimum
+        width=0.8\linewidth] (machine_graph) {};
       \node[below right] at (machine_graph.south west)
-        {machine graph};
+        {machine graph (running on SpiNNaker)};
 
-      \node[dot, below=3 of layer_input.south west]
+      \node[elem, container, left=0.5 of machine_graph, minimum
+        width=0.05\linewidth] (host1) {Host};
+      \node[elem, container, right=0.5 of machine_graph, minimum
+        width=0.05\linewidth] (host2) {Host};
+
+        \node[dot, below=3 of layer_input.south west]
         (input0) {};
       \node[dot, below=.1 of input0]
         (input1) {};
@@ -315,8 +258,13 @@ assert np.amax(np.absolute(p - p_)) < 1e-4
       \node[below=.001 of output2] {\vdots};
 
 
-      \node[dot, dashed, right=1.75 of output1] (lpg) {};
+      \node[dot, dashed, right=1 of output1] (lpg) {};
 
+      \draw[dashed, ->] (host1.52) -- (input0);
+      \draw[dashed, ->] (host1.52) -- (input1);
+      \draw[dashed, ->] (host1.52) -- (input2);
+
+      \draw[dashed, ->] (lpg) -- (host2.124);
 
       \draw[->] (model) -- node[above right]
         {\texttt{.fit}, \texttt{.predict}} (machine_graph);
@@ -387,7 +335,7 @@ assert np.amax(np.absolute(p - p_)) < 1e-4
       \item 2D convolutional layers
       \item Pooling layers
       \item Shortcut connections \citep{he_et_al_2015}
-      \item (Batch normalization)
+      \item Batch normalization
     \end{itemize}
   \end{minipage}
 \end{frame}
@@ -404,6 +352,8 @@ assert np.amax(np.absolute(p - p_)) < 1e-4
     \item TIME!
     \item Dropped packets
     \item Convolutional layer as neurons is a complex abstraction
+    \item Issues with the toolchain \citep{fassbender_2020a,
+        fassbender_2020b, fassbender_2020c, fassbender_2020d}
   \end{itemize}
 \end{frame}
 % }}}
@@ -420,7 +370,7 @@ assert np.amax(np.absolute(p - p_)) < 1e-4
   \begin{itemize}[<+->]
     \item Application graph instead of machine graph (less packets
       sent)
-    \item P2P communications instead of multicast packets
+    \item Slower communication protocol for bigger messages
     \item Time-division multiple access (TDMA) system (sends packets
       at the right time to avoid dropping them)
   \end{itemize}
@@ -669,6 +619,81 @@ assert np.amax(np.absolute(p - p_)) < 1e-4
 \end{frame}
 
 % }}}
+
+\section{Summary}
+
+\begin{frame}[fragile]
+  \frametitle{Summary}
+  \setbeamercovered{invisible}
+
+  \begin{itemize}[<+->]
+    \item Unfortunately no ResNet-50
+    \item Valuable insights gained
+    \item Learned a lot (SpiNNaker, deep learning, software
+      engineering, project management, \dots)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Code Example}
+  \setbeamercovered{invisible}
+
+  \begin{figure} % {{{
+  \begin{subfigure}[t]{.48\linewidth}
+    {\tiny
+  \begin{lstlisting}[language=Python]
+import numpy as np
+import tensorflow as tf
+
+# generate random data set
+X = np.random.rand(500, 10)
+
+# Keras MLP
+kmodel = tf.keras.models.Sequential()
+kmodel.add(tf.keras.layers.Dense(
+  50, activation="relu",
+  input_shape=(10,)))
+kmodel.add(tf.keras.layers.Dense(
+  50, activation="softmax"))
+kmodel.add(tf.keras.layers.Dense(
+  300, activation="tanh"))
+kmodel.add(tf.keras.layers.Dense(
+  50, activation="sigmoid"))
+kmodel.add(tf.keras.layers.Dense(25))
+
+# predict labels from random data
+# with random weights
+p_ = kmodel.predict(X)
+  \end{lstlisting}
+}
+  \end{subfigure}
+  \begin{subfigure}[t]{.48\linewidth}
+    {\tiny
+  \begin{lstlisting}[language=Python]
+from spiDNN import Model
+from spiDNN.layers import Input, Dense
+
+# equivalent model for SpiNNaker
+model=Model()
+model.add(Input(10))
+model.add(Dense(50, activation="relu"))
+model.add(Dense(50, activation="softmax"))
+model.add(Dense(300, activation="tanh"))
+model.add(Dense(50, activation="sigmoid"))
+model.add(Dense(25))
+
+# make sure both models have same parameters
+model.set_weights(kmodel.get_weights())
+
+p = model.predict(X)
+
+# floating point discrepancies may occur
+assert np.amax(np.absolute(p - p_)) < 1e-4
+\end{lstlisting}
+}
+  \end{subfigure}
+  \end{figure} % }}}
+\end{frame}
 
 % References {{{
 \begin{frame}
